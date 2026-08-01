@@ -1,0 +1,627 @@
+<div class="wrapper">
+  
+  <!-- ── TOP NAVIGATION BAR ── -->
+  <header class="top-nav">
+    <div class="nav-brand">
+      <div class="brand-icon-wrapper">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h2 class="app-name">AI Speaking Assistant</h2>
+        <div class="sub-brand-row">
+          <span class="app-subtitle">Teacher Portal / ส่วนจัดการอาจารย์</span>
+          <span class="pulse-status-badge live">
+            <span class="pulse-dot"></span> Online
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="user-profile">
+      <div class="profile-info">
+        <span class="avatar-circle">T</span>
+        <div class="user-details">
+          <p class="user-name">อาจารย์ {{ currentUser?.firstName || 'ผู้สอน' }} {{ currentUser?.lastName || '' }}</p>
+          <span class="user-role-badge">Teacher</span>
+        </div>
+      </div>
+      <button class="logout-btn" (click)="logout()" title="ออกจากระบบ">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        ออกจากระบบ / Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- ── MAIN CONTAINER ── -->
+  <div class="body-flat">
+    
+    <!-- ── SECONDARY TAB BAR ── -->
+    @if (!selectedStudent) {
+      <div class="secondary-tabs">
+        <button class="sub-tab-btn" [class.active]="activeSubTab === 'students'" (click)="switchSubTab('students')">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          รายงานสถิตินักศึกษา / Student Stats
+        </button>
+        <button class="sub-tab-btn" [class.active]="activeSubTab === 'lessons'" (click)="switchSubTab('lessons')">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          จัดการบทเรียนและข้อสอบ / Manage Course
+        </button>
+      </div>
+    }
+
+    <!-- ── ACADEMIC YEAR LEVEL TOGGLE BAR ── -->
+    @if (!selectedStudent && !editingLesson) {
+      <div class="secondary-tabs" style="margin-top: -0.5rem; background: transparent; border: none; box-shadow: none; padding: 0;">
+        <button type="button" class="sub-tab-btn" [class.active]="activeYearLevel === 1" (click)="switchYearLevel(1)" style="flex: 1; justify-content: center;">
+          บทเรียน & นักศึกษา ชั้นปีที่ 1 (Year 1)
+        </button>
+        <button type="button" class="sub-tab-btn" [class.active]="activeYearLevel === 2" (click)="switchYearLevel(2)" style="flex: 1; justify-content: center;">
+          บทเรียน & นักศึกษา ชั้นปีที่ 2 (Year 2)
+        </button>
+      </div>
+    }
+
+    <!-- ── CONTENT LAYOUT ── -->
+    <div class="main-content-flat">
+
+      @if (activeSubTab === 'students') {
+        <div class="tab-panel animate-fade">
+          
+          <!-- มุมมอง 1: รายชื่อนักเรียนปกติ -->
+          @if (!selectedStudent) {
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-header">
+                  <div class="kpi-icon">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                    </svg>
+                  </div>
+                  <span class="kpi-tag success">นักศึกษาในคลาส</span>
+                </div>
+                <div>
+                  <span class="kpi-val">{{ studentCount }}</span>
+                  <span class="kpi-lbl">จำนวนนักศึกษาทั้งหมด</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-header">
+                  <div class="kpi-icon">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                  </div>
+                  <span class="kpi-tag success">ผลการเรียนรวม</span>
+                </div>
+                <div>
+                  <span class="kpi-val">{{ classAverage }}%</span>
+                  <span class="kpi-lbl">คะแนนเฉลี่ยห้องเรียน</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-header">
+                  <div class="kpi-icon">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                  </div>
+                  <span class="kpi-tag success">อัตราความสำเร็จ</span>
+                </div>
+                <div>
+                  <span class="kpi-val">{{ completedRate }}%</span>
+                  <span class="kpi-lbl">การส่งงานและฝึกพูด</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-container">
+              <div class="filter-controls-row">
+                <div class="search-input-wrapper">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" class="filter-input" placeholder="ค้นหาชื่อหรือรหัสนักศึกษา..." [(ngModel)]="searchQuery" />
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="cute-table">
+                  <thead>
+                    <tr>
+                      <th>รหัสประจำตัว</th>
+                      <th>ชื่อ-นามสกุล</th>
+                      <th>คะแนนเฉลี่ย</th>
+                      <th>บทเรียนสำเร็จ</th>
+                      <th>สถานะ</th>
+                      <th style="text-align: center;">จัดการข้อมูล</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (st of filteredStudents; track st.id) {
+                      <tr>
+                        <td><span class="id-tag">{{ st.student_code }}</span></td>
+                        <td><strong>{{ st.name }}</strong></td>
+                        <td>
+                          <span class="latency-indicator" [class.fast]="st.average_score >= 75" [class.slow]="st.average_score < 75">
+                            {{ st.average_score }}%
+                          </span>
+                        </td>
+                        <td>{{ st.lessons_completed }} / 5 บท</td>
+                        <td>
+                          <span class="status-indicator-pill" [class.active]="!st.need_support">
+                            {{ st.need_support ? 'ควรช่วยเหลือ / Need Support' : 'ปกติ / Normal' }}
+                          </span>
+                        </td>
+                        <td style="text-align: center;">
+                          <button type="button" class="btn-test-action" (click)="selectStudent(st)">
+                            เปิดดูสถิติ / View Stats
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+          <!-- มุมมอง 2: รายงานสถิตินักศึกษาแบบละเอียด -->
+          @if (selectedStudent) {
+            <div class="section-container animate-fade">
+              
+              <!-- ส่วนหัวของรายงาน -->
+              <div class="section-header-row">
+                <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
+                  <button type="button" class="btn-primary-action outline" (click)="selectedStudent = null">
+                    ย้อนกลับ / Back to List
+                  </button>
+                  <div>
+                    <h3 class="section-title">ผลการเรียนรายบุคคล: {{ selectedStudent.name }}</h3>
+                    <p class="section-desc">รหัสประจำตัว: {{ selectedStudent.student_code }} | บทเรียนสำเร็จ: {{ selectedStudent.lessons_completed }}/5 บทเรียน</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- เลย์เอาต์ 3 คอลัมน์ -->
+              <div class="overview-split-row margin-top-lg">
+                
+                <!-- คอลัมน์ที่ 1: ทักษะการพูด (AI Evaluated Skills) -->
+                <div class="status-summary-card">
+                  <div class="card-heading-between">
+                    <h3>ทักษะการพูด (AI Evaluated Skills)</h3>
+                  </div>
+                  
+                  <div class="server-metric-item">
+                    <div class="metric-row-header">
+                      <span>ความคล่องแคล่ว (Fluency)</span>
+                      <strong>{{ selectedStudent.skills.fluency }}%</strong>
+                    </div>
+                    <div class="progress-bar-track">
+                      <div class="progress-bar-fill purple" [style.width.%]="selectedStudent.skills.fluency"></div>
+                    </div>
+                  </div>
+
+                  <div class="server-metric-item">
+                    <div class="metric-row-header">
+                      <span>การออกเสียง (Pronunciation)</span>
+                      <strong>{{ selectedStudent.skills.pronunciation }}%</strong>
+                    </div>
+                    <div class="progress-bar-track">
+                      <div class="progress-bar-fill green" [style.width.%]="selectedStudent.skills.pronunciation"></div>
+                    </div>
+                  </div>
+
+                  <div class="server-metric-item">
+                    <div class="metric-row-header">
+                      <span>ความถูกต้องไวยากรณ์ (Grammar)</span>
+                      <strong>{{ selectedStudent.skills.grammar }}%</strong>
+                    </div>
+                    <div class="progress-bar-track">
+                      <div class="progress-bar-fill blue" [style.width.%]="selectedStudent.skills.grammar"></div>
+                    </div>
+                  </div>
+
+                  <div class="server-metric-item">
+                    <div class="metric-row-header">
+                      <span>คลังคำศัพท์ (Vocabulary)</span>
+                      <strong>{{ selectedStudent.skills.vocabulary }}%</strong>
+                    </div>
+                    <div class="progress-bar-track">
+                      <div class="progress-bar-fill purple" [style.width.%]="selectedStudent.skills.vocabulary"></div>
+                    </div>
+                  </div>
+
+                  <div class="compact-log-item" style="margin-top: 1rem;">
+                    <div class="compact-log-msg">
+                      อีเมล: <strong>{{ selectedStudent.email }}</strong><br>
+                      คะแนนเฉลี่ยรวม: <strong>{{ selectedStudent.average_score }}%</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- คอลัมน์ที่ 2: คะแนนสอบและเกม -->
+                <div class="recent-logs-card">
+                  <div class="card-heading-between">
+                    <h3>ผลคะแนนสอบ & แบบฝึกหัด (Quizzes)</h3>
+                  </div>
+
+                  <div class="compact-logs-list">
+                    @for (score of selectedStudent.scores; track score.unit) {
+                      <div class="compact-log-item">
+                        <div class="compact-log-msg">
+                          <strong>{{ score.unit }}</strong><br>
+                          <span style="font-size: 0.76rem; color: #64748b;">
+                            ก่อนเรียน: {{ score.pre }}% | หลังเรียน: {{ score.post }}% | เกม: {{ score.game }}%
+                          </span>
+                        </div>
+                      </div>
+                    } @empty {
+                      <p class="empty-table-msg">ยังไม่ได้ทำแบบทดสอบก่อน/หลังเรียน</p>
+                    }
+                  </div>
+                </div>
+
+                <!-- คอลัมน์ที่ 3: ประวัติการพูดและคอมเมนต์ AI -->
+                <div class="recent-logs-card">
+                  <div class="card-heading-between">
+                    <h3>ประวัติการพูดและคอมเมนต์ AI (Speech Logs)</h3>
+                  </div>
+
+                  <div class="compact-logs-list">
+                    @for (log of selectedStudent.practiceLogs; track log.timestamp) {
+                      <div class="compact-log-item" style="flex-direction: column; align-items: flex-start; gap: 0.3rem;">
+                        <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.72rem; color: #94a3b8;">
+                          <span>{{ log.timestamp }}</span>
+                          <span class="log-level-chip success">คะแนน {{ log.score }}%</span>
+                        </div>
+                        <p style="font-weight: 700; color: #0f172a; margin: 0;">"{{ log.sentence }}"</p>
+                        <p style="font-size: 0.76rem; color: #475569; margin: 0;">คอมเมนต์: {{ log.feedback }}</p>
+                      </div>
+                    } @empty {
+                      <p class="empty-table-msg">ยังไม่มีประวัติการพูดบันทึกไว้</p>
+                    }
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          }
+
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════
+           SUB-TAB 2: MANAGE LESSONS (จัดการเนื้อหา)
+           ══════════════════════════════════════ -->
+      @if (activeSubTab === 'lessons') {
+        <div class="tab-panel animate-fade">
+          
+          <!-- รายชื่อบทเรียนที่มี -->
+          @if (editingLesson === null) {
+            <div class="section-container">
+              <div class="section-header-row">
+                <div>
+                  <h3 class="section-title">บทเรียนทั้งหมดในวิชาฝึกพูดภาษาอังกฤษ</h3>
+                  <p class="section-desc">สร้าง แก้ไข กำหนดสิทธิ์เกม อัปโหลดสไลด์ และจัดการข้อสอบภาษาอังกฤษ</p>
+                </div>
+                <button type="button" class="btn-primary-action" (click)="startNewLesson()">
+                  เพิ่มบทเรียนใหม่ / Add Lesson
+                </button>
+              </div>
+
+              <div class="courses-grid">
+                @for (les of filteredLessons; track les.id) {
+                  <div class="course-card">
+                    <div class="course-card-top">
+                      <span class="level-badge">Lesson ID: {{ les.id }}</span>
+                    </div>
+                    <h4 class="course-title">{{ les.name }}</h4>
+                    <p class="teacher-info">{{ les.titleEn }}</p>
+                    <p class="sub-table-desc">{{ les.description }}</p>
+                    <div class="course-card-footer">
+                      <button type="button" class="btn-approve" style="flex:1;" (click)="editLesson(les)">แก้ไขเนื้อหา / Edit</button>
+                      <button type="button" class="btn-reject" (click)="deleteLesson(les.id)">ลบ / Delete</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- ฟอร์มการแก้ไข/เพิ่มบทเรียนใหม่ -->
+          @if (editingLesson !== null) {
+            <div class="section-container animate-fade">
+              <div class="section-header-row">
+                <div>
+                  <h3 class="section-title">{{ isCreatingNew ? 'สร้างบทเรียนใหม่' : 'แก้ไขบทเรียน' }}</h3>
+                  <p class="section-desc">กรอกข้อมูลบทเรียนภาษาอังกฤษ คลังคำศัพท์ สไลด์ PDF และแบบทดสอบ</p>
+                </div>
+                <div class="header-buttons-row">
+                  <button type="button" class="btn-primary-action outline" (click)="editingLesson = null">ยกเลิก / Cancel</button>
+                  <button type="button" class="btn-primary-action" (click)="saveLesson()">บันทึกการเปลี่ยนแปลง / Save</button>
+                </div>
+              </div>
+
+              <form class="editor-form" style="display: flex; flex-direction: column; gap: 1.2rem; margin-top: 1rem;">
+                <div class="form-group-flat">
+                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">ชื่อบทเรียน (English Title)</label>
+                  <input type="text" class="filter-input" style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.65rem 0.9rem; width: 100%; box-sizing: border-box; background: #ffffff;" [(ngModel)]="editingLesson.name" name="lessonName" placeholder="เช่น Unit 1: Welcoming Students" />
+                </div>
+
+                <div class="form-group-flat">
+                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">คำอธิบายสั้นๆ (Description)</label>
+                  <textarea class="filter-input" style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.65rem 0.9rem; width: 100%; min-height: 80px; box-sizing: border-box; background: #ffffff;" [(ngModel)]="editingLesson.description" name="lessonDesc" placeholder="คำอธิบายภาพรวมสั้นๆ ประจำบทเรียน..."></textarea>
+                </div>
+
+                <div class="form-group-flat">
+                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">ไฟล์สไลด์บทเรียน PDF (Lesson Slide PDF File)</label>
+                  <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <input type="text" class="filter-input" style="flex: 1; min-width: 240px; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.65rem 0.9rem; background: #ffffff;" [(ngModel)]="editingLesson.slidePath" name="lessonSlidePath" placeholder="เช่น บทที่ 1.pdf หรือลิงก์ URL สไลด์ที่อัปโหลด" />
+                    <label class="btn-primary-action purple" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
+                      เลือกไฟล์ / Upload PDF
+                      <input type="file" accept="application/pdf" (change)="onSlideUpload($event)" style="display: none;" />
+                    </label>
+                  </div>
+                </div>
+
+                <!-- การเปิดใช้งานเกม (Allowed Games Selector) -->
+                <div class="section-container" style="background: #f8fafc; border: 1px solid #f1f5f9; padding: 1.25rem;">
+                  <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">การกำหนดสิทธิ์การเล่นเกม (Allowed Games Manager)</h4>
+                  <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">โปรดเลือกเกมที่ต้องการเปิดใช้งานในขั้นตอน Roadmap ก่อนเรียน (Step 2) และหลังเรียน (Step 4):</p>
+
+                  <div class="overview-split-row">
+                    <!-- รอบก่อนเรียน -->
+                    <div style="background: #ffffff; padding: 1rem; border-radius: 16px; border: 1px solid #e2e8f0;">
+                      <h5 style="margin: 0 0 0.75rem 0; font-size: 0.84rem; font-weight: 800; color: #7e22ce;">เกมรอบก่อนเรียน (Pre-Lesson Step 2)</h5>
+                      <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #334155; cursor: pointer;">
+                          <input type="radio" name="preGame" value="scramble" [checked]="getPreGame() === 'scramble'" (change)="setPreGame('scramble')" style="accent-color: #7e22ce;" />
+                          เกมเรียงประโยคสะกดคำ (Word Scramble)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #334155; cursor: pointer;">
+                          <input type="radio" name="preGame" value="dialogue" [checked]="getPreGame() === 'dialogue'" (change)="setPreGame('dialogue')" style="accent-color: #7e22ce;" />
+                          เกมบทบาทสมมติ (Dialogue Sequencer)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #334155; cursor: pointer;">
+                          <input type="radio" name="preGame" value="picture-word" [checked]="getPreGame() === 'picture-word'" (change)="setPreGame('picture-word')" style="accent-color: #7e22ce;" />
+                          ดูภาพทายคำศัพท์ (Picture → Word)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #334155; cursor: pointer;">
+                          <input type="radio" name="preGame" value="fill-blank" [checked]="getPreGame() === 'fill-blank'" (change)="setPreGame('fill-blank')" style="accent-color: #7e22ce;" />
+                          เติมคำในประโยค (Fill in the Blank)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #334155; cursor: pointer;">
+                          <input type="radio" name="preGame" value="none" [checked]="getPreGame() === 'none'" (change)="setPreGame('none')" style="accent-color: #7e22ce;" />
+                          ไม่ต้องเล่นเกมรอบนี้ (Skip Step)
+                        </label>
+                      </div>
+                    </div>
+
+                    <!-- รอบหลังเรียน -->
+                    <div style="background: #ffffff; padding: 1rem; border-radius: 16px; border: 1px solid #e2e8f0;">
+                      <h5 style="margin: 0 0 0.75rem 0; font-size: 0.84rem; font-weight: 800; color: #7e22ce;">เกมรอบหลังเรียน (Post-Lesson Step 4)</h5>
+                      <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #334155; cursor: pointer;">
+                          <input type="radio" name="postGame" value="scramble" [checked]="getPostGame() === 'scramble'" (change)="setPostGame('scramble')" style="accent-color: #7e22ce;" />
+                          เกมเรียงประโยคสะกดคำ (Word Scramble)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #334155; cursor: pointer;">
+                          <input type="radio" name="postGame" value="dialogue" [checked]="getPostGame() === 'dialogue'" (change)="setPostGame('dialogue')" style="accent-color: #7e22ce;" />
+                          เกมบทบาทสมมติ (Dialogue Sequencer)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #334155; cursor: pointer;">
+                          <input type="radio" name="postGame" value="picture-word" [checked]="getPostGame() === 'picture-word'" (change)="setPostGame('picture-word')" style="accent-color: #7e22ce;" />
+                          ดูภาพทายคำศัพท์ (Picture → Word)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #334155; cursor: pointer;">
+                          <input type="radio" name="postGame" value="fill-blank" [checked]="getPostGame() === 'fill-blank'" (change)="setPostGame('fill-blank')" style="accent-color: #7e22ce;" />
+                          เติมคำในประโยค (Fill in the Blank)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #334155; cursor: pointer;">
+                          <input type="radio" name="postGame" value="none" [checked]="getPostGame() === 'none'" (change)="setPostGame('none')" style="accent-color: #7e22ce;" />
+                          ไม่ต้องเล่นเกมรอบนี้ (Skip Step)
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- เครื่องมือสร้างและออกแบบมินิเกม (Dedicated Game Creator Studio) -->
+                <div class="section-container" style="background: #ffffff; border: 1.5px solid #e9d5ff; padding: 1.5rem;">
+                  <div class="section-header-row" style="margin-bottom: 1rem;">
+                    <div>
+                      <h4 style="font-size: 1.05rem; font-weight: 800; color: #7e22ce; margin: 0 0 0.2rem 0;">เครื่องมือสร้างและออกแบบมินิเกม (Dedicated Game Creator Studio)</h4>
+                      <p style="font-size: 0.78rem; color: #64748b; margin: 0;">อาจารย์สามารถสร้างโจทย์ เพิ่มคำศัพท์ และออกแบบคลังคำถามสำหรับแต่ละมินิเกมประจำบทเรียนนี้ได้แบบอิสระ</p>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+                    <!-- 1. Word Scramble Builder -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.1rem;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                        <h5 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #0f172a;">1. สร้างคำศัพท์สำหรับเกมเรียงสะกดคำ (Word Scramble Builder)</h5>
+                        <button type="button" class="btn-test-action" (click)="previewCustomGame('Word Scramble')">ทดสอบเล่นเกม / Preview</button>
+                      </div>
+
+                      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        @for (word of editingLesson.customGames?.scrambleWords; track $index; let i = $index) {
+                          <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <span style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; width: 25px;">#{{ i + 1 }}</span>
+                            <input type="text" class="filter-input" [(ngModel)]="editingLesson.customGames.scrambleWords[i]" name="scramble_{{i}}" placeholder="กรอกคำศัพท์ภาษาอังกฤษ เช่น PRESENTATION..." style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.5rem 0.8rem; background: #ffffff;" />
+                            <button type="button" class="btn-reject" (click)="removeScrambleWord(i)">ลบ</button>
+                          </div>
+                        }
+                        <button type="button" class="btn-primary-action outline" (click)="addScrambleWord()" style="margin-top: 0.5rem;">เพิ่มคำศัพท์เรียงสะกดคำ / Add Scramble Word</button>
+                      </div>
+                    </div>
+
+                    <!-- 2. Dialogue Sequencer Builder -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.1rem;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                        <h5 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #0f172a;">2. สร้างคู่บทสนทนาสำหรับเกมบทบาทสมมติ (Dialogue Sequencer Builder)</h5>
+                        <button type="button" class="btn-test-action" (click)="previewCustomGame('Dialogue Sequencer')">ทดสอบเล่นเกม / Preview</button>
+                      </div>
+
+                      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        @for (pair of editingLesson.customGames?.dialoguePairs; track $index; let i = $index) {
+                          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                              <span style="font-size: 0.75rem; font-weight: 800; color: #7e22ce;">คู่สนทนาข้อที่ {{ i + 1 }}</span>
+                              <button type="button" class="btn-reject" (click)="removeDialoguePair(i)">ลบข้อนี้</button>
+                            </div>
+                            <input type="text" class="filter-input" [(ngModel)]="pair.speakerA" name="spkA_{{i}}" placeholder="ประโยคของผู้พูด A (เช่น Good morning! How can I help?)" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.45rem 0.75rem;" />
+                            <input type="text" class="filter-input" [(ngModel)]="pair.speakerB" name="spkB_{{i}}" placeholder="ประโยคของผู้พูด B (เช่น I would like to register.)" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.45rem 0.75rem;" />
+                          </div>
+                        }
+                        <button type="button" class="btn-primary-action outline" (click)="addDialoguePair()" style="margin-top: 0.3rem;">เพิ่มคู่บทสนทนาใหม่ / Add Dialogue Pair</button>
+                      </div>
+                    </div>
+
+                    <!-- 3. Picture -> Word Builder -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.1rem;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                        <h5 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #0f172a;">3. สร้างโจทย์เกมดูภาพทายคำศัพท์ (Picture → Word Builder)</h5>
+                        <button type="button" class="btn-test-action" (click)="previewCustomGame('Picture Word')">ทดสอบเล่นเกม / Preview</button>
+                      </div>
+
+                      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        @for (pic of editingLesson.customGames?.pictureWords; track $index; let i = $index) {
+                          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.85rem; display: flex; gap: 0.5rem; align-items: center;">
+                            <span style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; width: 25px;">#{{ i + 1 }}</span>
+                            <input type="text" class="filter-input" [(ngModel)]="pic.hintText" name="pichint_{{i}}" placeholder="คำอธิบายภาพ/คำใบ้..." style="flex: 1.2; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.45rem 0.75rem;" />
+                            <input type="text" class="filter-input" [(ngModel)]="pic.correctWord" name="picword_{{i}}" placeholder="คำตอบคำศัพท์ภาษาอังกฤษ..." style="flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.45rem 0.75rem;" />
+                            <button type="button" class="btn-reject" (click)="removePictureWord(i)">ลบ</button>
+                          </div>
+                        }
+                        <button type="button" class="btn-primary-action outline" (click)="addPictureWord()" style="margin-top: 0.3rem;">เพิ่มโจทย์ทายภาพใหม่ / Add Picture Item</button>
+                      </div>
+                    </div>
+
+                    <!-- 4. Fill in the Blank Builder -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.1rem;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                        <h5 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #0f172a;">4. สร้างโจทย์เกมเติมคำในประโยค (Fill in the Blank Builder)</h5>
+                        <button type="button" class="btn-test-action" (click)="previewCustomGame('Fill in the Blank')">ทดสอบเล่นเกม / Preview</button>
+                      </div>
+
+                      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        @for (fb of editingLesson.customGames?.fillBlanks; track $index; let i = $index) {
+                          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                              <span style="font-size: 0.75rem; font-weight: 800; color: #7e22ce;">โจทย์เติมคำข้อที่ {{ i + 1 }}</span>
+                              <button type="button" class="btn-reject" (click)="removeFillBlank(i)">ลบข้อนี้</button>
+                            </div>
+                            <input type="text" class="filter-input" [(ngModel)]="fb.sentence" name="fbsent_{{i}}" placeholder="ประโยคพร้อมสัญลักษณ์ ___ เช่น Please fill in this ___ form." style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.45rem 0.75rem;" />
+                            <input type="text" class="filter-input" [(ngModel)]="fb.missingWord" name="fbword_{{i}}" placeholder="คำตอบที่ถูกต้อง..." style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.45rem 0.75rem;" />
+                          </div>
+                        }
+                        <button type="button" class="btn-primary-action outline" (click)="addFillBlank()" style="margin-top: 0.3rem;">เพิ่มโจทย์เติมคำใหม่ / Add Fill in Blank Item</button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- คลังประโยคฝึกพูด (Speaking Sentences Manager) -->
+                <div class="section-container">
+                  <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">คลังประโยคสำหรับฝึกอ่านออกเสียง (Speaking Sentences / Questions)</h4>
+                  <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">ประโยคอ้างอิงประจำบทเรียนที่ให้นักศึกษาฝึกพูดตาม เพื่อรับการประเมินคะแนนการออกเสียง (Speech-to-Text)</p>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem;">
+                    @for (sent of editingLesson.speakingQuestions; track $index; let i = $index) {
+                      <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; width: 30px; text-align: center;">#{{ i + 1 }}</span>
+                        <input
+                          type="text"
+                          class="filter-input"
+                          [(ngModel)]="editingLesson.speakingQuestions[i]"
+                          name="sent_{{i}}"
+                          placeholder="กรอกประโยคฝึกพูดภาษาอังกฤษ..."
+                          style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff;"
+                        />
+                        <button
+                          type="button"
+                          class="btn-reject"
+                          (click)="editingLesson.speakingQuestions.splice(i, 1)"
+                        >
+                          ลบ / Delete
+                        </button>
+                      </div>
+                    }
+
+                    <button
+                      type="button"
+                      class="btn-primary-action outline"
+                      (click)="editingLesson.speakingQuestions.push('')"
+                      style="margin-top: 0.5rem;"
+                    >
+                      เพิ่มประโยคฝึกพูดใหม่ / Add Sentence
+                    </button>
+                  </div>
+                </div>
+
+                <!-- คลังคำศัพท์ -->
+                <div class="section-container">
+                  <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">คลังคำศัพท์ประจำบทเรียน (Vocabulary Manager)</h4>
+                  <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">คำศัพท์ที่ใช้แสดงและใช้ให้ AI อ้างอิงตอนวิเคราะห์ผลประเมินการฝึกพูด</p>
+                  
+                  <div class="table-responsive">
+                    <table class="cute-table">
+                      <thead>
+                        <tr>
+                          <th>คำศัพท์ (Word)</th>
+                          <th>ความหมาย (Meaning)</th>
+                          <th>ประโยคตัวอย่าง (Example Sentence)</th>
+                          <th style="text-align: center;">การจัดการ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (v of editingLesson.vocabularies; track $index; let i = $index) {
+                          <tr>
+                            <td><input type="text" class="filter-input" [(ngModel)]="v.word" name="word_{{i}}" placeholder="เช่น Welcome" /></td>
+                            <td><input type="text" class="filter-input" [(ngModel)]="v.meaning" name="meaning_{{i}}" placeholder="เช่น ยินดีต้อนรับ" /></td>
+                            <td><input type="text" class="filter-input" [(ngModel)]="v.example_sentence" name="ex_{{i}}" placeholder="เช่น Welcome to our class." /></td>
+                            <td style="text-align: center;">
+                              <button type="button" class="btn-reject" (click)="editingLesson.vocabularies.splice(i, 1)">ลบ</button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <button type="button" class="btn-primary-action outline" (click)="editingLesson.vocabularies.push({word:'', meaning:'', example_sentence:''})" style="margin-top: 1rem;">
+                    เพิ่มคำศัพท์ใหม่ / Add Vocabulary
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          }
+        </div>
+      }
+
+    </div>
+  </div>
+</div>

@@ -1,0 +1,1291 @@
+      <section class="tab-section animate-fade">
+        @if (!lessonDetailUnit) {
+          <!-- Lesson List View -->
+          <div class="welcome-row">
+            <div class="welcome-text-block">
+              <h1 class="welcome-h1">
+                สวัสดี, <span class="name-hi">{{ session.currentUser?.firstName || 'นักศึกษา' }}</span>
+              </h1>
+              <p class="welcome-p">เลือกบทเรียนที่คุณต้องการเรียนวันนี้</p>
+            </div>
+            <div class="progress-overview-pill">
+              <span class="pill-emoji"> </span>
+              <span
+                >เรียนแล้ว <strong>{{ progress.getCompletedCount() }}</strong> /
+                {{ lessonsData.units.length }} บทเรียน</span
+              >
+            </div>
+          </div>
+          <div class="lessons-grid">
+            @for (u of lessonsData.units; track u.id; let i = $index) {
+              <div class="lesson-card" [ngClass]="'lc-' + ((i % 5) + 1)">
+                <div class="lc-blob"></div>
+                <div class="lc-top">
+                  <span class="lc-unit-badge">{{ u.number }}</span>
+                  <span class="lc-status-badge" [ngClass]="progress.getLessonStatusClass(u.id)">
+                    <span class="status-dot"> </span>{{ progress.getLessonStatusLabel(u.id) }}
+                  </span>
+                </div>
+                <div class="lc-body">
+                  <h3 class="lc-title">{{ u.title }}</h3>
+                  <p class="lc-desc">
+                    {{ u.description | slice: 0 : 90 }}{{ u.description.length > 90 ? '...' : '' }}
+                  </p>
+                </div>
+                <div class="lc-meta">
+                  <span class="lc-chip">
+                    <svg viewBox="0 0 16 16" fill="currentColor">
+                      <path
+                        d="M8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-                        3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4                        2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877                        1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-                        1.105C10.413.809 8.985.936 8 1.783z"
+                      />
+                    </svg>
+                    {{ u.vocabularies.length }} คำศัพท์
+                  </span>
+                  <span class="lc-chip">{{ u.lessons.length }} หัวข้อ</span>
+                </div>
+                <button class="btn-enter-lesson" (click)="enterLesson(u)">
+                  เข้าเรียน
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </button>
+              </div>
+            }
+          </div>
+        }
+        @if (lessonDetailUnit) {
+          <!-- Lesson Detail View -->
+          <div class="lesson-detail animate-fade">
+            <div class="detail-header">
+              <button class="btn-back-detail" (click)="lessonDetailUnit = null">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                กลับ
+              </button>
+              <div class="detail-title-block">
+                <span class="detail-unit-tag">{{ lessonDetailUnit.number }}</span>
+                <h2 class="detail-title">{{ lessonDetailUnit.title }}</h2>
+                <p class="detail-desc">{{ lessonDetailUnit.description }}</p>
+              </div>
+            </div>
+            <!-- Learning Path Steps -->
+            <div class="learning-steps">
+              <div class="step-node" (click)="startStep('pre-test')">
+                <div class="step-node-icon step-pre">1</div>
+                <div class="step-node-info">
+                  <span class="step-label">Pre-Test · แบบทดสอบก่อนเรียน</span>
+                  @if (progress.progressReport[lessonDetailUnit.id - 1]?.preScore !== null) {
+                    <span class="step-score"
+                      >{{ progress.progressReport[lessonDetailUnit.id - 1]?.preScore }}%</span
+                    >
+                  }
+                </div>
+              </div>
+              <div class="step-connector"></div>
+              @if (isRoadmapSlotEnabled(lessonDetailUnit.id, 'pre')) {
+                <div class="step-node" (click)="startStep('game-pre')">
+                  <div class="step-node-icon step-game1">2</div>
+                  <div class="step-node-info">
+                    <span class="step-label">{{ getRoadmapGameLabel(lessonDetailUnit.id, 'pre') }}</span>
+                    @if (getRoadmapGameScore(lessonDetailUnit.id, 'pre') !== null) {
+                      <span class="step-done">สำเร็จ ✓</span>
+                    }
+                  </div>
+                </div>
+              } @else {
+                <div class="step-node" style="opacity: 0.6; cursor: not-allowed;">
+                  <div class="step-node-icon" style="background: #94A3B8; color: white; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; font-size: 1.1rem; font-weight: 800; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); flex-shrink: 0;">🔒</div>
+                  <div class="step-node-info">
+                    <span class="step-label" style="text-decoration: line-through; color: #94A3B8;">กิจกรรมก่อนเรียน (ปิดสิทธิ์โดยอาจารย์)</span>
+                  </div>
+                </div>
+              }
+              <div class="step-connector"></div>
+              <div class="step-node" (click)="startStep('lesson')">
+                <div class="step-node-icon step-lesson">3</div>
+                <div class="step-node-info">
+                  <span class="step-label">Lesson · เนื้อหาบทเรียน</span>
+                </div>
+              </div>
+              <div class="step-connector"></div>
+              @if (isRoadmapSlotEnabled(lessonDetailUnit.id, 'post')) {
+                <div class="step-node" (click)="startStep('game-post')">
+                  <div class="step-node-icon step-game2">4</div>
+                  <div class="step-node-info">
+                    <span class="step-label">{{ getRoadmapGameLabel(lessonDetailUnit.id, 'post') }}</span>
+                    @if (getRoadmapGameScore(lessonDetailUnit.id, 'post') !== null) {
+                      <span class="step-done">สำเร็จ ✓</span>
+                    }
+                  </div>
+                </div>
+              } @else {
+                <div class="step-node" style="opacity: 0.6; cursor: not-allowed;">
+                  <div class="step-node-icon" style="background: #94A3B8; color: white; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; font-size: 1.1rem; font-weight: 800; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); flex-shrink: 0;">🔒</div>
+                  <div class="step-node-info">
+                    <span class="step-label" style="text-decoration: line-through; color: #94A3B8;">กิจกรรมหลังเรียน (ปิดสิทธิ์โดยอาจารย์)</span>
+                  </div>
+                </div>
+              }
+              <div class="step-connector"></div>
+              <div class="step-node" (click)="startStep('post-test')">
+                <div class="step-node-icon step-post">5</div>
+                <div class="step-node-info">
+                  <span class="step-label">Post-Test · แบบทดสอบหลังเรียน</span>
+                  @if (progress.progressReport[lessonDetailUnit.id - 1]?.postScore !== null) {
+                    <span class="step-score"
+                      >{{ progress.progressReport[lessonDetailUnit.id - 1]?.postScore }}%</span
+                    >
+                  }
+                </div>
+              </div>
+            </div>
+            <!-- Steps open as fullscreen overlays (see below) -->
+          </div>
+        }
+      </section>
+
+  @if (quizFullscreen && lessonsData.currentUnit.fullQuiz) {
+    <div class="quiz-fs-overlay animate-fade">
+      <!-- Header -->
+      <div class="qfs-header">
+        <div class="qfs-title-group">
+          <span class="qfs-unit-badge">{{ lessonsData.currentUnit.number }}</span>
+          <div>
+            <h2 class="qfs-title">{{ currentStep === 'pre-test' ? 'Pre-Test' : 'Post-Test' }}</h2>
+            <p class="qfs-subtitle">
+              แบบทดสอบ{{ currentStep === 'pre-test' ? 'ก่อน' : 'หลัง' }}เรียน ·
+              {{ lessonsData.currentUnit.title }}
+            </p>
+          </div>
+        </div>
+        <button type="button" class="qfs-close-btn" (click)="closeQuizOverlay()">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="width: 18px; height: 18px"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+          ปิด
+        </button>
+      </div>
+      <!-- Body -->
+      <div class="qfs-body">
+        @if (!fullQuizSubmitted) {
+          <!-- ── Part A: Multiple Choice ── -->
+          <div class="fq-part-header">
+            <span class="fq-part-badge badge-a">Part A</span>
+            <div>
+              <h4 class="fq-part-title">ตอนที่ 1: ปรนัย (Multiple Choice)</h4>
+              <p class="fq-part-sub">เลือกคำตอบที่ถูกต้องที่สุด (70 คะแนน)</p>
+            </div>
+          </div>
+          @for (q of lessonsData.currentUnit.fullQuiz.partA; track q; let qIdx = $index) {
+            <div class="quiz-q-card">
+              <p class="q-text">ข้อที่ {{ qIdx + 1 }}: {{ q.question }}</p>
+              <div class="opts-grid opts-vertical">
+                @for (opt of q.options; track opt; let oIdx = $index) {
+                  <button
+                    type="button"
+                    class="opt-btn"
+                    [class.selected]="fullQuizPartAAnswers[qIdx] === oIdx"
+                    (click)="selectFullQuizA(qIdx, oIdx)"
+                  >
+                    <span class="opt-letter">{{ ['A', 'B', 'C', 'D'][oIdx] }}</span>
+                    <span>{{ opt }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+          <!-- ── Part B: Matching ── -->
+          <div class="fq-part-header fq-part-gap">
+            <span class="fq-part-badge badge-b">Part B</span>
+            <div>
+              <h4 class="fq-part-title">ตอนที่ 2: จับคู่ (Matching)</h4>
+              <p class="fq-part-sub">ลากตัวอักษรไปใส่ในช่องว่าง (10 คะแนน)</p>
+            </div>
+          </div>
+          <div class="matching-section">
+            <table class="matching-table-pdf">
+              <thead>
+                <tr>
+                  <th class="mtp-expr-col">Expressions</th>
+                  <th class="mtp-reply-col">Replies</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (expr of lessonsData.currentUnit.fullQuiz.partB.expressions; track expr; let i = $index) {
+                  <tr>
+                    <td class="mtp-expr-td">
+                      {{ i + 1 }}. {{ expr }}
+                      <span
+                        class="drop-zone"
+                        [class.dz-filled]="!!fullQuizPartBAnswers[i]"
+                        [class.dz-selected-target]="!!selectedPartBKey"
+                        (dragover)="onPartBDragOver($event)"
+                        (drop)="onPartBDrop($event, i)"
+                        (click)="tapPartBSlot(i)"
+                      >
+                        {{ fullQuizPartBAnswers[i] ? '(' + fullQuizPartBAnswers[i] + ')' : '____' }}
+                      </span>
+                    </td>
+                    <td class="mtp-reply-td">
+                      <span class="mtp-reply-key"
+                        >{{ lessonsData.currentUnit.fullQuiz.partB.replies[i].key }}.</span
+                      >
+                      {{ lessonsData.currentUnit.fullQuiz.partB.replies[i].text }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <div class="drag-chips-area">
+              <p class="drag-chips-label">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="width: 15px; height: 15px; flex-shrink: 0"
+                >
+                  <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                  <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                  <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                  <path
+                    d="M6 14v-3a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6c0 2.5 2 5 6 5h2c3.5 0 6-2.5 6-6v-1.5"
+                  />
+                </svg>
+                ลากตัวอักษรไปใส่ในช่องว่าง — หรือกดเลือก แล้วกดช่องว่าง
+              </p>
+              <div class="drag-chips">
+                @for (reply of lessonsData.currentUnit.fullQuiz.partB.replies; track reply.key) {
+                  <div
+                    class="drag-chip"
+                    [class.chip-used]="fullQuizPartBAnswers.includes(reply.key)"
+                    [class.chip-sel]="selectedPartBKey === reply.key"
+                    [draggable]="!fullQuizPartBAnswers.includes(reply.key)"
+                    (dragstart)="onPartBDragStart($event, reply.key)"
+                    (click)="tapPartBChip(reply.key)"
+                  >
+                    ({{ reply.key }})
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+          <!-- ── Part C: Put in Order (เฉพาะ Unit ที่มี) ── -->
+          @if (lessonsData.currentUnit.fullQuiz.partCOrder) {
+            <div class="fq-part-header fq-part-gap">
+              <span class="fq-part-badge badge-order">Part C</span>
+              <div>
+                <h4 class="fq-part-title">ตอนที่ 3: เรียงลำดับ (Put in Order)</h4>
+                <p class="fq-part-sub">
+                  {{ lessonsData.currentUnit.fullQuiz.partCOrder.instruction }} (10 คะแนน)
+                </p>
+              </div>
+            </div>
+            <div class="order-section">
+              @for (item of partCOrderItems; track item; let i = $index) {
+                <div class="order-item-row">
+                  <span class="order-pos">{{ i + 1 }}</span>
+                  <span class="order-text">{{ item.text }}</span>
+                  <div class="order-btns">
+                    <button
+                      type="button"
+                      class="btn-order-move"
+                      (click)="moveOrderItem(i, 'up')"
+                      [disabled]="i === 0"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-order-move"
+                      (click)="moveOrderItem(i, 'down')"
+                      [disabled]="i === partCOrderItems.length - 1"
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+          <!-- ── Part C/D: Speaking ── -->
+          @if (lessonsData.currentUnit.fullQuiz.partC.length > 0) {
+            <div class="fq-part-header fq-part-gap">
+              <span class="fq-part-badge badge-c">{{
+                lessonsData.currentUnit.fullQuiz.partCOrder ? 'Part D' : 'Part C'
+              }}</span>
+              <div>
+                <h4 class="fq-part-title">
+                  {{ lessonsData.currentUnit.fullQuiz.partCOrder ? 'ตอนที่ 4' : 'ตอนที่ 3' }}: พูดตอบ (Speaking)
+                </h4>
+                <p class="fq-part-sub">กดปุ่มไมค์แล้วพูดคำตอบเป็นภาษาอังกฤษ</p>
+              </div>
+            </div>
+          }
+          @for (q of lessonsData.currentUnit.fullQuiz.partC; track q; let qIdx = $index) {
+            <div class="partc-question-card">
+              <div class="partc-q-num">ข้อที่ {{ 8 + qIdx + 1 }}:</div>
+              <div class="partc-context">
+                @for (line of q.contextText.split('\n'); track line) {
+                  <p class="partc-context-line" [class.partc-blank-line]="line.includes('____')">
+                    {{ line }}
+                  </p>
+                }
+              </div>
+              @for (sub of q.subQuestions; track sub.label; let subIdx = $index) {
+                <div class="partc-sub-item">
+                  <span class="partc-sub-label">{{ sub.label }}</span>
+                  <div class="partc-voice-row">
+                    <button
+                      type="button"
+                      class="btn-mic-speak"
+                      [class.btn-mic-recording]="partCRecording[qIdx]?.[subIdx]"
+                      (click)="togglePartCRecording(qIdx, subIdx)"
+                    >
+                      @if (partCRecording[qIdx]?.[subIdx]) {
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          style="width: 17px; height: 17px; flex-shrink: 0"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="10" y1="15" x2="10" y2="9" />
+                          <line x1="14" y1="15" x2="14" y2="9" />
+                        </svg>
+                        กดเพื่อหยุด
+                      } @else {
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          style="width: 17px; height: 17px; flex-shrink: 0"
+                        >
+                          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                          <line x1="12" y1="19" x2="12" y2="23" />
+                          <line x1="8" y1="23" x2="16" y2="23" />
+                        </svg>
+                        กดเพื่อพูด
+                      }
+                    </button>
+                    <div
+                      class="partc-transcript-box"
+                      [class.has-transcript]="!!partCAnswers[qIdx]?.[subIdx]"
+                    >
+                      {{ partCAnswers[qIdx]?.[subIdx] || 'ยังไม่ได้ตอบ — กดปุ่มไมค์เพื่อพูด' }}
+                    </div>
+                    @if (partCAnswers[qIdx]?.[subIdx]) {
+                      <button
+                        type="button"
+                        class="btn-retry-voice"
+                        (click)="partCAnswers[qIdx][subIdx] = ''"
+                      >
+                        พูดใหม่
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+          <div class="qfs-submit-row">
+            <button type="button" class="btn-submit-quiz" (click)="submitFullQuiz()">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                style="width: 17px; height: 17px"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              ส่งคำตอบทั้งหมด
+            </button>
+          </div>
+        }
+        <!-- ── Result Screen ── -->
+        @if (fullQuizSubmitted && fullQuizResult) {
+          <div class="qfs-result animate-fade">
+            <!-- Score Hero -->
+            <div class="qfs-score-hero">
+              <div
+                class="qfs-score-circle"
+                [class.circle-great]="fullQuizResult.total >= 80"
+                [class.circle-pass]="fullQuizResult.total >= 60 && fullQuizResult.total < 80"
+                [class.circle-fail]="fullQuizResult.total < 60"
+              >
+                <span class="qfs-score-num">{{ fullQuizResult.total }}</span>
+                <span class="qfs-score-denom">/100</span>
+              </div>
+              <h3 class="qfs-result-label">
+                {{
+                  fullQuizResult.total >= 80
+                    ? 'ยอดเยี่ยมมาก!'
+                    : fullQuizResult.total >= 60
+                      ? 'ผ่านแล้ว ทำได้ดี!'
+                      : 'ลองทบทวนแล้วสอบใหม่นะคะ'
+                }}
+              </h3>
+              <p class="qfs-result-sub">
+                {{ currentStep === 'pre-test' ? 'Pre-Test · ก่อนเรียน' : 'Post-Test · หลังเรียน' }}
+                — {{ lessonsData.currentUnit.title }}
+              </p>
+            </div>
+            <!-- Score Breakdown -->
+            <div class="qfs-breakdown-card">
+              <h4 class="qfs-breakdown-title">สรุปคะแนน</h4>
+              <div class="score-breakdown">
+                <div class="score-row">
+                  <span>
+                    <span class="part-dot dot-a"> </span>Part A — ปรนัย
+                    {{ lessonsData.currentUnit.fullQuiz!.partA.length }} ข้อ</span
+                  >
+                  <span
+                    >{{ fullQuizResult.partAScore }} /
+                    {{
+                      lessonsData.currentUnit.fullQuiz!.partA.length * 10 > 70
+                        ? 70
+                        : lessonsData.currentUnit.fullQuiz!.partA.length * 10
+                    }}</span
+                  >
+                </div>
+                <div class="score-row">
+                  <span> <span class="part-dot dot-b"> </span>Part B — จับคู่</span>
+                  <span>{{ fullQuizResult.partBScore }} / 10</span>
+                </div>
+                @if (lessonsData.currentUnit.fullQuiz!.partCOrder) {
+                  <div class="score-row">
+                    <span> <span class="part-dot dot-order"> </span>Part C — เรียงลำดับ</span>
+                    <span>{{ fullQuizResult.orderScore }} / 10</span>
+                  </div>
+                  @if (fullQuizResult.partCScore > 0) {
+                    <div class="score-row">
+                      <span> <span class="part-dot dot-c"> </span>Part D — พูดตอบ</span>
+                      <span>{{ fullQuizResult.partCScore }} / {{ fullQuizResult.partCScore }}</span>
+                    </div>
+                  }
+                } @else {
+                  <div class="score-row">
+                    <span> <span class="part-dot dot-c"> </span>Part C — พูดตอบ</span>
+                    <span>{{ fullQuizResult.partCScore }} / {{ fullQuizResult.partCScore }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+            <!-- Part B Answer Key -->
+            <div class="qfs-answerkey-card">
+              <h4 class="qfs-breakdown-title">เฉลย Part B</h4>
+              @for (ans of lessonsData.currentUnit.fullQuiz.partB.answers; track ans; let i = $index) {
+                <div
+                  class="qfs-ak-row"
+                  [class.ak-correct]="fullQuizPartBAnswers[i] === ans"
+                  [class.ak-wrong]="fullQuizPartBAnswers[i] !== ans"
+                >
+                  <span class="ak-num">{{ i + 1 }}.</span>
+                  <span class="ak-expr">{{ lessonsData.currentUnit.fullQuiz.partB.expressions[i] }}</span>
+                  <span class="ak-arrow">→</span>
+                  <span class="ak-ans">({{ ans }}) {{ getReplyText(ans) }}</span>
+                  <span class="ak-icon">{{ fullQuizPartBAnswers[i] === ans ? '✓' : '✗' }}</span>
+                </div>
+              }
+            </div>
+            <!-- Part C Speaking Results -->
+            <div class="qfs-speaking-card">
+              <h4 class="qfs-breakdown-title">ผลการพูดตอบ — Part C</h4>
+              @for (q of lessonsData.currentUnit.fullQuiz.partC; track q; let qIdx = $index) {
+                @for (sub of q.subQuestions; track sub.label; let subIdx = $index) {
+                  <div class="qfs-speech-item">
+                    <div class="qfs-speech-header">
+                      <span class="qfs-speech-label">{{ sub.label }}</span>
+                      @if (partCRecordingDuration[qIdx]?.[subIdx]) {
+                        <span
+                          class="qfs-speed-badge"
+                          [ngClass]="
+                            getSpeedClass(
+                              partCRecordingDuration[qIdx][subIdx],
+                              partCAnswers[qIdx]?.[subIdx] || ''
+                            )
+                          "
+                        >
+                          ⏱ {{ partCRecordingDuration[qIdx][subIdx] }} วิ ·
+                          {{
+                            getSpeedLabel(
+                              partCRecordingDuration[qIdx][subIdx],
+                              partCAnswers[qIdx]?.[subIdx] || ''
+                            )
+                          }}
+                        </span>
+                      }
+                    </div>
+                    <div class="qfs-speech-answer">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        style="width: 14px; height: 14px; flex-shrink: 0; color: #a855f7"
+                      >
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      </svg>
+                      {{ partCAnswers[qIdx]?.[subIdx] || '(ไม่มีคำตอบ)' }}
+                    </div>
+                    <div class="qfs-speech-sample">
+                      <strong>ตัวอย่าง:</strong> {{ sub.sampleAnswer }}
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+            <button type="button" class="btn-finish-quiz" (click)="closeQuizOverlay()">
+              เสร็จสิ้น — กลับสู่บทเรียน
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ====================================================       STEP OVERLAYS (Word Scramble / Lesson / Dialogue)       ==================================================== -->
+  @if (stepFullscreen && lessonDetailUnit) {
+    @if ((currentStep === 'game-pre' || currentStep === 'game-post') && activeStepGameType === 'scramble') {
+      <div class="quiz-fs-overlay animate-fade">
+        <div class="qfs-header">
+          <div class="qfs-title-group">
+            <span
+              class="qfs-unit-badge"
+              style="background: var(--pastel-green); color: var(--pastel-green-dark)"
+              >{{ lessonsData.currentUnit.number }}</span
+            >
+            <div>
+              <h2 class="qfs-title">Word Scramble</h2>
+              <p class="qfs-subtitle">สลับตัวอักษร · {{ lessonsData.currentUnit.title }}</p>
+            </div>
+          </div>
+          <button type="button" class="qfs-close-btn" (click)="closeStepOverlay()">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 18px; height: 18px"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            ปิด
+          </button>
+        </div>
+        <div class="qfs-body">
+          <div class="game-body-scramble">
+            @if (!engine.scrambleCompleted) {
+              <div class="scramble-card">
+                <span class="game-meta-tag"
+                  >คำที่ {{ engine.scrambleIndex + 1 }} / {{ engine.scrambleRoundIndices.length }}</span
+                >
+                <p class="scramble-hint">{{ lessonsData.currentUnit.scrambleHints[engine.scrambleRoundIndices[engine.scrambleIndex]] }}</p>
+                <div class="user-word-display">
+                  @for (item of engine.scrambleUserWordList; track item; let uIdx = $index) {
+                    <span class="user-letter" (click)="engine.deselectLetter(item, uIdx)">{{
+                      item.char
+                    }}</span>
+                  }
+                  @if (engine.scrambleUserWordList.length === 0) {
+                    <span class="empty-display">คลิกตัวอักษรด้านล่าง</span>
+                  }
+                </div>
+                <div class="letter-keyboard">
+                  @for (letter of engine.clickableLetters; track letter) {
+                    <button
+                      type="button"
+                      class="letter-key"
+                      [class.used]="letter.used"
+                      [disabled]="letter.used"
+                      (click)="engine.selectLetter(letter)"
+                    >
+                      {{ letter.char }}
+                    </button>
+                  }
+                </div>
+                <div class="scramble-actions">
+                  <button type="button" class="btn-clear-sc" (click)="engine.clearScrambleWord()">
+                    ล้าง
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-check-sc"
+                    (click)="engine.checkScrambleAnswer()"
+                    [disabled]="engine.scrambleUserWordList.length === 0"
+                  >
+                    ตรวจสอบ
+                  </button>
+                </div>
+              </div>
+            }
+            @if (engine.scrambleCompleted) {
+              <div class="game-done-card">
+                <h3>สลับตัวอักษรเสร็จแล้ว!</h3>
+                <p>
+                  ถูก {{ engine.scrambleScores.filter((s) => s).length }} / {{ engine.scrambleScores.length }} คำ
+                </p>
+                <button type="button" class="btn-finish-quiz" (click)="closeStepOverlay()">
+                  กลับสู่บทเรียน
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+    <!-- ── Step 3: Lesson Content (Slide Deck Viewer) ── -->
+    @if (currentStep === 'lesson') {
+      <div class="quiz-fs-overlay animate-fade">
+        <div class="qfs-header">
+          <div class="qfs-title-group">
+            <span class="qfs-unit-badge" style="background: var(--pastel-yellow); color: #92400e">{{
+              lessonsData.currentUnit.number
+            }}</span>
+            <div>
+              <h2 class="qfs-title">เนื้อหาบทเรียน</h2>
+              <p class="qfs-subtitle">Lesson · {{ lessonsData.currentUnit.title }}</p>
+            </div>
+          </div>
+          <div class="qfs-header-actions" style="display: flex; gap: 0.75rem">
+            <button
+              type="button"
+              class="qfs-download-btn"
+              [disabled]="pdfLoading"
+              (click)="downloadCurrentUnitPdf()"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                style="width: 18px; height: 18px"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              ดาวน์โหลด PDF
+            </button>
+            <button type="button" class="qfs-close-btn" (click)="closeStepOverlay()">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                style="width: 18px; height: 18px"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+              ปิด
+            </button>
+          </div>
+        </div>
+        <div class="qfs-body slide-deck-body" [class.fullscreen-active]="isSlideFullscreen">
+          <!-- Slide Deck Wrapper -->
+          <div class="slide-deck-wrap">
+            <!-- Slide Deck Canvas -->
+            <div class="slide-canvas pdf-canvas" [class.fullscreen-active]="isSlideFullscreen">
+              @if (pdfLoading) {
+                <div class="pdf-loading-spinner">
+                  <div class="spinner"></div>
+                  <p>กำลังโหลดสไลด์บทเรียน...</p>
+                </div>
+              }
+              <canvas
+                id="pdf-canvas-element"
+                [class.hidden]="pdfLoading"
+                (click)="onCanvasClick($event)"
+                (mousemove)="onCanvasMouseMove($event)"
+                style="width: 100%; display: block; margin: 0 auto"
+              ></canvas>
+
+              <!-- Floating Fullscreen Toggle Button -->
+              <button
+                type="button"
+                class="btn-toggle-fullscreen"
+                (click)="toggleSlideFullscreen()"
+                [title]="isSlideFullscreen ? 'ย่อหน้าจอ' : 'ขยายเต็มหน้าจอ'"
+              >
+                @if (isSlideFullscreen) {
+                  <!-- Collapse Icon -->
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    style="width: 18px; height: 18px"
+                  >
+                    <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
+                  </svg>
+                } @else {
+                  <!-- Expand Icon -->
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    style="width: 18px; height: 18px"
+                  >
+                    <path
+                      d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3M10 21v-6H4M14 3v6h6"
+                    />
+                  </svg>
+                }
+              </button>
+            </div>
+            <!-- Slide Navigation Controls -->
+            <div
+              class="slide-nav-controls"
+              style="display: flex; align-items: center; justify-content: space-between"
+            >
+              <!-- Left side spacer for balance -->
+              <div style="width: 120px"></div>
+
+              <!-- Slide Page Indicator (Center) -->
+              <div class="slide-page-indicator">
+                <div class="indicator-dots">
+                  @for (idx of lessonPagesArray; track idx) {
+                    <span
+                      class="ind-dot"
+                      [class.active]="currentLessonPage === idx"
+                      (click)="!pdfLoading && setLessonPage(idx)"
+                    ></span>
+                  }
+                </div>
+                <span class="indicator-text"
+                  >สไลด์ที่ {{ currentLessonPage + 1 }} / {{ totalLessonPages }}</span
+                >
+              </div>
+
+              <!-- Right side: Finish button on last page -->
+              <div style="width: 120px; display: flex; justify-content: flex-end">
+                @if (currentLessonPage === totalLessonPages - 1) {
+                  <button
+                    type="button"
+                    class="btn-slide-nav btn-slide-finish"
+                    [disabled]="pdfLoading"
+                    (click)="closeStepOverlay()"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      style="width: 16px; height: 16px"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    เสร็จสิ้นบทเรียน
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Lesson Syllabus Details -->
+            @if (!isSlideFullscreen) {
+              <div class="lesson-syllabus-details animate-fade">
+                <div class="syllabus-header">
+                  <h3 class="syllabus-main-title">รายละเอียดหลักสูตรประจำยูนิต</h3>
+                  <div class="syllabus-meta-badges">
+                    <span class="meta-badge hour-badge">{{ lessonsData.currentUnit.classHours || '⏱ 4 คาบเรียน' }}</span>
+                    <span class="meta-badge week-badge">{{ lessonsData.currentUnit.weekRange || '📅 สัปดาห์ที่ 1' }}</span>
+                  </div>
+                </div>
+
+                <div class="syllabus-grid">
+                  <!-- Section 1: Course Topics -->
+                  @if (lessonsData.currentUnit.topics && lessonsData.currentUnit.topics.length > 0) {
+                    <div class="syllabus-card topic-card">
+                      <div class="card-header">
+                        <span class="card-icon">📚</span>
+                        <h4>หัวข้อเนื้อหา</h4>
+                      </div>
+                      <ul class="syllabus-list">
+                        @for (topic of lessonsData.currentUnit.topics; track $index; let idx = $index) {
+                          <li>
+                            <span class="bullet">{{ idx + 1 }}.</span> {{ topic }}
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                  <!-- Section 2: Keywords -->
+                  @if (lessonsData.currentUnit.keywords && lessonsData.currentUnit.keywords.length > 0) {
+                    <div class="syllabus-card keyword-card">
+                      <div class="card-header">
+                        <span class="card-icon">🔑</span>
+                        <h4>คำสำคัญ</h4>
+                      </div>
+                      <ul class="syllabus-list">
+                        @for (key of lessonsData.currentUnit.keywords; track $index; let idx = $index) {
+                          <li>
+                            <span class="bullet">{{ idx + 1 }}.</span> {{ key }}
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                  <!-- Section 3: Objectives -->
+                  @if (lessonsData.currentUnit.objectives && lessonsData.currentUnit.objectives.length > 0) {
+                    <div class="syllabus-card objective-card">
+                      <div class="card-header">
+                        <span class="card-icon">🎯</span>
+                        <h4>วัตถุประสงค์เชิงพฤติกรรม</h4>
+                      </div>
+                      <p class="card-intro">เมื่อศึกษาบทเรียนนี้แล้ว ผู้เรียนสามารถ:</p>
+                      <ul class="syllabus-list">
+                        @for (obj of lessonsData.currentUnit.objectives; track $index; let idx = $index) {
+                          <li>
+                            <span class="bullet">{{ idx + 1 }}.</span> {{ obj }}
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                  <!-- Section 4: Assessment -->
+                  @if (lessonsData.currentUnit.assessments && lessonsData.currentUnit.assessments.length > 0) {
+                    <div class="syllabus-card assessment-card">
+                      <div class="card-header">
+                        <span class="card-icon">📝</span>
+                        <h4>การประเมินผล</h4>
+                      </div>
+                      <ul class="syllabus-list">
+                        @for (ass of lessonsData.currentUnit.assessments; track $index; let idx = $index) {
+                          <li>
+                            <span class="bullet">{{ idx + 1 }}.</span> {{ ass }}
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <!-- /slide-deck-wrap -->
+        </div>
+      </div>
+    }
+    @if ((currentStep === 'game-pre' || currentStep === 'game-post') && activeStepGameType === 'dialogue') {
+      <div class="quiz-fs-overlay animate-fade">
+        <div class="qfs-header">
+          <div class="qfs-title-group">
+            <span
+              class="qfs-unit-badge"
+              style="background: var(--pastel-purple); color: var(--pastel-purple-dark)"
+              >{{ lessonsData.currentUnit.number }}</span
+            >
+            <div>
+              <h2 class="qfs-title">Dialogue Sequencer</h2>
+              <p class="qfs-subtitle">เรียงประโยค · {{ lessonsData.currentUnit.title }}</p>
+            </div>
+          </div>
+          <button type="button" class="qfs-close-btn" (click)="closeStepOverlay()">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 18px; height: 18px"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            ปิด
+          </button>
+        </div>
+        <div class="qfs-body">
+          <div class="game-body-dialogue">
+            <p class="dialogue-instruction">คลิก ↑ / ↓ เพื่อเรียงประโยคให้ถูกต้อง</p>
+            <div class="dialogue-seq-list">
+              @for (line of engine.scrambledDialogueLines; track line; let idx = $index) {
+                <div class="dialogue-seq-row">
+                  <span class="seq-num">{{ idx + 1 }}</span>
+                  <span class="seq-text">{{ line.text }}</span>
+                  <div class="seq-moves">
+                    <button
+                      type="button"
+                      class="btn-move"
+                      (click)="engine.moveLine(idx, 'up')"
+                      [disabled]="idx === 0"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-move"
+                      (click)="engine.moveLine(idx, 'down')"
+                      [disabled]="idx === engine.scrambledDialogueLines.length - 1"
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+            @if (!engine.dialogueFinished) {
+              <button
+                type="button"
+                class="btn-check-sc"
+                style="margin-top: 1rem"
+                (click)="engine.checkDialogueOrder()"
+              >
+                ตรวจสอบลำดับ
+              </button>
+            }
+            @if (engine.dialogueFinished) {
+              <div class="game-done-card" style="margin-top: 1.5rem">
+                <h3>{{ engine.dialogueSuccessMessage }}</h3>
+                <button type="button" class="btn-finish-quiz" (click)="closeStepOverlay()">
+                  กลับสู่บทเรียน
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+    <!-- ── Roadmap Game: Picture → Word ── -->
+    @if ((currentStep === 'game-pre' || currentStep === 'game-post') && activeStepGameType === 'picture-word') {
+      <div class="quiz-fs-overlay animate-fade">
+        <div class="qfs-header">
+          <div class="qfs-title-group">
+            <span
+              class="qfs-unit-badge"
+              style="background: var(--pastel-blue); color: var(--pastel-blue-dark)"
+              >{{ lessonsData.currentUnit.number }}</span
+            >
+            <div>
+              <h2 class="qfs-title">Picture → Word</h2>
+              <p class="qfs-subtitle">ดูภาพทายคำ · {{ lessonsData.currentUnit.title }}</p>
+            </div>
+          </div>
+          <button type="button" class="qfs-close-btn" (click)="closeStepOverlay()">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 18px; height: 18px"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            ปิด
+          </button>
+        </div>
+        <div class="qfs-body">
+          <div class="game-body-scramble">
+            @if (!engine.pw_finished) {
+              <div class="scramble-card">
+                <span class="game-meta-tag"
+                  >คำที่ {{ engine.pw_index + 1 }} / {{ engine.pw_pool.length }} · คะแนน {{ engine.pw_score }}</span
+                >
+                <div class="vocab-image-frame" [class]="gameFx.iconColorClass(engine.pwCurrentWord?.word || '')">
+                  @if (engine.pwCurrentWord?.image && !engine.pw_imgError) {
+                    <img
+                      [src]="engine.pwCurrentWord?.image"
+                      (error)="engine.onPwImageError()"
+                      [alt]="engine.pwCurrentWord?.word || ''"
+                      class="vocab-image"
+                    />
+                  } @else {
+                    <svg
+                      class="vocab-icon-svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M15 9l-2 6-6 2 2-6z" />
+                    </svg>
+                  }
+                </div>
+                <input
+                  type="text"
+                  class="typing-input"
+                  placeholder="พิมพ์คำศัพท์ภาษาอังกฤษ..."
+                  [(ngModel)]="engine.pw_input"
+                  [disabled]="engine.pw_feedback === 'correct'"
+                  (keyup.enter)="engine.checkPictureWordAnswer()"
+                  autocomplete="off"
+                />
+                @if (engine.pw_feedback === 'wrong') {
+                  <p class="typing-feedback wrong">ยังไม่ถูก ลองอีกครั้งนะ</p>
+                }
+                @if (engine.pw_feedback === 'correct') {
+                  <p class="typing-feedback correct">ถูกต้อง! 🎉</p>
+                }
+                @if (engine.pwHintText) {
+                  <p class="typing-hint">💡 {{ engine.pwHintText }}</p>
+                }
+                <div class="scramble-actions">
+                  @if (engine.pw_wrongAttempts >= 2 && engine.pw_feedback !== 'correct') {
+                    <button class="btn-clear-sc" (click)="engine.skipPictureWord()">ข้ามคำนี้</button>
+                  }
+                  <button
+                    class="btn-check-sc"
+                    (click)="engine.checkPictureWordAnswer()"
+                    [disabled]="engine.pw_feedback === 'correct' || !engine.pw_input.trim()"
+                  >
+                    ตรวจสอบ
+                  </button>
+                </div>
+              </div>
+            }
+            @if (engine.pw_finished) {
+              <div class="game-done-card">
+                <h3>🎉 เสร็จแล้ว!</h3>
+                <p>ถูก {{ engine.pw_score }} / {{ engine.pw_pool.length }} คำ</p>
+                <button type="button" class="btn-finish-quiz" (click)="closeStepOverlay()">
+                  กลับสู่บทเรียน
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+    <!-- ── Roadmap Game: Fill in the Blank ── -->
+    @if ((currentStep === 'game-pre' || currentStep === 'game-post') && activeStepGameType === 'fill-blank') {
+      <div class="quiz-fs-overlay animate-fade">
+        <div class="qfs-header">
+          <div class="qfs-title-group">
+            <span
+              class="qfs-unit-badge"
+              style="background: var(--pastel-yellow); color: #92400e"
+              >{{ lessonsData.currentUnit.number }}</span
+            >
+            <div>
+              <h2 class="qfs-title">Fill in the Blank</h2>
+              <p class="qfs-subtitle">เติมคำในประโยค · {{ lessonsData.currentUnit.title }}</p>
+            </div>
+          </div>
+          <button type="button" class="qfs-close-btn" (click)="closeStepOverlay()">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 18px; height: 18px"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            ปิด
+          </button>
+        </div>
+        <div class="qfs-body">
+          <div class="game-body-scramble">
+            @if (!engine.fb_finished) {
+              <div class="scramble-card">
+                <span class="game-meta-tag"
+                  >ประโยคที่ {{ engine.fb_index + 1 }} / {{ engine.fb_pool.length }} · คะแนน {{ engine.fb_score }}</span
+                >
+                <p class="scramble-hint">{{ engine.fbCurrentItem?.blanked }}</p>
+                <input
+                  type="text"
+                  class="typing-input"
+                  placeholder="พิมพ์คำที่หายไป..."
+                  [(ngModel)]="engine.fb_input"
+                  [disabled]="engine.fb_feedback !== ''"
+                  (keyup.enter)="engine.checkFillBlankAnswer()"
+                  autocomplete="off"
+                />
+                @if (engine.fb_feedback === 'correct') {
+                  <p class="typing-feedback correct">ถูกต้อง! 🎉</p>
+                }
+                @if (engine.fb_feedback === 'wrong') {
+                  <p class="typing-feedback wrong">ผิด คำตอบที่ถูกคือ "{{ engine.fbCurrentItem?.answer }}"</p>
+                }
+                @if (engine.fb_feedback !== '') {
+                  <p class="typing-hint">ประโยคเต็ม: {{ engine.fbCurrentItem?.full }}</p>
+                }
+                <div class="scramble-actions">
+                  <button
+                    class="btn-check-sc"
+                    (click)="engine.checkFillBlankAnswer()"
+                    [disabled]="engine.fb_feedback !== '' || !engine.fb_input.trim()"
+                  >
+                    ตรวจสอบ
+                  </button>
+                </div>
+              </div>
+            }
+            @if (engine.fb_finished) {
+              <div class="game-done-card">
+                <h3>🎉 เสร็จแล้ว!</h3>
+                <p>ถูก {{ engine.fb_score }} / {{ engine.fb_pool.length }} ประโยค</p>
+                <button type="button" class="btn-finish-quiz" (click)="closeStepOverlay()">
+                  กลับสู่บทเรียน
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+    <!-- ── Regular MC Quiz (lessonsData.units without fullQuiz) ── -->
+    @if ((currentStep === 'pre-test' || currentStep === 'post-test') && !lessonsData.currentUnit.fullQuiz) {
+      <div class="quiz-fs-overlay animate-fade">
+        <div class="qfs-header">
+          <div class="qfs-title-group">
+            <span class="qfs-unit-badge">{{ lessonsData.currentUnit.number }}</span>
+            <div>
+              <h2 class="qfs-title">{{ currentStep === 'pre-test' ? 'Pre-Test' : 'Post-Test' }}</h2>
+              <p class="qfs-subtitle">
+                แบบทดสอบ{{ currentStep === 'pre-test' ? 'ก่อน' : 'หลัง' }}เรียน ·
+                {{ lessonsData.currentUnit.title }}
+              </p>
+            </div>
+          </div>
+          <button type="button" class="qfs-close-btn" (click)="closeStepOverlay()">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 18px; height: 18px"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            ปิด
+          </button>
+        </div>
+        <div class="qfs-body">
+          @for (
+            q of currentStep === 'pre-test' ? lessonsData.currentUnit.preQuiz : lessonsData.currentUnit.postQuiz;
+            track q;
+            let qIdx = $index
+          ) {
+            <div class="quiz-q-card">
+              <p class="q-text">ข้อที่ {{ qIdx + 1 }}: {{ q.question }}</p>
+              <div class="opts-grid opts-vertical">
+                @for (opt of q.options; track opt; let oIdx = $index) {
+                  <button
+                    type="button"
+                    class="opt-btn"
+                    [class.selected]="quizAnswers[qIdx] === oIdx"
+                    [class.correct]="quizSubmitted && oIdx === q.answer"
+                    [class.wrong]="quizSubmitted && quizAnswers[qIdx] === oIdx && oIdx !== q.answer"
+                    (click)="selectOption(qIdx, oIdx)"
+                  >
+                    <span class="opt-letter">{{ ['A', 'B', 'C', 'D'][oIdx] }}</span>
+                    <span>{{ opt }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+          @if (!quizSubmitted) {
+            <div class="qfs-submit-row">
+              <button
+                type="button"
+                class="btn-submit-quiz"
+                (click)="submitQuiz(currentStep === 'pre-test' ? 'pre' : 'post')"
+              >
+                ส่งคำตอบ
+              </button>
+            </div>
+          }
+          @if (quizSubmitted) {
+            <div class="qfs-result animate-fade">
+              <div class="qfs-score-hero">
+                <div
+                  class="qfs-score-circle"
+                  [class.circle-great]="quizScore >= 80"
+                  [class.circle-pass]="quizScore >= 60 && quizScore < 80"
+                  [class.circle-fail]="quizScore < 60"
+                >
+                  <span class="qfs-score-num">{{ quizScore }}</span>
+                  <span class="qfs-score-denom">/100</span>
+                </div>
+                <h3 class="qfs-result-label">
+                  {{
+                    quizScore >= 80
+                      ? 'ยอดเยี่ยมมาก!'
+                      : quizScore >= 60
+                        ? 'ผ่านแล้ว!'
+                        : 'ลองทบทวนแล้วสอบใหม่นะคะ'
+                  }}
+                </h3>
+              </div>
+              <button type="button" class="btn-finish-quiz" (click)="closeStepOverlay()">
+                เสร็จสิ้น — กลับสู่บทเรียน
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }

@@ -1,0 +1,109 @@
+<section class="tab-section animate-fade">
+  <div class="tab-header-row">
+    <h1 class="tab-title">ทบทวนคำที่เคยผิด</h1>
+    <p class="tab-subtitle">รวมคำและประโยคที่เคยพิมพ์/พูดผิดจากทุกกิจกรรม มาฝึกซ้ำให้จำได้แม่นขึ้น</p>
+  </div>
+
+  @if (reviewMode === 'list') {
+    @if (mistakes.frequentlyWrongItems.length === 0) {
+      <div class="review-empty-state">
+        <span class="review-empty-icon">🎉</span>
+        <p>ยังไม่มีคำที่เคยตอบผิดเลย ทำได้ดีมากค่ะ!</p>
+        <p class="review-empty-sub">เมื่อคุณตอบผิดจากการฝึกพูด/เขียน หรือเล่นเกม ระบบจะเก็บคำเหล่านั้นมาไว้ให้ทบทวนที่นี่</p>
+      </div>
+    } @else {
+      <div class="review-list-header">
+        <p>พบ {{ mistakes.frequentlyWrongItems.length }} คำ/ประโยคที่เคยผิด</p>
+        <button class="btn-start-review animate-scale" (click)="startReviewQuiz()">
+          🚀 เริ่มทบทวน (สูงสุด 5 ข้อ)
+        </button>
+      </div>
+      <div class="review-items-grid">
+        @for (item of mistakes.frequentlyWrongItems; track item.id) {
+          <div class="review-item-card">
+            <span class="review-item-type" [ngClass]="'type-' + item.type">{{
+              item.type === 'word' ? 'คำศัพท์' : item.type === 'sentence' ? 'ประโยค' : 'ไวยากรณ์'
+            }}</span>
+            <p class="review-item-original">{{ item.original }}</p>
+            <p class="review-item-correct">✓ {{ item.correct }}</p>
+            @if (item.clue) {
+              <p class="review-item-clue">{{ item.clue }}</p>
+            }
+            <span class="review-item-count">ผิดไปแล้ว {{ item.wrongCount }} ครั้ง</span>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  @if (reviewMode === 'quiz') {
+    <div class="review-quiz-wrap">
+      <div class="review-quiz-progress">
+        ข้อที่ {{ reviewIndex + 1 }} / {{ reviewItems.length }} · ตอบถูกแล้ว {{ reviewScore }} ข้อ
+      </div>
+      <div class="review-quiz-card">
+        <span class="review-item-type" [ngClass]="'type-' + reviewItems[reviewIndex].type">{{
+          reviewItems[reviewIndex].type === 'word' ? 'คำศัพท์' : reviewItems[reviewIndex].type === 'sentence' ? 'ประโยค' : 'ไวยากรณ์'
+        }}</span>
+        <p class="review-quiz-question">เคยตอบว่า: <span class="review-quiz-wrong-text">"{{ reviewItems[reviewIndex].original }}"</span></p>
+        @if (reviewItems[reviewIndex].clue) {
+          <p class="review-quiz-clue">💡 {{ reviewItems[reviewIndex].clue }}</p>
+        }
+        <p class="review-quiz-instruction">พิมพ์คำตอบที่ถูกต้อง:</p>
+
+        <div class="review-quiz-input-row">
+          <input
+            type="text"
+            class="review-quiz-input"
+            [(ngModel)]="reviewInput"
+            [disabled]="reviewFeedback !== ''"
+            (keyup.enter)="submitReviewAnswer()"
+            placeholder="พิมพ์คำตอบที่นี่..."
+          />
+          <button
+            type="button"
+            class="btn-avr-audio"
+            (click)="speakReviewCurrent()"
+            title="ฟังคำตอบที่ถูกต้อง"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </svg>
+          </button>
+        </div>
+
+        @if (reviewFeedback === '') {
+          <button class="btn-check-sc" (click)="submitReviewAnswer()" [disabled]="!reviewInput.trim()">
+            ตรวจคำตอบ
+          </button>
+        }
+
+        @if (reviewFeedback === 'correct') {
+          <div class="review-feedback review-feedback-correct">✅ ถูกต้อง! เก่งมาก</div>
+        }
+        @if (reviewFeedback === 'wrong') {
+          <div class="review-feedback review-feedback-wrong">
+            ❌ ยังไม่ถูก คำตอบที่ถูกต้องคือ: <strong>{{ reviewItems[reviewIndex].correct }}</strong>
+          </div>
+        }
+
+        @if (reviewFeedback !== '') {
+          <button class="btn-check-sc" (click)="nextReviewRound()">
+            {{ reviewIndex < reviewItems.length - 1 ? 'ข้อถัดไป →' : 'ดูผลสรุป' }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (reviewMode === 'completed') {
+    <div class="review-completed-card animate-scale">
+      <h2>🎉 ทบทวนเสร็จแล้ว!</h2>
+      <p class="review-completed-score">ตอบถูก {{ reviewScore }} / {{ reviewItems.length }} ข้อ</p>
+      <p class="review-completed-xp">+{{ reviewScore * 5 }} XP</p>
+      <button class="btn-start-review animate-scale" (click)="backToList()">กลับไปหน้ารายการ</button>
+    </div>
+  }
+</section>

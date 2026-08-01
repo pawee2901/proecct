@@ -1,0 +1,981 @@
+// Persistent chrome styles extracted from student.component.scss.
+// Sources (original line ranges):
+//  - :host CSS custom properties + .dashboard-wrap/.orb* (5-88)
+//  - "TOP NAV" section incl. profile dropdown (89-325)
+//  - "BOTTOM NAVIGATION (Mobile)" section incl. mobile profile sheet (3223-3475)
+//  - .animate-slide-up + slideUp keyframes (3373-3383)
+//  - .animate-fade + pageFadeIn keyframes (5003-5015)
+//  - "General Custom Modals" (.duo-modal-overlay/.duo-modal/.dmodal-*/.dbtn-*) (8277-8462)
+//  - "Badges grid" (9001-9046)
+//  - .shake-anim + confetti-fall keyframes (9624-9643)
+//
+// The :host custom properties below are visible to every routed child
+// component too — Angular's view encapsulation scopes selectors, not CSS
+// custom-property inheritance, so var(--slate-900) etc. still resolve
+// correctly inside StudentLessonsComponent/StudentGamesComponent/etc.
+// as long as they render inside this shell's DOM subtree via <router-outlet>.
+
+:host {
+  display: block;
+  width: 100%;
+
+  /* Psychological Pastel Color Scheme from login page */
+  --pastel-blue-light: #f3f1ff; /* Very soft periwinkle */
+  --pastel-blue: #e8e3ff; /* Soft periwinkle/lavender */
+  --pastel-blue-medium: #c8c0ff; /* Medium periwinkle */
+  --pastel-blue-dark: #7b6cf6; /* Primary Periwinkle Violet */
+  --pastel-blue-darker: #5448cc; /* Darker Periwinkle */
+
+  --pastel-green-light: #f0fbf8; /* Soft mint */
+  --pastel-green: #d1f5ec; /* Light mint */
+  --pastel-green-medium: #a8ebd8; /* Medium mint */
+  --pastel-green-dark: #44c7b7; /* Accent mint */
+
+  /* Pastel yellow/orange matches login sun/peach */
+  --pastel-yellow-light: #fff8e7;
+  --pastel-yellow: #ffe4b2;
+  --pastel-yellow-dark: #ffb085;
+
+  /* Red/pink matches login coral */
+  --pastel-red-light: #fff0f3;
+  --pastel-red: #ffb8c8;
+  --pastel-red-dark: #ff8fa3;
+
+  /* Pastel Purple */
+  --pastel-purple-light: #fbf0ff;
+  --pastel-purple: #f3d8ff;
+  --pastel-purple-dark: #a855f7;
+
+  /* Neutrals mapped to Ink/Slate from login page */
+  --slate-900: #2d2b55; /* Ink */
+  --slate-800: #3c396d;
+  --slate-700: #5a5880; /* Ink-md */
+  --slate-600: #7876a0;
+  --slate-500: #9b99b8; /* Ink-lt */
+  --slate-450: #b0aed1;
+  --slate-400: #b5b3cf;
+  --slate-300: #d2d0e6;
+  --slate-200: #e4e2f2;
+  --slate-100: #f3f1ff;
+  --slate-50: #fafafe;
+}
+
+/* ── Wrapper ──
+   App-shell layout: the wrap itself is locked to the viewport height and
+   never scrolls. Only .main-content (the area between the top nav and the
+   mobile bottom nav) scrolls when a tab's content is taller than the
+   available space. */
+.dashboard-wrap {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, #f0edff 0%, #fff0f8 45%, #eff9ff 100%);
+}
+
+/* ── Ambient Orbs ── */
+.orb {
+  position: fixed;
+  border-radius: 9999px;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.45;
+}
+.orb-blue {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--pastel-blue) 0%, rgba(200, 192, 255, 0) 70%);
+  top: -150px;
+  right: -100px;
+}
+.orb-green {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--pastel-green) 0%, rgba(168, 235, 216, 0) 70%);
+  bottom: -200px;
+  left: -150px;
+}
+
+
+/* ====================================================
+   TOP NAV
+   ==================================================== */
+.top-nav {
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+  z-index: 200;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 20px rgba(123, 108, 246, 0.06);
+}
+
+/* ── Main Content ──
+   .dashboard-wrap is locked to the viewport and never scrolls (see comment
+   above); this is the only region that should — it fills the remaining
+   space between .top-nav and .bottom-nav and scrolls internally when a
+   tab's content is taller than that. min-height: 0 is required for a flex
+   child to be allowed to shrink below its content size and actually scroll
+   instead of overflowing its flex-column parent.
+
+   No explicit z-index here (on purpose): `position: relative` + a set
+   z-index together create a new stacking context, which would trap every
+   `position: fixed` descendant rendered by routed pages — e.g. the lesson
+   roadmap's fullscreen quiz/game overlays (`.quiz-fs-overlay`,
+   z-index: 1200) — inside it. Their z-index would then only be compared
+   against siblings within .main-content, never against .top-nav
+   (z-index: 200), so the sticky navbar would paint over the overlay's
+   header and hide its close button. Staying at z-index: auto still paints
+   above .orb (z-index: 0, earlier in DOM) without creating that trap. */
+.main-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  position: relative;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+@media (max-width: 1024px) {
+  .main-content {
+    padding: 1.25rem;
+  }
+}
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+  }
+}
+@media (max-width: 480px) {
+  .main-content {
+    padding: 0.75rem;
+  }
+}
+
+/* Brand */
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+}
+.brand-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    var(--pastel-green-medium) 0%,
+    var(--pastel-blue-medium) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pastel-green-dark);
+  box-shadow: 0 2px 10px rgba(68, 199, 183, 0.18);
+}
+.brand-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.brand-texts {
+  display: flex;
+  flex-direction: column;
+}
+.brand-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--slate-900);
+  line-height: 1.2;
+}
+.brand-sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--slate-400);
+  letter-spacing: 0.3px;
+}
+
+/* Desktop Nav Menu */
+.desktop-nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(248, 250, 252, 0.8);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  border-radius: 9999px;
+  padding: 0.3rem 0.4rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+.nav-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1.1rem;
+  border: none;
+  background: none;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--slate-500);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  .tab-svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+  }
+  &:hover {
+    color: var(--pastel-blue-dark);
+    background: rgba(123, 108, 246, 0.07);
+  }
+  &.active {
+    background: white;
+    color: var(--pastel-blue-dark);
+    box-shadow: 0 2px 10px rgba(123, 108, 246, 0.15);
+    font-weight: 700;
+  }
+}
+
+/* Profile area */
+.profile-area {
+  position: relative;
+}
+.avatar-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  border: 1.5px solid var(--slate-200);
+  border-radius: 9999px;
+  padding: 0.35rem 0.9rem 0.35rem 0.35rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  &:hover {
+    box-shadow: 0 4px 14px rgba(123, 108, 246, 0.15);
+    border-color: var(--pastel-blue-medium);
+  }
+}
+.avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pastel-blue-dark) 0%, var(--pastel-green-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.chevron-svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--slate-400);
+  transition: transform 0.2s ease;
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+/* Profile Dropdown */
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 240px;
+  background: white;
+  border: 1.5px solid var(--slate-100);
+  border-radius: 18px;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(123, 108, 246, 0.08);
+  overflow: hidden;
+  z-index: 300;
+}
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 1.1rem;
+  background: linear-gradient(135deg, var(--pastel-blue-light) 0%, var(--pastel-green-light) 100%);
+}
+.dd-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pastel-blue-dark) 0%, var(--pastel-green-dark) 100%);
+  color: white;
+  font-size: 1.05rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.dd-name {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--slate-800);
+}
+.dd-role {
+  font-size: 0.72rem;
+  color: var(--slate-500);
+  font-weight: 600;
+}
+.dd-divider {
+  height: 1px;
+  background: var(--slate-100);
+  margin: 0 0.8rem;
+}
+.dd-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.7rem 1.1rem;
+  background: none;
+  border: none;
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--slate-700);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--slate-400);
+    flex-shrink: 0;
+  }
+  &:hover {
+    background: var(--slate-50);
+    color: var(--pastel-blue-dark);
+    svg {
+      stroke: var(--pastel-blue-dark);
+    }
+  }
+}
+.dd-logout {
+  color: #b91c1c;
+  svg {
+    stroke: #b91c1c;
+  }
+  &:hover {
+    background: #fef2f2;
+    color: #b91c1c;
+  }
+}
+
+
+/* ====================================================
+   BOTTOM NAVIGATION (Mobile)
+   ==================================================== */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  z-index: 150;
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 0.5rem;
+}
+.bottom-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  flex: 1;
+  padding: 0.4rem 0.2rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--slate-400);
+  transition: color 0.2s ease;
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+  span {
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+  &.active {
+    color: var(--pastel-blue-dark);
+  }
+}
+.mobile-avatar-mini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pastel-blue-dark) 0%, var(--pastel-green-dark) 100%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile Profile Sheet */
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.mobile-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 24px 24px 0 0;
+  padding: 0.75rem 0 2rem;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+}
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--slate-300);
+  margin: 0 auto 1.25rem;
+}
+.sheet-user-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0 1.25rem 1rem;
+  border-bottom: 1px solid var(--slate-100);
+  margin-bottom: 0.5rem;
+}
+.sheet-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pastel-blue-dark) 0%, var(--pastel-green-dark) 100%);
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sheet-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--slate-800);
+}
+.sheet-role {
+  font-size: 0.78rem;
+  color: var(--slate-500);
+  font-weight: 600;
+}
+.sheet-menu-list {
+  display: flex;
+  flex-direction: column;
+}
+.sheet-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1.25rem;
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--slate-700);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--slate-400);
+  }
+  &:hover {
+    background: var(--slate-50);
+  }
+}
+.sheet-logout {
+  color: #b91c1c;
+  svg {
+    stroke: #b91c1c;
+  }
+  &:hover {
+    background: #fef2f2;
+  }
+}
+
+/* ── Responsive Nav Switch ──
+   Desktop/tablet: pill nav-menu lives in the top bar. Below 768px there
+   isn't room for it next to the brand + profile avatar, so swap to the
+   fixed bottom tab bar instead (also more thumb-reachable on a phone).
+   .main-content gets extra bottom padding so its last item never sits
+   underneath the now-fixed bottom bar. */
+@media (max-width: 768px) {
+  .desktop-nav-menu {
+    display: none;
+  }
+  .bottom-nav {
+    display: flex;
+  }
+  .main-content {
+    padding-bottom: calc(1rem + 64px + env(safe-area-inset-bottom, 0px));
+  }
+  .top-nav {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-nav {
+    height: 60px;
+    padding: 0 0.75rem;
+  }
+  .brand-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .avatar-circle {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+  .profile-dropdown {
+    min-width: 0;
+    width: calc(100vw - 1.5rem);
+    max-width: 300px;
+  }
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Vocabulary Card Customizations */
+.fc-card-top-row {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fc-unit-badge-sm {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--pastel-blue-light);
+  color: var(--pastel-blue-dark);
+  border: 1px solid var(--pastel-blue-medium);
+  &.dark-mode {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+  }
+}
+
+/* ── Card front: pos badge ── */
+.fc-pos-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-style: italic;
+  background: rgba(237, 233, 254, 0.9);
+  color: #7c3aed;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  margin-top: 0.25rem;
+  margin-bottom: 0.1rem;
+  text-align: center;
+}
+
+/* ── Card back: pos badge (white on dark bg) ── */
+.fc-pos-badge-back {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  font-style: italic;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+
+/* ── Card back: reading (very small) ── */
+.fc-reading-sm {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
+  text-align: center;
+  margin-top: 0.3rem;
+}
+
+.fc-back .btn-avr-audio {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+  }
+  &.speaking {
+    background: white;
+    color: var(--pastel-blue-dark);
+    border-color: white;
+  }
+}
+
+/* Vocabulary Table Customizations in Lesson Step */
+.vocab-table-word-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vocab-table-reading {
+  color: var(--pastel-blue-dark);
+  font-weight: 600;
+}
+
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade {
+  animation: pageFadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// General Custom Modals
+.duo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(6px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.duo-modal {
+  background: white;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+
+  .dmodal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1.5px solid var(--slate-100);
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--slate-800);
+      margin: 0;
+    }
+
+    .dmodal-close {
+      border: none;
+      background: none;
+      font-size: 1.7rem;
+      color: var(--slate-400);
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      &:hover {
+        color: var(--slate-700);
+      }
+    }
+  }
+
+  .dmodal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .dmodal-footer {
+    padding: 1.25rem 1.5rem;
+    border-top: 1.5px solid var(--slate-100);
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+// Settings switch decoration
+.dsetting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--slate-100);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .dsetting-info {
+    flex: 1;
+    h4 {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--slate-800);
+      margin: 0 0 0.15rem 0;
+    }
+    p {
+      font-size: 0.75rem;
+      color: var(--slate-500);
+      margin: 0;
+      line-height: 1.35;
+    }
+  }
+}
+
+// Switch slider style
+.dswitch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+}
+
+.dslider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--slate-200);
+  transition: .3s;
+  border-radius: 34px;
+
+  &::before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+}
+
+input:checked + .dslider {
+  background-color: var(--pastel-green-dark);
+}
+
+input:checked + .dslider::before {
+  transform: translateX(22px);
+}
+
+// Select buttons speed/accent
+.dselect-group {
+  display: flex;
+  background: var(--slate-100);
+  border-radius: 12px;
+  padding: 0.25rem;
+}
+
+.dbtn-select {
+  border: none;
+  background: none;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--slate-600);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+
+  &.active {
+    background: white;
+    color: var(--pastel-blue-dark);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+}
+
+.dbtn-primary {
+  border: none;
+  background: linear-gradient(135deg, #7b6cf6 0%, #a78bfa 100%);
+  color: white;
+  font-weight: 800;
+  font-size: 0.88rem;
+  padding: 0.75rem 1.8rem;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(123, 108, 246, 0.3);
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(123, 108, 246, 0.4);
+  }
+}
+
+
+// Badges grid
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 420px) {
+  .duo-modal {
+    border-radius: 18px;
+    max-height: 85vh;
+
+    .dmodal-header {
+      padding: 1rem 1.1rem;
+      h2 {
+        font-size: 1rem;
+      }
+    }
+    .dmodal-body {
+      padding: 1.1rem;
+      gap: 1rem;
+    }
+    .dmodal-footer {
+      padding: 1rem 1.1rem;
+    }
+  }
+  .badges-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.badge-card-item {
+  background: var(--slate-50);
+  border: 2px solid var(--slate-100);
+  border-radius: 20px;
+  padding: 1.25rem;
+  text-align: center;
+  transition: all 0.2s;
+
+  &.locked {
+    opacity: 0.65;
+    background: var(--slate-100);
+  }
+
+  .badge-icon-visual {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  h4 {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--slate-800);
+    margin: 0 0 0.2rem 0;
+  }
+  p {
+    font-size: 0.72rem;
+    color: var(--slate-500);
+    margin: 0 0 0.6rem 0;
+    line-height: 1.35;
+  }
+
+  .badge-status-lbl {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--slate-400);
+  }
+}
+
+
+.shake-anim {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh) rotate(360deg);
+    opacity: 0;
+  }
+}

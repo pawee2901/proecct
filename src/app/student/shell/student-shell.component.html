@@ -1,0 +1,325 @@
+<div class="dashboard-wrap premium-gradient-bg" [class.shake-anim]="gameFx.gameShake" (click)="onWrapperClick()">
+  <!-- Confetti overlay -->
+  @if (gameFx.showConfetti) {
+    <div class="confetti-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; overflow: hidden;">
+      @for (p of gameFx.confettiParticles; track $index) {
+        <div class="confetti-particle" [style.left]="p.left" [style.background-color]="p.color" [style.width]="p.size" [style.height]="p.size" [style.transform]="'rotate(' + p.rotation + ')'" [style.animation-delay]="p.delay" [style.animation-duration]="p.duration" style="position: absolute; top: -20px; border-radius: 50%; opacity: 0.85; animation: confetti-fall linear forwards;"></div>
+      }
+    </div>
+  }
+  <!-- Ambient Light Orbs -->
+  <div class="orb orb-blue"></div>
+  <div class="orb orb-green"></div>
+
+  <!-- ==================================================== TOP NAVIGATION BAR (Desktop) ==================================================== -->
+  <header class="top-nav">
+    <div class="nav-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+          <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
+          <line x1="12" y1="19" x2="12" y2="22" />
+          <line x1="8" y1="22" x2="16" y2="22" />
+        </svg>
+      </div>
+    </div>
+
+    <nav class="desktop-nav-menu">
+      <button class="nav-tab-btn" routerLink="lessons" routerLinkActive="active">
+        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+        บทเรียน
+      </button>
+      <button class="nav-tab-btn" routerLink="vocabulary" routerLinkActive="active">
+        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+        คำศัพท์
+      </button>
+      <button class="nav-tab-btn" routerLink="games" routerLinkActive="active">
+        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="6" y1="12" x2="10" y2="12" />
+          <line x1="8" y1="10" x2="8" y2="14" />
+          <line x1="15" y1="13" x2="15.01" y2="13" />
+          <line x1="18" y1="11" x2="18.01" y2="11" />
+          <rect x="2" y="6" width="20" height="12" rx="2" />
+        </svg>
+        เกม
+      </button>
+      <button class="nav-tab-btn" routerLink="practice" routerLinkActive="active">
+        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6.5 6.5 17.5 17.5" />
+          <rect x="2" y="9" width="3" height="6" rx="1" transform="rotate(-45 3.5 12)" />
+          <rect x="19" y="9" width="3" height="6" rx="1" transform="rotate(-45 20.5 12)" />
+          <path d="m11.5 7.5 5 5" />
+          <path d="m7.5 11.5 5 5" />
+        </svg>
+        ฝึกฝน
+      </button>
+    </nav>
+
+    <!-- Profile Avatar + Dropdown -->
+    <div class="profile-area">
+      <button class="avatar-btn" (click)="toggleProfileDropdown(); $event.stopPropagation()">
+        <div class="avatar-circle">{{ getInitial() }}</div>
+        <svg class="chevron-svg" [class.open]="showProfileDropdown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      @if (showProfileDropdown) {
+        <div class="profile-dropdown animate-fade" (click)="$event.stopPropagation()">
+          <div class="dropdown-header">
+            <div class="dd-avatar">{{ getInitial() }}</div>
+            <div class="dd-info">
+              <p class="dd-name">{{ session.currentUser?.firstName }} {{ session.currentUser?.lastName }}</p>
+              <span class="dd-role">Student · นักศึกษา (ชั้นปีที่ {{ session.activeYearLevel }})</span>
+            </div>
+          </div>
+          <div class="dd-divider"></div>
+          <button class="dd-item" routerLink="profile" (click)="showProfileDropdown = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            ข้อมูลโปรไฟล์
+          </button>
+          <button class="dd-item" (click)="openHistory(); showProfileDropdown = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            ประวัติการทำแบบฝึกหัด
+          </button>
+          <button class="dd-item" routerLink="profile" (click)="showProfileDropdown = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+            ผลการเรียน / ความก้าวหน้า
+          </button>
+          <button class="dd-item" routerLink="review" (click)="showProfileDropdown = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            ทบทวนคำที่เคยผิด
+          </button>
+          <div class="dd-divider"></div>
+          <button class="dd-item dd-logout" (click)="logout()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            ออกจากระบบ
+          </button>
+        </div>
+      }
+    </div>
+  </header>
+
+  <!-- ==================================================== MAIN CONTENT (routed feature page) ==================================================== -->
+  <!-- TODO(Phase 6): original bound [class.no-scroll] here to Practice's setup-wizard state
+       (practiceSetupActive || practiceMode !== 'menu'); StudentPracticeComponent should apply
+       its own scroll-lock internally once built, since the Shell no longer owns that state. -->
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- ==================================================== BOTTOM NAVIGATION (Mobile) ==================================================== -->
+  <nav class="bottom-nav">
+    <button class="bottom-tab" routerLink="lessons" routerLinkActive="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      </svg>
+      <span>บทเรียน</span>
+    </button>
+    <button class="bottom-tab" routerLink="vocabulary" routerLinkActive="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+      </svg>
+      <span>คำศัพท์</span>
+    </button>
+    <button class="bottom-tab" routerLink="games" routerLinkActive="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="6" y1="12" x2="10" y2="12" />
+        <line x1="8" y1="10" x2="8" y2="14" />
+        <line x1="15" y1="13" x2="15.01" y2="13" />
+        <line x1="18" y1="11" x2="18.01" y2="11" />
+        <rect x="2" y="6" width="20" height="12" rx="2" />
+      </svg>
+      <span>เกม</span>
+    </button>
+    <button class="bottom-tab" routerLink="practice" routerLinkActive="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6.5 6.5 17.5 17.5" />
+        <rect x="2" y="9" width="3" height="6" rx="1" transform="rotate(-45 3.5 12)" />
+        <rect x="19" y="9" width="3" height="6" rx="1" transform="rotate(-45 20.5 12)" />
+        <path d="m11.5 7.5 5 5" />
+        <path d="m7.5 11.5 5 5" />
+      </svg>
+      <span>ฝึกฝน</span>
+    </button>
+    <button class="bottom-tab" (click)="toggleMobileProfile()">
+      <div class="mobile-avatar-mini">{{ getInitial() }}</div>
+      <span>โปรไฟล์</span>
+    </button>
+  </nav>
+
+  <!-- Mobile Profile Sheet -->
+  @if (showMobileProfile) {
+    <div class="mobile-overlay" (click)="showMobileProfile = false">
+      <div class="mobile-sheet animate-slide-up" (click)="$event.stopPropagation()">
+        <div class="sheet-handle"></div>
+        <div class="sheet-user-row">
+          <div class="sheet-avatar">{{ getInitial() }}</div>
+          <div>
+            <p class="sheet-name">{{ session.currentUser?.firstName }} {{ session.currentUser?.lastName }}</p>
+            <p class="sheet-role">นักศึกษา · Student</p>
+          </div>
+        </div>
+        <div class="sheet-menu-list">
+          <button class="sheet-menu-btn" routerLink="profile" (click)="showMobileProfile = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            ข้อมูลโปรไฟล์
+          </button>
+          <button class="sheet-menu-btn" (click)="openHistory(); showMobileProfile = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            ประวัติการทำแบบฝึกหัด
+          </button>
+          <button class="sheet-menu-btn" routerLink="profile" (click)="showMobileProfile = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+            ผลการเรียน / ความก้าวหน้า
+          </button>
+          <button class="sheet-menu-btn" routerLink="review" (click)="showMobileProfile = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            ทบทวนคำที่เคยผิด
+          </button>
+          <button class="sheet-menu-btn sheet-logout" (click)="logout()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            ออกจากระบบ
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: VOICE SETTINGS -->
+  @if (sharedUi.showVoiceSettingsModal) {
+    <div class="duo-modal-overlay" (click)="sharedUi.showVoiceSettingsModal = false">
+      <div class="duo-modal animate-scale" (click)="$event.stopPropagation()">
+        <div class="dmodal-header">
+          <h2>ตั้งค่าเสียงและการเรียน (Voice Settings)</h2>
+          <button class="dmodal-close" (click)="sharedUi.showVoiceSettingsModal = false">×</button>
+        </div>
+
+        <div class="dmodal-body">
+          <div class="dsetting-row">
+            <div class="dsetting-info">
+              <h4>เปิดเสียงเอฟเฟกต์</h4>
+              <p>เสียงเมื่อตอบถูก ชิมแชท และปุ่มกด</p>
+            </div>
+            <label class="dswitch">
+              <input type="checkbox" [(ngModel)]="sharedUi.voiceEffectsEnabled" />
+              <span class="dslider"></span>
+            </label>
+          </div>
+
+          <div class="dsetting-row">
+            <div class="dsetting-info">
+              <h4>ความเร็วเสียงสังเคราะห์ (Text-to-Speech)</h4>
+              <p>เลือกความเร็วของเสียงพูด AI</p>
+            </div>
+            <div class="dselect-group">
+              <button class="dbtn-select" [class.active]="sharedUi.ttsSpeed === 0.75" (click)="sharedUi.ttsSpeed = 0.75">ช้า</button>
+              <button class="dbtn-select" [class.active]="sharedUi.ttsSpeed === 1.0" (click)="sharedUi.ttsSpeed = 1.0">ปกติ</button>
+              <button class="dbtn-select" [class.active]="sharedUi.ttsSpeed === 1.25" (click)="sharedUi.ttsSpeed = 1.25">เร็ว</button>
+            </div>
+          </div>
+
+          <div class="dsetting-row">
+            <div class="dsetting-info">
+              <h4>สำเนียงเสียงของ AI</h4>
+              <p>สำเนียงหลักในการฝึกภาษา</p>
+            </div>
+            <div class="dselect-group">
+              <button class="dbtn-select" [class.active]="sharedUi.ttsVoiceType === 'US'" (click)="sharedUi.ttsVoiceType = 'US'">US Accent</button>
+              <button class="dbtn-select" [class.active]="sharedUi.ttsVoiceType === 'UK'" (click)="sharedUi.ttsVoiceType = 'UK'">UK Accent</button>
+            </div>
+          </div>
+
+          <div class="dsetting-row">
+            <div class="dsetting-info">
+              <h4>แสดงคำแปลภาษาไทย</h4>
+              <p>แสดงการแปลประโยคเป็นไทยในคลังเรียนรู้</p>
+            </div>
+            <label class="dswitch">
+              <input type="checkbox" [(ngModel)]="sharedUi.thaiTranslationsEnabled" />
+              <span class="dslider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="dmodal-footer">
+          <button class="dbtn-primary animate-scale" (click)="sharedUi.saveVoiceSettings()">บันทึกการตั้งค่า</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: ACHIEVEMENTS / BADGES -->
+  @if (sharedUi.showBadgesModal) {
+    <div class="duo-modal-overlay" (click)="sharedUi.showBadgesModal = false">
+      <div class="duo-modal animate-scale" (click)="$event.stopPropagation()">
+        <div class="dmodal-header">
+          <h2>🏅 เหรียญรางวัลเกียรติยศ (Achievements)</h2>
+          <button class="dmodal-close" (click)="sharedUi.showBadgesModal = false">×</button>
+        </div>
+
+        <div class="dmodal-body">
+          <div class="badges-grid">
+            @for (b of sharedUi.badges; track b.id) {
+              <div class="badge-card-item" [class.locked]="!b.unlocked">
+                <span class="badge-icon-visual">{{ b.unlocked ? b.icon : '🔒' }}</span>
+                <h4>{{ b.title }}</h4>
+                <p>{{ b.desc }}</p>
+                <span class="badge-status-lbl">{{ b.unlocked ? '🔓 ปลดล็อกแล้ว' : '🔒 ล็อกอยู่' }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="dmodal-footer">
+          <button class="dbtn-primary animate-scale" (click)="sharedUi.showBadgesModal = false">ตกลง</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

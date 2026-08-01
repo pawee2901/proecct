@@ -1,0 +1,57 @@
+{
+  "/api": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/students": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/student": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/leaderboard": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/lessons": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/lesson": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/save-lesson": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/teacher": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/admin": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/ai-speaking": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/ai-assistant-file": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

@@ -1,0 +1,2474 @@
+import { Injectable } from '@angular/core';
+import Swal from 'sweetalert2';
+import { LessonsDataService } from './lessons-data.service';
+import { StudentSessionService } from './student-session.service';
+import { GameFxService } from './game-fx.service';
+import { ProgressService } from './progress.service';
+import { LearningLogService } from './learning-log.service';
+import { MistakesTrackerService } from './mistakes-tracker.service';
+
+// Full per-game state + logic for all ~20 mini-games (Phase 4 of the
+// migration plan), extracted verbatim from student.component.ts:
+//  - vocab pool + icon/image maps (Phase 0, ~2331-2437, 5970-5997)
+//  - round/bank state for every game (~2281-2325, 2439-2801)
+//  - init/setup/check/next/finish methods for every game (~5798-5954,
+//    6235-7773) — both the Games tab AND the Lessons roadmap's step overlay
+//    (scramble/dialogue/picture-word/fill-blank) call these same methods,
+//    so Lessons never needs to reach into the Games component directly.
+//
+// Cross-references retargeted from the original component during the move:
+//  - this.units/.currentUser/.currentUnit -> lessonsData/session services
+//  - this.triggerConfetti/triggerGameShake/playSoundEffect/awardGameXp/
+//    shuffleArray/normalizeAnswer/iconColorClass/escapeRegExp/
+//    normalizeSentence/extractKeywords/speakText -> gameFx service
+//  - this.logActivity -> learningLog.log, this.loadProgressHistory ->
+//    progress.loadProgressHistory, this.trackWrongItem -> mistakes.trackWrongItem
+//  - this.currentStep/this.submitQuizResultToBackend (Lessons-only concepts)
+//    replaced by a new `roadmapQuizType` flag: StudentLessonsComponent sets
+//    it to 'pre_game'/'post_game' before calling init*Game() from the
+//    roadmap, and clears it to null for standalone Games-tab play, so this
+//    service never needs to know about Lessons' step enum.
+//  - onWordSearchPointerUp lost its @HostListener (services can't have one)
+//    — StudentGamesComponent re-declares a thin @HostListener wrapper that
+//    calls this method.
+//
+// Pre-existing staleness bug (not introduced here, not fixed): the original
+// called buildGameVocabPool() once, synchronously, in ngOnInit — before the
+// async loadLessonsFromDb() resolved, so the pool could be built from stale
+// fallback data. StudentShellComponent.ngOnInit still does the same thing.
+@Injectable({ providedIn: 'root' })
+export class GameEngineService {
+  gameVocabPool: { word: string; meaning: string; image?: string; icon: string }[] = [];
+
+  /** Set by StudentLessonsComponent when a roadmap "game-pre"/"game-post"
+   *  step launches a game, so finish*Game() knows whether/how to submit a
+   *  quiz result. Left null for standalone Games-tab play. */
+  roadmapQuizType: 'pre_game' | 'post_game' | null = null;
+
+  constructor(
+    private lessonsData: LessonsDataService,
+    private session: StudentSessionService,
+    private gameFx: GameFxService,
+    private progress: ProgressService,
+    private learningLog: LearningLogService,
+    private mistakes: MistakesTrackerService,
+  ) {}
+
+  /** original student.component.ts:5660-5670 ("Games Tab" quick-play shortcut,
+   *  called only from the Games tab's own scramble/dialogue buttons). */
+  startGameFromTab(type: 'scramble' | 'dialogue'): void {
+    const unit = this.lessonsData.units.find((u) => u.id === +this.selectedGameUnitId) || this.lessonsData.units[0];
+    this.lessonsData.currentUnit = unit;
+    if (type === 'scramble') {
+      this.activeGameType = 'scramble';
+      this.initScrambleGame();
+    } else if (type === 'dialogue') {
+      this.activeGameType = 'dialogue';
+      this.initDialogueGame();
+    }
+  }
+
+  /** original student.component.ts:3299-3307 — reads selectedGameUnitId as a
+   *  fallback when the Games tab menu checks whether a game is allowed for
+   *  the currently-selected unit; Lessons' roadmap always passes unitId
+   *  explicitly instead of relying on the fallback. */
+  isGameAllowed(gameType: string, unitId?: number): boolean {
+    const targetUnitId = unitId !== undefined ? +unitId : +this.selectedGameUnitId;
+    const unit = this.lessonsData.units.find((u) => u.id === targetUnitId);
+    if (!unit) return true;
+    if (unit.allowedGames && Array.isArray(unit.allowedGames)) {
+      return unit.allowedGames.includes(gameType);
+    }
+    return true;
+  }
+
+  // ── Interactive Word Scramble Game (Clickable letters concept) ──
+  scrambleIndex = 0;
+  scrambleCompleted = false;
+  scrambleScores: boolean[] = [];
+  clickableLetters: { char: string; used: boolean; originalIndex: number }[] = [];
+  scrambleUserWordList: { char: string; originalIndex: number }[] = [];
+  // สุ่มว่ารอบนี้จะหยิบคำไหนบ้างจาก scrambleWords ของหน่วยเรียน และเรียงลำดับใหม่ทุกครั้ง
+  // เพื่อให้แต่ละคน/แต่ละรอบเล่นได้ไม่เหมือนกัน (ไม่ตายตัวว่าต้องเจอคำที่ 1-2-3-4 เรียงกันเสมอ)
+  scrambleRoundIndices: number[] = [];
+  // เมื่อไม่ null แสดงว่ากำลังเล่นเกม (Picture-Word/Fill-blank) จากขั้นตอนบทเรียนของหน่วยนี้อยู่
+  // ใช้ตอนบันทึกคะแนนแยกตามหน่วย และอัปเดตเครื่องหมายสำเร็จในแผนที่การเรียน
+  roadmapGameUnitId: number | null = null;
+
+  // ── Post-Lesson Game: Unscramble Dialogue State ──
+  scrambledDialogueLines: { id: number; text: string; currentOrder: number }[] = [];
+  dialogueSuccessMessage = '';
+  dialogueFinished = false;
+
+  // ── Game Center State ──
+  selectedGameUnitId = 1;
+  activeGameType:
+    | 'vocabulary'
+    | 'scramble'
+    | 'dialogue'
+    | 'picture-word'
+    | 'thai-recall'
+    | 'fill-blank'
+    | 'sprint'
+    | 'typo-fix'
+    | 'word-riddle'
+    | 'sentence-reorder'
+    | 'open-reply'
+    | 'scenario'
+    | 'email-capstone'
+    | 'match-pair'
+    | 'dictation'
+    | 'pos-sorter'
+    | 'synonym-match'
+    | 'save-mascot'
+    | 'word-search'
+    | 'drag-word'
+    | 'convert-sentence'
+    | 'eng-to-thai'
+    | null = null;
+
+
+  // ── Game: Picture → Type the Word (Rebus Word Combinations) ──
+  pw_rebusPool = [
+    { word: 'classroom', meaning: 'ห้องเรียน', emoji1: '🏫', emoji2: '🚪', clue: 'สถานที่เรียนในโรงเรียน/ห้องเรียน?', unitId: 1 },
+    { word: 'icebreaker', meaning: 'กิจกรรมละลายพฤติกรรม', emoji1: '🧊', emoji2: '🔨', clue: 'กิจกรรมเปิดใจ/ละลายพฤติกรรม?', unitId: 1 },
+    { word: 'face-to-face', meaning: 'เผชิญหน้า / ส่วนตัว', emoji1: '👦', emoji2: '👦', clue: 'การพบกันตรงๆ/แบบส่วนตัว?', unitId: 1 },
+    { word: 'appointment', meaning: 'การนัดหมาย', emoji1: '📅', emoji2: '🤝', clue: 'การกำหนดวันเจอกันล่วงหน้า?', unitId: 1 },
+    { word: 'schedule', meaning: 'กำหนดการ / ตารางเวลา', emoji1: '📅', emoji2: '⏱️', clue: 'แผนกำหนดเวลาหรือกิจกรรม?', unitId: 1 },
+    { word: 'verify', meaning: 'ยืนยันความถูกต้อง', emoji1: '🔍', emoji2: '✅', clue: 'การตรวจทานเพื่อความถูกต้อง?', unitId: 2 },
+    { word: 'multitasking', meaning: 'การทำงานหลายอย่างพร้อมกัน', emoji1: '🧑‍💻', emoji2: '🤹', clue: 'การทำงานหลายอย่างในเวลาเดียวกัน?', unitId: 2 },
+    { word: 'extension', meaning: 'เบอร์ต่อภายใน', emoji1: '☎️', emoji2: '➡️', clue: 'หมายเลขโทรศัพท์ภายในองค์กร?', unitId: 2 },
+    { word: 'takeaway', meaning: 'ข้อคิดหลัก / ข้อสรุป', emoji1: '🥡', emoji2: '📦', clue: 'ข้อคิดสำคัญที่ได้จากการเรียนรู้?', unitId: 3 },
+    { word: 'outline', meaning: 'โครงร่าง / หัวข้อหลัก', emoji1: '✏️', emoji2: '📋', clue: 'โครงสร้างหรือแผนร่างเนื้อหาคร่าวๆ?', unitId: 3 },
+    { word: 'transition', meaning: 'การเชื่อมต่อ', emoji1: '🔄', emoji2: '🌉', clue: 'การเปลี่ยนผ่านหรือส่วนเชื่อมโยง?', unitId: 3 },
+    { word: 'audience', meaning: 'ผู้ฟัง / ผู้ชม', emoji1: '👥', emoji2: '👂', clue: 'กลุ่มคนที่มาร่วมฟังการบรรยาย?', unitId: 3 },
+    { word: 'summarize', meaning: 'สรุปความ', emoji1: '📝', emoji2: '📑', clue: 'การเขียนย่อความประเด็นสำคัญ?', unitId: 3 },
+    { word: 'handout', meaning: 'เอกสารแจก', emoji1: '📄', emoji2: '🤲', clue: 'เอกสารคู่มือที่ครูแจกในห้องเรียน?', unitId: 3 },
+    { word: 'agenda', meaning: 'ระเบียบวาระการประชุม', emoji1: '📋', emoji2: '📅', clue: 'หัวข้อกำหนดการที่จะประชุมพูดคุย?', unitId: 4 },
+    { word: 'perspective', meaning: 'มุมมอง / ทัศนะ', emoji1: '👁️', emoji2: '🧠', clue: 'ทัศนคติหรือมุมมองส่วนบุคคล?', unitId: 4 },
+    { word: 'feedback', meaning: 'คำแนะนำป้อนกลับ', emoji1: '🗣️', emoji2: '🔄', clue: 'คำติชม/ข้อแนะนำเพื่อการปรับปรุง?', unitId: 4 },
+    { word: 'consensus', meaning: 'มติเอกฉันท์', emoji1: '👥', emoji2: '🤝', clue: 'ความเห็นพ้องต้องกันของคณะทำงาน?', unitId: 5 },
+    { word: 'collaboration', meaning: 'การร่วมมือทำงาน', emoji1: '🤝', emoji2: '👥', clue: 'การร่วมมือร่วมใจกันทำงานเป็นทีม?', unitId: 5 },
+    { word: 'worksheet', meaning: 'ใบงาน / แบบฝึกหัด', emoji1: '📄', emoji2: '✏️', clue: 'กระดาษแบบฝึกหัดทบทวนบทเรียน?', unitId: 5 }
+  ];
+  pw_pool: { word: string; meaning: string; emoji1?: string; emoji2?: string; clue?: string; unitId?: number; image?: string; icon?: string }[] = [];
+  pw_index = 0;
+  pw_roundSize = 10;
+  pw_input = '';
+  pw_wrongAttempts = 0;
+  pw_feedback: 'correct' | 'wrong' | '' = '';
+  pw_imgError = false;
+  pw_score = 0;
+  pw_finished = false;
+
+  // ── Game: Thai → English Typing Recall (wrong once = wrong for good) ──
+  tr_pool: { word: string; meaning: string; image?: string }[] = [];
+  tr_index = 0;
+  tr_roundSize = 10;
+  tr_input = '';
+  tr_feedback: 'correct' | 'wrong' | '' = '';
+  tr_score = 0;
+  tr_finished = false;
+
+  // ── Game: Fill in the Blank (real dialogue lines from all units) ──
+  fb_pool: { blanked: string; answer: string; full: string }[] = [];
+  fb_index = 0;
+  fb_roundSize = 8;
+  fb_input = '';
+  fb_feedback: 'correct' | 'wrong' | '' = '';
+  fb_score = 0;
+  fb_finished = false;
+
+  // ── Game: Vocabulary Typing Sprint (timed) ──
+  sprint_queue: { word: string; meaning: string }[] = [];
+  sprint_index = 0;
+  sprint_input = '';
+  sprint_timeLeft = 45;
+  sprint_timerInterval: any = null;
+  sprint_score = 0;
+  sprint_combo = 0;
+  sprint_bestCombo = 0;
+  sprint_lastResult: 'correct' | 'wrong' | '' = '';
+  sprint_finished = false;
+
+  // ── Game: Spot & Fix the Typo ──
+  typoFixBank: { wrong: string; correct: string }[] = [
+    {
+      wrong: 'Please have a sit and wait for a moment.',
+      correct: 'Please have a seat and wait for a moment.',
+    },
+    {
+      wrong: 'Thank you for calling, how i can help you?',
+      correct: 'Thank you for calling, how can I help you?',
+    },
+    {
+      wrong: 'I would like to schedule a meeting for tommorow.',
+      correct: 'I would like to schedule a meeting for tomorrow.',
+    },
+    {
+      wrong: 'He is not available right now, would you like to leave a massage?',
+      correct: 'He is not available right now, would you like to leave a message?',
+    },
+    {
+      wrong: "Could you please repeat you're phone number?",
+      correct: 'Could you please repeat your phone number?',
+    },
+    {
+      wrong: 'We are exciting to welcome you to our school.',
+      correct: 'We are excited to welcome you to our school.',
+    },
+    {
+      wrong: "Let's begin the meeting, please turn to page 10 of you book.",
+      correct: "Let's begin the meeting, please turn to page 10 of your book.",
+    },
+    {
+      wrong: "I appreciate you're patience while we transfer the call.",
+      correct: 'I appreciate your patience while we transfer the call.',
+    },
+    {
+      wrong: 'Our next agenda item are the budget report.',
+      correct: 'Our next agenda item is the budget report.',
+    },
+    {
+      wrong: 'Please let me no if you have any questions.',
+      correct: 'Please let me know if you have any questions.',
+    },
+  ];
+  tf_pool: { wrong: string; correct: string }[] = [];
+  tf_index = 0;
+  tf_roundSize = 8;
+  tf_input = '';
+  tf_feedback: 'correct' | 'wrong' | '' = '';
+  tf_score = 0;
+  tf_finished = false;
+
+  // ── Game: Word Riddle (progressive letter reveal) ──
+  wr_pool: { word: string; meaning: string }[] = [];
+  wr_index = 0;
+  wr_roundSize = 8;
+  wr_input = '';
+  wr_wrongAttempts = 0;
+  wr_maxAttempts = 4;
+  wr_feedback: 'correct' | 'wrong' | 'revealed' | '' = '';
+  wr_score = 0;
+  wr_finished = false;
+
+  // ── Game: Scrambled Sentence → Typed Reorder ──
+  ss_pool: string[] = [];
+  ss_index = 0;
+  ss_roundSize = 8;
+  ss_wordBank: string[] = [];
+  ss_input = '';
+  ss_feedback: 'correct' | 'wrong' | '' = '';
+  ss_score = 0;
+  ss_finished = false;
+
+  // ── Game: Open Dialogue Reply ──
+  odr_pool: { context: string; label: string; sampleAnswer: string; keywords: string[] }[] = [];
+  odr_index = 0;
+  odr_roundSize = 6;
+  odr_input = '';
+  odr_submitted = false;
+  odr_matchedKeywords: string[] = [];
+  odr_score = 0;
+  odr_finished = false;
+
+  // ── Game: Scenario Sentence Construction ──
+  // โจทย์สถานการณ์เป็นคำถามภาษาอังกฤษ (เหมือนสถานการณ์จริงที่ต้องอ่าน/ฟังแล้วตอบเป็นอังกฤษทันที)
+  // ส่วน situationTh เป็นแค่คำแปลกำกับเล็กๆ ไว้ช่วยทำความเข้าใจ ไม่ใช่ตัวโจทย์หลัก
+  scenarioBank: { situationEn: string; situationTh: string; keywords: string[]; sampleAnswer: string }[] = [
+    {
+      situationEn: 'A caller asks for Mr. David, but he is not at his desk right now. What do you say?',
+      situationTh: 'ลูกค้าโทรมาถามหา Mr. David แต่เขาไม่อยู่ที่โต๊ะ คุณจะพูดว่าอย่างไร',
+      keywords: ['sorry', 'unavailable', 'message'],
+      sampleAnswer:
+        "I'm sorry, Mr. David is unavailable right now. Would you like to leave a message?",
+    },
+    {
+      situationEn: 'A visitor arrives at the school gate for the first time. How do you greet them?',
+      situationTh: 'มีแขกมาถึงประตูโรงเรียนเป็นครั้งแรก คุณควรทักทายอย่างไร',
+      keywords: ['good morning', 'welcome', 'help'],
+      sampleAnswer: 'Good morning, welcome to our school. How can I help you today?',
+    },
+    {
+      situationEn: 'You are about to start your presentation in front of the class. Introduce yourself.',
+      situationTh: 'คุณกำลังเริ่มนำเสนอผลงานหน้าชั้นเรียน แนะนำตัวเอง',
+      keywords: ['good afternoon', 'my name', 'today'],
+      sampleAnswer:
+        "Good afternoon everyone, my name is Anna, and today I'm excited to present our project.",
+    },
+    {
+      situationEn: 'You are opening a meeting. Announce the first agenda item.',
+      situationTh: 'เริ่มการประชุมและแจ้งวาระการประชุมแรก',
+      keywords: ['agenda', 'begin', 'item'],
+      sampleAnswer: "Let's begin the meeting. The first item on our agenda is the budget review.",
+    },
+    {
+      situationEn: 'A student arrives late to class. As the teacher, how do you politely ask them to sit down?',
+      situationTh: 'นักเรียนมาสาย ในฐานะครูควรพูดอย่างไรให้เขานั่งลงอย่างสุภาพ',
+      keywords: ['please', 'seat', 'quietly'],
+      sampleAnswer: 'Please take a seat quietly, we have already started the lesson.',
+    },
+    {
+      situationEn: "During your presentation, someone asks a question you don't know the answer to. How do you respond politely?",
+      situationTh: 'ระหว่างพรีเซนต์ มีคำถามที่คุณไม่รู้คำตอบ ควรตอบอย่างสุภาพว่าอย่างไร',
+      keywords: ['not sure', 'follow up', 'back to you'],
+      sampleAnswer: "I'm not sure about that, but I will follow up and get back to you.",
+    },
+    {
+      situationEn: 'Ask the caller to hold the line for a moment while you transfer the call.',
+      situationTh: 'ขอให้ผู้โทรถือสายรอสักครู่ระหว่างโอนสาย',
+      keywords: ['hold', 'moment', 'transfer'],
+      sampleAnswer: 'Could you please hold for a moment while I transfer your call?',
+    },
+    {
+      situationEn: 'Politely close the meeting and summarize the next action items.',
+      situationTh: 'จบการประชุมอย่างสุภาพและสรุปงานที่ต้องทำต่อ',
+      keywords: ['thank you', 'wrap up', 'action items'],
+      sampleAnswer: "Thank you, everyone. Let's wrap up and review our action items.",
+    },
+  ];
+  scn_pool: { situationEn: string; situationTh: string; keywords: string[]; sampleAnswer: string }[] = [];
+  scn_index = 0;
+  scn_roundSize = 6;
+  scn_input = '';
+  scn_submitted = false;
+  scn_matchedKeywords: string[] = [];
+  scn_score = 0;
+  scn_finished = false;
+
+  // ── Game: Email Reply Capstone ──
+  emailBank: { subject: string; body: string; keywords: string[]; minWords: number; sampleAnswer: string }[] = [
+    {
+      subject: "Question about tomorrow's schedule",
+      body: "Hi, could you confirm what time the orientation starts tomorrow? I don't want to be late. Thanks, Anna",
+      keywords: ['orientation', 'starts', 'thank'],
+      minWords: 12,
+      sampleAnswer: 'Hi Anna, the orientation starts at 9 AM tomorrow. Thank you for checking, see you there!',
+    },
+    {
+      subject: 'Request to reschedule our meeting',
+      body: "Hello, I'm unable to attend our meeting on Monday. Could we move it to Wednesday instead?",
+      keywords: ['wednesday', 'reschedule', 'works'],
+      minWords: 12,
+      sampleAnswer: "Hello, Wednesday works for me. Let's reschedule the meeting to that day, same time.",
+    },
+    {
+      subject: 'Missing homework submission',
+      body: 'Hi, I could not submit my homework on time because of an internet problem. Can I send it today?',
+      keywords: ['understand', 'today', 'submit'],
+      minWords: 12,
+      sampleAnswer: 'Hi, I understand. Please submit your homework today and I will accept it without penalty.',
+    },
+    {
+      subject: 'Asking about the presentation topic',
+      body: 'Hello, I am not sure what topic to choose for my presentation next week. Do you have any suggestions?',
+      keywords: ['suggest', 'topic', 'presentation'],
+      minWords: 12,
+      sampleAnswer: 'Hello, I suggest you choose a topic related to technology in education for your presentation.',
+    },
+    {
+      subject: 'Confirming the phone call time',
+      body: 'Hi, just confirming our phone call is at 3 PM today, is that still correct?',
+      keywords: ['confirm', 'correct', '3 pm'],
+      minWords: 10,
+      sampleAnswer: 'Hi, yes that is correct, our phone call is confirmed for 3 PM today. Talk soon!',
+    },
+  ];
+  em_pool: { subject: string; body: string; keywords: string[]; minWords: number; sampleAnswer: string }[] = [];
+  em_index = 0;
+  em_roundSize = 5;
+  em_input = '';
+  em_submitted = false;
+  em_matchedKeywords: string[] = [];
+  em_wordCountOk = false;
+  em_score = 0;
+  em_finished = false;
+
+  // ── Game 1: Memory Card Match ──
+  mm_cards: { id: number; text: string; type: 'en' | 'th'; matchId: string; isFlipped: boolean; isMatched: boolean }[] = [];
+  mm_selectedCards: number[] = [];
+  mm_score = 0;
+  mm_finished = false;
+  mm_round = 1;
+  mm_maxRounds = 3;
+
+  // ── Game 2: Dictation Master ──
+  dc_pool: { word: string; meaning: string }[] = [];
+  dc_index = 0;
+  dc_input = '';
+  dc_score = 0;
+  dc_showFeedback = false;
+  dc_isCorrect = false;
+  dc_finished = false;
+
+  // ── Game 3: POS Sorter ──
+  pos_pool: { word: string; pos: string; meaning: string }[] = [];
+  pos_index = 0;
+  pos_score = 0;
+  pos_showFeedback = false;
+  pos_selected = '';
+  pos_finished = false;
+
+  // ── Game 4: Synonym Matcher ──
+  sm_pool: { word: string; synonym: string; options: string[] }[] = [];
+  sm_index = 0;
+  sm_score = 0;
+  sm_selectedOption = '';
+  sm_showFeedback = false;
+  sm_finished = false;
+
+  // ── Game 5: Save the Mascot ──
+  hm_roundWords: { word: string; meaning: string }[] = [];
+  hm_wordObj: { word: string; meaning: string } | null = null;
+  hm_wordLetters: string[] = [];
+  hm_guessedLetters: Set<string> = new Set();
+  hm_lives = 5;
+  hm_score = 0;
+  hm_index = 0;
+  hm_finished = false;
+  hm_keyboard: string[] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+  // ── Game 6: Word Search (Drag to Find) ──
+  readonly ws_gridSize = 12;
+  ws_grid: string[][] = [];
+  ws_words: { word: string; meaning: string; found: boolean; colorIndex: number }[] = [];
+  ws_selectedCells: { row: number; col: number }[] = [];
+  private ws_wordCellMap: { [key: string]: { word: string; colorIndex: number } } = {};
+  private ws_isDragging = false;
+  private ws_startCell: { row: number; col: number } | null = null;
+  ws_score = 0;
+  ws_finished = false;
+  ws_invalidFlash = false;
+  private readonly ws_colorCount = 6;
+
+  // ── Game 7: Drag & Drop Word Builder (เกมลากคำ) ──
+  dw_questions: {
+    id: number;
+    thaiHint: string;
+    sentenceTemplate: string;
+    slots: { placeholder: string; targetWord: string; currentWord: string | null }[];
+    wordBank: string[];
+    explanation: string;
+  }[] = [];
+  dw_index = 0;
+  dw_score = 0;
+  dw_draggedWord: string | null = null;
+  dw_showFeedback = false;
+  dw_isCorrect = false;
+  dw_finished = false;
+
+  // ── Game 8: Sentence Converter (เกมคอนเวิด - แปลงรูปประโยค) ──
+  cs_questions: {
+    id: number;
+    instruction: string;
+    originalSentence: string;
+    hint: string;
+    correctAnswers: string[];
+    explanation: string;
+  }[] = [];
+  cs_index = 0;
+  cs_score = 0;
+  cs_input = '';
+  cs_showHint = false;
+  cs_showFeedback = false;
+  cs_isCorrect = false;
+  cs_finished = false;
+
+  // ── Game 9: English to Thai Translation (เกมแปลอังกฤษ พิมพ์ไทย) ──
+  et_questions: {
+    id: number;
+    englishSentence: string;
+    thaiHint: string;
+    primaryThai: string;
+    keyKeywords: string[];
+    explanation: string;
+  }[] = [];
+  et_index = 0;
+  et_score = 0;
+  et_input = '';
+  et_showHint = false;
+  et_showFeedback = false;
+  et_isCorrect = false;
+  et_finished = false;
+
+  private readonly vocabIconMap: { [word: string]: string } = {
+    welcoming: 'smile',
+    icebreaker: 'lightbulb',
+    'face-to-face': 'person',
+    'course overview': 'compass',
+    'receptions duties': 'list',
+    receptionist: 'person',
+    appointment: 'calendar',
+    'service-mind': 'smile',
+    expectation: 'compass',
+    schedule: 'calendar',
+    concise: 'chat',
+    etiquette: 'smile',
+    transferring: 'link',
+    unavailable: 'clock',
+    verify: 'check',
+    professionalism: 'briefcase',
+    multitasking: 'briefcase',
+    extension: 'phone',
+    reachable: 'phone',
+    assist: 'person',
+    'visual aids': 'monitor',
+    takeaway: 'document',
+    outline: 'list',
+    transition: 'link',
+    'q&a session': 'question',
+    hook: 'mic',
+    interactive: 'chat',
+    articulation: 'mic',
+    adaptability: 'puzzle',
+    storytelling: 'mic',
+    agenda: 'list',
+    minutes: 'document',
+    stakeholders: 'person',
+    brainstorming: 'lightbulb',
+    chairperson: 'person',
+    'action item': 'list',
+    'decision-making': 'chart',
+    negotiation: 'check',
+    curriculum: 'book',
+    'common ground': 'check',
+    'break down': 'list',
+    'peer feedback': 'chat',
+    'sequence words': 'list',
+    consensus: 'check',
+    excel: 'award',
+    straightforward: 'compass',
+    comprehension: 'book',
+    worksheet: 'document',
+    collaboration: 'person',
+    enthusiasm: 'smile',
+  };
+
+  // Maps each vocabulary word to a free flat-illustration file (unDraw,
+  // no attribution required) stored under src/assets/vocab-images/.
+  private readonly vocabImageMap: { [word: string]: string } = {
+    welcoming: 'welcoming',
+    icebreaker: 'icebreaker',
+    'face-to-face': 'face-to-face',
+    'course overview': 'course-overview',
+    'receptions duties': 'receptions-duties',
+    receptionist: 'receptionist',
+    appointment: 'appointment',
+    'service-mind': 'service-mind',
+    expectation: 'expectation',
+    schedule: 'schedule',
+    concise: 'concise',
+    etiquette: 'etiquette',
+    transferring: 'transferring',
+    unavailable: 'unavailable',
+    verify: 'verify',
+    professionalism: 'professionalism',
+    multitasking: 'multitasking',
+    extension: 'extension',
+    reachable: 'reachable',
+    assist: 'assist',
+    'visual aids': 'visual-aids',
+    takeaway: 'takeaway',
+    outline: 'outline',
+    transition: 'transition',
+    'q&a session': 'qa-session',
+    hook: 'hook',
+    interactive: 'interactive',
+    articulation: 'articulation',
+    adaptability: 'adaptability',
+    storytelling: 'storytelling',
+    agenda: 'agenda',
+    minutes: 'minutes',
+    stakeholders: 'stakeholders',
+    brainstorming: 'brainstorming',
+    chairperson: 'chairperson',
+    'action item': 'action-item',
+    'decision-making': 'decision-making',
+    negotiation: 'negotiation',
+    curriculum: 'curriculum',
+    'common ground': 'common-ground',
+    'break down': 'break-down',
+    'peer feedback': 'peer-feedback',
+    'sequence words': 'sequence-words',
+    consensus: 'consensus',
+    excel: 'excel',
+    straightforward: 'straightforward',
+    comprehension: 'comprehension',
+    worksheet: 'worksheet',
+    collaboration: 'collaboration',
+    enthusiasm: 'enthusiasm',
+  };
+
+  private resolveVocabIcon(word: string): string {
+    return this.vocabIconMap[word.toLowerCase()] || 'compass';
+  }
+
+  private resolveVocabImage(word: string): string | undefined {
+    const slug = this.vocabImageMap[word.toLowerCase()];
+    return slug ? `/assets/vocab-images/${slug}.svg` : undefined;
+  }
+
+  buildGameVocabPool(): void {
+    const seen = new Set<string>();
+    const pool: { word: string; meaning: string; image?: string; icon: string }[] = [];
+    this.lessonsData.units.forEach((u) => {
+      u.vocabularies.forEach((v) => {
+        const key = v.word.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          pool.push({
+            word: v.word,
+            meaning: v.meaning,
+            image: v.image || this.resolveVocabImage(v.word),
+            icon: this.resolveVocabIcon(v.word),
+          });
+        }
+      });
+    });
+    this.gameVocabPool = pool;
+  }
+
+  initScrambleGame(): void {
+    this.scrambleIndex = 0;
+    this.scrambleCompleted = false;
+    this.scrambleScores = [];
+
+    // สุ่มหยิบคำบางส่วน (ไม่ใช่ทั้งหมดเสมอไป) แล้วสุ่มลำดับใหม่ทุกครั้งที่เริ่มเกม
+    const totalWords = this.lessonsData.currentUnit.scrambleWords.length;
+    const minCount = Math.min(2, totalWords);
+    const roundCount =
+      totalWords > minCount
+        ? minCount + Math.floor(Math.random() * (totalWords - minCount + 1))
+        : totalWords;
+    this.scrambleRoundIndices = this.gameFx.shuffleArray(
+      this.lessonsData.currentUnit.scrambleWords.map((_, i) => i),
+    ).slice(0, roundCount);
+
+    this.setupCurrentScramble();
+  }
+
+  setupCurrentScramble(): void {
+    const original = this.lessonsData.currentUnit.scrambleWords[this.scrambleRoundIndices[this.scrambleIndex]];
+    let arr = original.split('');
+    let attempts = 0;
+    while (attempts < 10) {
+      arr.sort(() => Math.random() - 0.5);
+      if (arr.join('') !== original) break;
+      attempts++;
+    }
+
+    // สร้างคีย์แคปปุ่มกด
+    this.clickableLetters = arr.map((char, index) => ({
+      char: char.toUpperCase(),
+      used: false,
+      originalIndex: index,
+    }));
+    this.scrambleUserWordList = [];
+  }
+
+  selectLetter(letter: (typeof this.clickableLetters)[0]): void {
+    if (letter.used) return;
+    letter.used = true;
+    this.scrambleUserWordList.push({ char: letter.char, originalIndex: letter.originalIndex });
+  }
+
+  deselectLetter(selected: (typeof this.scrambleUserWordList)[0], userWordIdx: number): void {
+    this.scrambleUserWordList.splice(userWordIdx, 1);
+    const origin = this.clickableLetters.find((l) => l.originalIndex === selected.originalIndex);
+    if (origin) {
+      origin.used = false;
+    }
+  }
+
+  clearScrambleWord(): void {
+    this.scrambleUserWordList = [];
+    this.clickableLetters.forEach((l) => (l.used = false));
+  }
+
+  checkScrambleAnswer(): void {
+    const original = this.lessonsData.currentUnit.scrambleWords[this.scrambleRoundIndices[this.scrambleIndex]];
+    const userWord = this.scrambleUserWordList.map((item) => item.char).join('');
+
+    const isCorrect = userWord.toUpperCase() === original.toUpperCase();
+    this.scrambleScores.push(isCorrect);
+
+    if (!isCorrect) {
+      this.gameFx.triggerGameShake();
+    } else {
+      this.gameFx.playSoundEffect('success');
+    }
+
+    const nextStep = () => {
+      if (this.scrambleIndex < this.scrambleRoundIndices.length - 1) {
+        this.scrambleIndex++;
+        this.setupCurrentScramble();
+      } else {
+        this.scrambleCompleted = true;
+        const score = Math.round(
+          (this.scrambleScores.filter((s) => s).length / this.scrambleScores.length) * 100,
+        );
+        localStorage.setItem(
+          `game_scramble_${this.session.currentUser.id}_unit${this.lessonsData.currentUnit.id}`,
+          score.toString(),
+        );
+
+        this.gameFx.awardGameXp(15, `Word Scramble Game Unit ${this.lessonsData.currentUnit.id}`, score);
+        if (this.roadmapQuizType) {
+          this.progress.submitQuizResultToBackend(this.roadmapQuizType, score);
+        }
+        this.progress.loadProgressHistory();
+      }
+    };
+
+    if (!isCorrect) {
+      setTimeout(() => nextStep(), 800);
+    } else {
+      nextStep();
+    }
+  }
+
+  initDialogueGame(): void {
+    this.dialogueSuccessMessage = '';
+    this.dialogueFinished = false;
+    const unitDialogue = this.lessonsData.currentUnit?.unscrambleDialogue;
+    const rawDialogue = unitDialogue && unitDialogue.length > 0 ? unitDialogue : [
+      { id: 1, text: 'Hello! Welcome to the course.', order: 0 },
+      { id: 2, text: 'Thank you! Excited to learn.', order: 1 }
+    ];
+    this.scrambledDialogueLines = rawDialogue
+      .map((line, index) => {
+        return { id: line.id, text: line.text, currentOrder: index };
+      })
+      .sort(() => Math.random() - 0.5);
+  }
+
+  moveLine(index: number, direction: 'up' | 'down'): void {
+    if (this.dialogueFinished) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= this.scrambledDialogueLines.length) return;
+
+    const temp = this.scrambledDialogueLines[index];
+    this.scrambledDialogueLines[index] = this.scrambledDialogueLines[targetIndex];
+    this.scrambledDialogueLines[targetIndex] = temp;
+  }
+
+  checkDialogueOrder(): void {
+    let allCorrect = true;
+    const correctDialogue = this.lessonsData.currentUnit?.unscrambleDialogue || [];
+    this.scrambledDialogueLines.forEach((line, idx) => {
+      const originalLine = correctDialogue.find((c) => c.text === line.text);
+      if (originalLine && originalLine.order !== idx) {
+        allCorrect = false;
+      }
+    });
+
+    if (allCorrect) {
+      this.dialogueSuccessMessage = '🎉 ยินดีด้วยค่ะ! คุณเรียงลำดับบทสนทนาได้ถูกต้องสมบูรณ์แล้ว';
+      this.dialogueFinished = true;
+      this.gameFx.triggerConfetti();
+      localStorage.setItem(
+        `game_dialogue_${this.session.currentUser.id}_unit${this.lessonsData.currentUnit.id}`,
+        '100',
+      );
+      this.learningLog.log({ type: 'Game', title: `Dialogue Sequencer Game Unit ${this.lessonsData.currentUnit.id}`, score: 100, xp: 0 });
+      if (this.roadmapQuizType) {
+        this.progress.submitQuizResultToBackend(this.roadmapQuizType, 100);
+      }
+      this.progress.loadProgressHistory();
+    } else {
+      this.gameFx.triggerGameShake();
+      Swal.fire({
+        icon: 'error',
+        title: 'คำตอบยังไม่ถูกต้อง',
+        text: 'ลำดับบทสนทนายังไม่ถูกต้อง ลองทบทวนและเรียงใหม่อีกครั้งนะคะ',
+        confirmButtonColor: '#6B21A8'
+      });
+    }
+  }
+
+
+  initPictureWordGame(unitId?: number): void {
+    this.activeGameType = 'picture-word';
+    this.roadmapGameUnitId = unitId ?? null;
+    
+    let candidatePool = [...this.pw_rebusPool];
+    if (unitId) {
+      const unitSpecific = this.pw_rebusPool.filter(w => w.unitId === +unitId);
+      const remaining = this.pw_rebusPool.filter(w => w.unitId !== +unitId);
+      candidatePool = [
+        ...this.gameFx.shuffleArray(unitSpecific),
+        ...this.gameFx.shuffleArray(remaining)
+      ];
+    } else {
+      candidatePool = this.gameFx.shuffleArray(candidatePool);
+    }
+    
+    this.pw_pool = candidatePool.slice(0, this.pw_roundSize);
+    this.pw_index = 0;
+    this.pw_score = 0;
+    this.pw_finished = false;
+    this.setupPictureWordRound();
+  }
+
+  setupPictureWordRound(): void {
+    this.pw_input = '';
+    this.pw_wrongAttempts = 0;
+    this.pw_feedback = '';
+    this.pw_imgError = false;
+  }
+
+  get pwCurrentWord(): { word: string; meaning: string; emoji1?: string; emoji2?: string; clue?: string; image?: string; icon?: string } | null {
+    return this.pw_pool[this.pw_index] || null;
+  }
+
+  get pwHintText(): string {
+    const word = this.pwCurrentWord;
+    if (!word) return '';
+    if (this.pw_wrongAttempts >= 2) return `คำใบ้ภาษาไทย: ${word.emoji1} + ${word.emoji2} แปลว่า "${word.meaning}"`;
+    if (this.pw_wrongAttempts === 1) return `ขึ้นต้นด้วยตัว "${word.word.charAt(0).toUpperCase()}" (คำนี้มี ${word.word.length} ตัวอักษร)`;
+    return '';
+  }
+
+  onPwImageError(): void {
+    this.pw_imgError = true;
+  }
+
+  checkPictureWordAnswer(): void {
+    const word = this.pwCurrentWord;
+    if (!word || this.pw_feedback === 'correct' || !this.pw_input.trim()) return;
+
+    const isCorrect = this.gameFx.normalizeAnswer(this.pw_input) === this.gameFx.normalizeAnswer(word.word);
+    if (isCorrect) {
+      this.pw_feedback = 'correct';
+      this.pw_score++;
+      setTimeout(() => this.nextPictureWordRound(), 700);
+    } else {
+      this.pw_wrongAttempts++;
+      this.pw_feedback = 'wrong';
+      this.mistakes.trackWrongItem('word', word.word, word.meaning, 'Picture → Word');
+    }
+  }
+
+  skipPictureWord(): void {
+    this.nextPictureWordRound();
+  }
+
+  nextPictureWordRound(): void {
+    if (this.pw_index < this.pw_pool.length - 1) {
+      this.pw_index++;
+      this.setupPictureWordRound();
+    } else {
+      this.finishPictureWordGame();
+    }
+  }
+
+  finishPictureWordGame(): void {
+    this.pw_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.pw_score / this.pw_pool.length) * 100);
+      const key = this.roadmapGameUnitId
+        ? `game_pictureword_${this.session.currentUser.id}_unit${this.roadmapGameUnitId}`
+        : `game_pictureword_${this.session.currentUser.id}`;
+      localStorage.setItem(key, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(15, 'Picture → Word Game', Math.round((this.pw_score / this.pw_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Thai → English Typing Recall ──
+  initTypingRecallGame(): void {
+    this.activeGameType = 'thai-recall';
+    this.tr_pool = this.gameFx.shuffleArray(this.gameVocabPool).slice(0, this.tr_roundSize);
+    this.tr_index = 0;
+    this.tr_score = 0;
+    this.tr_finished = false;
+    this.setupTypingRecallRound();
+  }
+
+  setupTypingRecallRound(): void {
+    this.tr_input = '';
+    this.tr_feedback = '';
+  }
+
+  get trCurrentWord(): { word: string; meaning: string; image?: string } | null {
+    return this.tr_pool[this.tr_index] || null;
+  }
+
+  submitTypingRecallAnswer(): void {
+    const word = this.trCurrentWord;
+    if (!word || this.tr_feedback !== '' || !this.tr_input.trim()) return;
+
+    const isCorrect = this.gameFx.normalizeAnswer(this.tr_input) === this.gameFx.normalizeAnswer(word.word);
+    this.tr_feedback = isCorrect ? 'correct' : 'wrong';
+    if (isCorrect) {
+      this.tr_score++;
+      this.gameFx.playSoundEffect('success');
+    } else {
+      this.gameFx.triggerGameShake();
+      this.mistakes.trackWrongItem('word', word.word, word.meaning, 'Thai → English Typing Recall');
+    }
+    setTimeout(() => this.nextTypingRecallRound(), 900);
+  }
+
+  nextTypingRecallRound(): void {
+    if (this.tr_index < this.tr_pool.length - 1) {
+      this.tr_index++;
+      this.setupTypingRecallRound();
+    } else {
+      this.finishTypingRecallGame();
+    }
+  }
+
+  finishTypingRecallGame(): void {
+    this.tr_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.tr_score / this.tr_pool.length) * 100);
+      localStorage.setItem(`game_typingrecall_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(15, 'Thai → English Typing Recall', Math.round((this.tr_score / this.tr_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── More Shared Game Helpers ──
+
+  private buildDialogueSentencePool(unitId?: number): string[] {
+    const sentences = new Set<string>();
+    const targetUnits = unitId ? this.lessonsData.units.filter((u) => u.id === unitId) : this.lessonsData.units;
+    targetUnits.forEach((u) => {
+      u.dialogues.forEach((d) => {
+        [d.text1, d.text2].forEach((t) => {
+          const wordCount = (t.match(/[A-Za-z']+/g) || []).length;
+          if (t && wordCount >= 5 && wordCount <= 14) {
+            sentences.add(t.trim());
+          }
+        });
+      });
+    });
+    return Array.from(sentences);
+  }
+
+  private buildFillBlankPool(unitId?: number): { blanked: string; answer: string; full: string }[] {
+    const pool: { blanked: string; answer: string; full: string }[] = [];
+    this.buildDialogueSentencePool(unitId).forEach((sentence) => {
+      const words = sentence.match(/[A-Za-z']+/g) || [];
+      if (words.length === 0) return;
+      const answer = words.reduce((a, b) => (b.length > a.length ? b : a));
+      if (answer.length < 4) return;
+      const blanked = sentence.replace(new RegExp(`\\b${this.gameFx.escapeRegExp(answer)}\\b`), '_____');
+      if (blanked === sentence) return;
+      pool.push({ blanked, answer, full: sentence });
+    });
+    // หน่วยเรียนบางหน่วยอาจมีประโยคที่ตัดคำได้ไม่พอสำหรับเล่นเป็นรอบ ให้ใช้ทุกหน่วยแทนกันเกมว่างเปล่า
+    if (unitId && pool.length < 3) {
+      return this.buildFillBlankPool();
+    }
+    return pool;
+  }
+
+  // ดึงคำศัพท์เฉพาะหน่วยเรียนเดียว (สำหรับเกม Picture-Word ตอนเล่นในขั้นตอนบทเรียน)
+  private buildUnitVocabPool(unitId: number): { word: string; meaning: string; image?: string; icon: string }[] {
+    const unit = this.lessonsData.units.find((u) => u.id === unitId);
+    if (!unit) return [];
+    const seen = new Set<string>();
+    const pool: { word: string; meaning: string; image?: string; icon: string }[] = [];
+    unit.vocabularies.forEach((v) => {
+      const key = v.word.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        pool.push({
+          word: v.word,
+          meaning: v.meaning,
+          image: v.image || this.resolveVocabImage(v.word),
+          icon: this.resolveVocabIcon(v.word),
+        });
+      }
+    });
+    // ถ้าหน่วยนี้มีคำศัพท์เดี่ยว (ไม่มีเว้นวรรค) น้อยเกินไป ให้ใช้คลังรวมทุกหน่วยแทนกันเกมว่างเปล่า
+    const guessable = pool.filter((w) => !w.word.includes(' '));
+    return guessable.length >= 3 ? pool : this.gameVocabPool;
+  }
+
+  private buildOpenReplyPool(): {
+    context: string;
+    label: string;
+    sampleAnswer: string;
+    keywords: string[];
+  }[] {
+    const pool: { context: string; label: string; sampleAnswer: string; keywords: string[] }[] =
+      [];
+    this.lessonsData.units.forEach((u) => {
+      u.fullQuiz?.partC?.forEach((item) => {
+        item.subQuestions.forEach((sq) => {
+          const keywords = this.gameFx.extractKeywords(sq.sampleAnswer, 4);
+          if (keywords.length >= 2) {
+            pool.push({
+              context: item.contextText,
+              label: sq.label,
+              sampleAnswer: sq.sampleAnswer,
+              keywords,
+            });
+          }
+        });
+      });
+    });
+    return pool;
+  }
+
+  // ── Game: Fill in the Blank (real dialogue lines) ──
+  // unitId ให้ไว้เมื่อเล่นจากขั้นตอนบทเรียน (roadmap) เพื่อจำกัดประโยคเฉพาะหน่วยนั้น
+  initFillBlankGame(unitId?: number): void {
+    this.activeGameType = 'fill-blank';
+    this.roadmapGameUnitId = unitId ?? null;
+    this.fb_pool = this.gameFx.shuffleArray(this.buildFillBlankPool(unitId)).slice(0, this.fb_roundSize);
+    this.fb_index = 0;
+    this.fb_score = 0;
+    this.fb_finished = false;
+    this.setupFillBlankRound();
+  }
+
+  setupFillBlankRound(): void {
+    this.fb_input = '';
+    this.fb_feedback = '';
+  }
+
+  get fbCurrentItem(): { blanked: string; answer: string; full: string } | null {
+    return this.fb_pool[this.fb_index] || null;
+  }
+
+  checkFillBlankAnswer(): void {
+    const item = this.fbCurrentItem;
+    if (!item || this.fb_feedback !== '' || !this.fb_input.trim()) return;
+    const correct = this.gameFx.normalizeAnswer(this.fb_input) === this.gameFx.normalizeAnswer(item.answer);
+    this.fb_feedback = correct ? 'correct' : 'wrong';
+    if (correct) this.fb_score++;
+    setTimeout(() => this.nextFillBlankRound(), 1000);
+  }
+
+  nextFillBlankRound(): void {
+    if (this.fb_index < this.fb_pool.length - 1) {
+      this.fb_index++;
+      this.setupFillBlankRound();
+    } else {
+      this.finishFillBlankGame();
+    }
+  }
+
+  finishFillBlankGame(): void {
+    this.fb_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.fb_score / this.fb_pool.length) * 100);
+      const key = this.roadmapGameUnitId
+        ? `game_fillblank_${this.session.currentUser.id}_unit${this.roadmapGameUnitId}`
+        : `game_fillblank_${this.session.currentUser.id}`;
+      localStorage.setItem(key, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(15, 'Fill in the Blank Game', Math.round((this.fb_score / this.fb_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Vocabulary Typing Sprint ──
+  initSprintGame(): void {
+    this.activeGameType = 'sprint';
+    this.sprint_queue = this.gameFx.shuffleArray(this.gameVocabPool);
+    this.sprint_index = 0;
+    this.sprint_input = '';
+    this.sprint_score = 0;
+    this.sprint_combo = 0;
+    this.sprint_bestCombo = 0;
+    this.sprint_lastResult = '';
+    this.sprint_timeLeft = 45;
+    this.sprint_finished = false;
+    if (this.sprint_timerInterval) clearInterval(this.sprint_timerInterval);
+    this.sprint_timerInterval = setInterval(() => {
+      this.sprint_timeLeft--;
+      if (this.sprint_timeLeft <= 0) {
+        this.finishSprintGame();
+      }
+    }, 1000);
+  }
+
+  get sprintCurrentWord(): { word: string; meaning: string } | null {
+    if (this.sprint_queue.length === 0) return null;
+    return this.sprint_queue[this.sprint_index % this.sprint_queue.length];
+  }
+
+  submitSprintAnswer(): void {
+    const word = this.sprintCurrentWord;
+    if (!word || this.sprint_finished || !this.sprint_input.trim()) return;
+    const correct = this.gameFx.normalizeAnswer(this.sprint_input) === this.gameFx.normalizeAnswer(word.word);
+    if (correct) {
+      this.sprint_score++;
+      this.sprint_combo++;
+      this.sprint_bestCombo = Math.max(this.sprint_bestCombo, this.sprint_combo);
+      this.sprint_lastResult = 'correct';
+    } else {
+      this.sprint_combo = 0;
+      this.sprint_lastResult = 'wrong';
+    }
+    this.sprint_input = '';
+    this.sprint_index++;
+  }
+
+  finishSprintGame(): void {
+    if (this.sprint_timerInterval) {
+      clearInterval(this.sprint_timerInterval);
+      this.sprint_timerInterval = null;
+    }
+    this.sprint_finished = true;
+    if (this.session.currentUser) {
+      const bestKey = `game_sprint_best_${this.session.currentUser.id}`;
+      const prevBest = parseInt(localStorage.getItem(bestKey) || '0', 10);
+      if (this.sprint_score > prevBest) {
+        localStorage.setItem(bestKey, this.sprint_score.toString());
+      }
+    }
+    this.gameFx.awardGameXp(20, 'Typing Sprint', this.sprint_score);
+    this.progress.loadProgressHistory();
+  }
+
+  exitSprintGame(): void {
+    if (this.sprint_timerInterval) {
+      clearInterval(this.sprint_timerInterval);
+      this.sprint_timerInterval = null;
+    }
+    this.activeGameType = null;
+  }
+
+  // ── Game: Spot & Fix the Typo ──
+  initTypoFixGame(): void {
+    this.activeGameType = 'typo-fix';
+    this.tf_pool = this.gameFx.shuffleArray(this.typoFixBank).slice(0, this.tf_roundSize);
+    this.tf_index = 0;
+    this.tf_score = 0;
+    this.tf_finished = false;
+    this.setupTypoFixRound();
+  }
+
+  setupTypoFixRound(): void {
+    this.tf_input = '';
+    this.tf_feedback = '';
+  }
+
+  get tfCurrentItem(): { wrong: string; correct: string } | null {
+    return this.tf_pool[this.tf_index] || null;
+  }
+
+  checkTypoFixAnswer(): void {
+    const item = this.tfCurrentItem;
+    if (!item || this.tf_feedback !== '' || !this.tf_input.trim()) return;
+    const correct = this.gameFx.normalizeSentence(this.tf_input) === this.gameFx.normalizeSentence(item.correct);
+    this.tf_feedback = correct ? 'correct' : 'wrong';
+    if (correct) this.tf_score++;
+    setTimeout(() => this.nextTypoFixRound(), 1400);
+  }
+
+  nextTypoFixRound(): void {
+    if (this.tf_index < this.tf_pool.length - 1) {
+      this.tf_index++;
+      this.setupTypoFixRound();
+    } else {
+      this.finishTypoFixGame();
+    }
+  }
+
+  finishTypoFixGame(): void {
+    this.tf_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.tf_score / this.tf_pool.length) * 100);
+      localStorage.setItem(`game_typofix_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(20, 'Spot & Fix the Typo', Math.round((this.tf_score / this.tf_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Word Riddle (progressive letter reveal) ──
+  initWordRiddleGame(): void {
+    this.activeGameType = 'word-riddle';
+    this.wr_pool = this.gameFx.shuffleArray(this.gameVocabPool).slice(0, this.wr_roundSize);
+    this.wr_index = 0;
+    this.wr_score = 0;
+    this.wr_finished = false;
+    this.setupWordRiddleRound();
+  }
+
+  setupWordRiddleRound(): void {
+    this.wr_input = '';
+    this.wr_wrongAttempts = 0;
+    this.wr_feedback = '';
+  }
+
+  get wrCurrentWord(): { word: string; meaning: string } | null {
+    return this.wr_pool[this.wr_index] || null;
+  }
+
+  get wrMaskedWord(): string {
+    const word = this.wrCurrentWord;
+    if (!word) return '';
+    return word.word
+      .split('')
+      .map((ch, idx) => (ch === ' ' ? ' ' : idx < this.wr_wrongAttempts ? ch : '_'))
+      .join(' ');
+  }
+
+  checkWordRiddleAnswer(): void {
+    const word = this.wrCurrentWord;
+    if (!word || this.wr_feedback !== '' || !this.wr_input.trim()) return;
+    const correct = this.gameFx.normalizeAnswer(this.wr_input) === this.gameFx.normalizeAnswer(word.word);
+    if (correct) {
+      this.wr_feedback = 'correct';
+      this.wr_score++;
+      setTimeout(() => this.nextWordRiddleRound(), 800);
+    } else {
+      this.wr_wrongAttempts++;
+      if (this.wr_wrongAttempts >= this.wr_maxAttempts) {
+        this.wr_feedback = 'revealed';
+        setTimeout(() => this.nextWordRiddleRound(), 1700);
+      } else {
+        this.wr_feedback = 'wrong';
+        setTimeout(() => {
+          this.wr_feedback = '';
+          this.wr_input = '';
+        }, 700);
+      }
+    }
+  }
+
+  nextWordRiddleRound(): void {
+    if (this.wr_index < this.wr_pool.length - 1) {
+      this.wr_index++;
+      this.setupWordRiddleRound();
+    } else {
+      this.finishWordRiddleGame();
+    }
+  }
+
+  finishWordRiddleGame(): void {
+    this.wr_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.wr_score / this.wr_pool.length) * 100);
+      localStorage.setItem(`game_wordriddle_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(15, 'Word Riddle', Math.round((this.wr_score / this.wr_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Scrambled Sentence → Typed Reorder ──
+  initSentenceReorderGame(): void {
+    this.activeGameType = 'sentence-reorder';
+    this.ss_pool = this.gameFx.shuffleArray(this.buildDialogueSentencePool()).slice(
+      0,
+      this.ss_roundSize,
+    );
+    this.ss_index = 0;
+    this.ss_score = 0;
+    this.ss_finished = false;
+    this.setupSentenceReorderRound();
+  }
+
+  setupSentenceReorderRound(): void {
+    this.ss_input = '';
+    this.ss_feedback = '';
+    const sentence = this.ss_pool[this.ss_index] || '';
+    this.ss_wordBank = this.gameFx.shuffleArray(sentence.split(/\s+/));
+  }
+
+  get ssCurrentSentence(): string {
+    return this.ss_pool[this.ss_index] || '';
+  }
+
+  checkSentenceReorderAnswer(): void {
+    if (this.ss_feedback !== '' || !this.ss_input.trim()) return;
+    const target = this.gameFx.normalizeSentence(this.ssCurrentSentence).split(' ');
+    const typed = this.gameFx.normalizeSentence(this.ss_input).split(' ');
+    const correct = target.length === typed.length && target.every((w, i) => w === typed[i]);
+    this.ss_feedback = correct ? 'correct' : 'wrong';
+    if (correct) this.ss_score++;
+    setTimeout(() => this.nextSentenceReorderRound(), 1300);
+  }
+
+  nextSentenceReorderRound(): void {
+    if (this.ss_index < this.ss_pool.length - 1) {
+      this.ss_index++;
+      this.setupSentenceReorderRound();
+    } else {
+      this.finishSentenceReorderGame();
+    }
+  }
+
+  finishSentenceReorderGame(): void {
+    this.ss_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.ss_score / this.ss_pool.length) * 100);
+      localStorage.setItem(`game_sentencereorder_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(20, 'Sentence Reorder', Math.round((this.ss_score / this.ss_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Open Dialogue Reply ──
+  initOpenReplyGame(): void {
+    this.activeGameType = 'open-reply';
+    this.odr_pool = this.gameFx.shuffleArray(this.buildOpenReplyPool()).slice(0, this.odr_roundSize);
+    this.odr_index = 0;
+    this.odr_score = 0;
+    this.odr_finished = false;
+    this.setupOpenReplyRound();
+  }
+
+  setupOpenReplyRound(): void {
+    this.odr_input = '';
+    this.odr_submitted = false;
+    this.odr_matchedKeywords = [];
+  }
+
+  get odrCurrentItem(): {
+    context: string;
+    label: string;
+    sampleAnswer: string;
+    keywords: string[];
+  } | null {
+    return this.odr_pool[this.odr_index] || null;
+  }
+
+  submitOpenReplyAnswer(): void {
+    const item = this.odrCurrentItem;
+    if (!item || this.odr_submitted || !this.odr_input.trim()) return;
+    const normalized = this.gameFx.normalizeAnswer(this.odr_input);
+    this.odr_matchedKeywords = item.keywords.filter((k) => normalized.includes(k.toLowerCase()));
+    this.odr_submitted = true;
+    if (this.odr_matchedKeywords.length / item.keywords.length >= 0.5) this.odr_score++;
+  }
+
+  nextOpenReplyRound(): void {
+    if (this.odr_index < this.odr_pool.length - 1) {
+      this.odr_index++;
+      this.setupOpenReplyRound();
+    } else {
+      this.finishOpenReplyGame();
+    }
+  }
+
+  finishOpenReplyGame(): void {
+    this.odr_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.odr_score / this.odr_pool.length) * 100);
+      localStorage.setItem(`game_openreply_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(20, 'Open Dialogue Reply', Math.round((this.odr_score / this.odr_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Scenario Sentence Construction ──
+  initScenarioGame(): void {
+    this.activeGameType = 'scenario';
+    this.scn_pool = this.gameFx.shuffleArray(this.scenarioBank).slice(0, this.scn_roundSize);
+    this.scn_index = 0;
+    this.scn_score = 0;
+    this.scn_finished = false;
+    this.setupScenarioRound();
+  }
+
+  setupScenarioRound(): void {
+    this.scn_input = '';
+    this.scn_submitted = false;
+    this.scn_matchedKeywords = [];
+  }
+
+  get scnCurrentItem(): { situationEn: string; situationTh: string; keywords: string[]; sampleAnswer: string } | null {
+    return this.scn_pool[this.scn_index] || null;
+  }
+
+  submitScenarioAnswer(): void {
+    const item = this.scnCurrentItem;
+    if (!item || this.scn_submitted || !this.scn_input.trim()) return;
+    const normalized = this.gameFx.normalizeAnswer(this.scn_input);
+    this.scn_matchedKeywords = item.keywords.filter((k) => normalized.includes(k.toLowerCase()));
+    this.scn_submitted = true;
+    if (this.scn_matchedKeywords.length / item.keywords.length >= 0.5) this.scn_score++;
+  }
+
+  nextScenarioRound(): void {
+    if (this.scn_index < this.scn_pool.length - 1) {
+      this.scn_index++;
+      this.setupScenarioRound();
+    } else {
+      this.finishScenarioGame();
+    }
+  }
+
+  finishScenarioGame(): void {
+    this.scn_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.scn_score / this.scn_pool.length) * 100);
+      localStorage.setItem(`game_scenario_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(25, 'Scenario Construction', Math.round((this.scn_score / this.scn_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Email Reply Capstone ──
+  initEmailCapstoneGame(): void {
+    this.activeGameType = 'email-capstone';
+    this.em_pool = this.gameFx.shuffleArray(this.emailBank).slice(0, this.em_roundSize);
+    this.em_index = 0;
+    this.em_score = 0;
+    this.em_finished = false;
+    this.setupEmailCapstoneRound();
+  }
+
+  setupEmailCapstoneRound(): void {
+    this.em_input = '';
+    this.em_submitted = false;
+    this.em_matchedKeywords = [];
+    this.em_wordCountOk = false;
+  }
+
+  get emCurrentItem(): {
+    subject: string;
+    body: string;
+    keywords: string[];
+    minWords: number;
+    sampleAnswer: string;
+  } | null {
+    return this.em_pool[this.em_index] || null;
+  }
+
+  get emWordCount(): number {
+    return (this.em_input.trim().match(/\S+/g) || []).length;
+  }
+
+  submitEmailCapstoneAnswer(): void {
+    const item = this.emCurrentItem;
+    if (!item || this.em_submitted || !this.em_input.trim()) return;
+    const normalized = this.gameFx.normalizeAnswer(this.em_input);
+    this.em_matchedKeywords = item.keywords.filter((k) => normalized.includes(k.toLowerCase()));
+    this.em_wordCountOk = this.emWordCount >= item.minWords;
+    this.em_submitted = true;
+    const keywordScore = this.em_matchedKeywords.length / item.keywords.length;
+    if (keywordScore >= 0.5 && this.em_wordCountOk) this.em_score++;
+  }
+
+  nextEmailCapstoneRound(): void {
+    if (this.em_index < this.em_pool.length - 1) {
+      this.em_index++;
+      this.setupEmailCapstoneRound();
+    } else {
+      this.finishEmailCapstoneGame();
+    }
+  }
+
+  finishEmailCapstoneGame(): void {
+    this.em_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.em_score / this.em_pool.length) * 100);
+      localStorage.setItem(`game_emailcapstone_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(30, 'Email Reply Capstone', Math.round((this.em_score / this.em_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Memory Card Match ──
+  initMemoryMatchGame(): void {
+    this.activeGameType = 'match-pair';
+    this.mm_round = 1;
+    this.mm_score = 0;
+    this.mm_finished = false;
+    this.startMemoryMatchRound();
+  }
+
+  startMemoryMatchRound(): void {
+    this.mm_selectedCards = [];
+    const pool = this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0].vocabularies;
+    const shuffledPool = this.gameFx.shuffleArray([...pool]);
+    const roundVocab = shuffledPool.slice(0, 4);
+    
+    const cards: { id: number; text: string; type: 'en' | 'th'; matchId: string; isFlipped: boolean; isMatched: boolean }[] = [];
+    let idCounter = 1;
+    roundVocab.forEach(v => {
+      cards.push({
+        id: idCounter++,
+        text: v.word,
+        type: 'en',
+        matchId: v.word,
+        isFlipped: false,
+        isMatched: false
+      });
+      cards.push({
+        id: idCounter++,
+        text: v.meaning,
+        type: 'th',
+        matchId: v.word,
+        isFlipped: false,
+        isMatched: false
+      });
+    });
+    
+    this.mm_cards = this.gameFx.shuffleArray(cards);
+  }
+
+  selectMemoryMatchCard(index: number): void {
+    const card = this.mm_cards[index];
+    if (this.mm_finished || card.isFlipped || card.isMatched || this.mm_selectedCards.length >= 2) return;
+    
+    card.isFlipped = true;
+    this.mm_selectedCards.push(index);
+    
+    if (this.mm_selectedCards.length === 2) {
+      setTimeout(() => this.checkMemoryMatch(), 1000);
+    }
+  }
+
+  checkMemoryMatch(): void {
+    const [idx1, idx2] = this.mm_selectedCards;
+    const card1 = this.mm_cards[idx1];
+    const card2 = this.mm_cards[idx2];
+    
+    if (card1.matchId === card2.matchId && card1.type !== card2.type) {
+      card1.isMatched = true;
+      card2.isMatched = true;
+      this.mm_score++;
+      
+      const allMatched = this.mm_cards.every(c => c.isMatched);
+      if (allMatched) {
+        if (this.mm_round < this.mm_maxRounds) {
+          this.mm_round++;
+          this.startMemoryMatchRound();
+        } else {
+          this.finishMemoryMatchGame();
+        }
+      }
+    } else {
+      card1.isFlipped = false;
+      card2.isFlipped = false;
+    }
+    this.mm_selectedCards = [];
+  }
+
+  finishMemoryMatchGame(): void {
+    this.mm_finished = true;
+    if (this.session.currentUser) {
+      localStorage.setItem(`game_memorymatch_${this.session.currentUser.id}`, '100');
+    }
+    this.gameFx.awardGameXp(15, 'Memory Card Match', 100);
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Dictation Master ──
+  initDictationGame(): void {
+    this.activeGameType = 'dictation';
+    const pool = this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0].vocabularies;
+    this.dc_pool = this.gameFx.shuffleArray([...pool]).slice(0, 5);
+    this.dc_index = 0;
+    this.dc_score = 0;
+    this.dc_input = '';
+    this.dc_showFeedback = false;
+    this.dc_isCorrect = false;
+    this.dc_finished = false;
+    setTimeout(() => this.playDictationWord(), 500);
+  }
+
+  playDictationWord(): void {
+    const current = this.dc_pool[this.dc_index];
+    if (current) {
+      this.gameFx.speakText(current.word);
+    }
+  }
+
+  submitDictationAnswer(): void {
+    if (this.dc_finished || this.dc_showFeedback || !this.dc_input.trim()) return;
+    const current = this.dc_pool[this.dc_index];
+    this.dc_isCorrect = this.gameFx.normalizeAnswer(this.dc_input) === this.gameFx.normalizeAnswer(current.word);
+    if (this.dc_isCorrect) {
+      this.dc_score++;
+    }
+    this.dc_showFeedback = true;
+  }
+
+  nextDictationRound(): void {
+    this.dc_showFeedback = false;
+    this.dc_input = '';
+    if (this.dc_index < this.dc_pool.length - 1) {
+      this.dc_index++;
+      setTimeout(() => this.playDictationWord(), 300);
+    } else {
+      this.finishDictationGame();
+    }
+  }
+
+  finishDictationGame(): void {
+    this.dc_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.dc_score / this.dc_pool.length) * 100);
+      localStorage.setItem(`game_dictation_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(20, 'Dictation Master', Math.round((this.dc_score / this.dc_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: POS Sorter ──
+  initPosSorterGame(): void {
+    this.activeGameType = 'pos-sorter';
+    const unitVocab = this.lessonsData.currentUnit?.vocabularies || [];
+    let pool = unitVocab.filter(v => v.pos && ['n.', 'v.', 'adj.', 'adv.', 'noun', 'verb', 'adjective', 'adverb'].some(p => v.pos!.toLowerCase().includes(p)));
+    
+    if (pool.length < 5) {
+      pool = [
+        { word: 'colleague', pos: 'n.', meaning: 'เพื่อนร่วมงาน' },
+        { word: 'collaborate', pos: 'v.', meaning: 'ร่วมมือ' },
+        { word: 'deadline', pos: 'n.', meaning: 'กำหนดส่ง' },
+        { word: 'strategic', pos: 'adj.', meaning: 'เชิงกลยุทธ์' },
+        { word: 'efficiently', pos: 'adv.', meaning: 'อย่างมีประสิทธิภาพ' },
+        { word: 'negotiate', pos: 'v.', meaning: 'เจรจาต่อรอง' },
+        { word: 'responsibility', pos: 'n.', meaning: 'ความรับผิดชอบ' },
+        { word: 'flexible', pos: 'adj.', meaning: 'ยืดหยุ่น' },
+        { word: 'innovate', pos: 'v.', meaning: 'สร้างนวัตกรรม' },
+        { word: 'successfully', pos: 'adv.', meaning: 'อย่างสำเร็จ' }
+      ];
+    }
+    
+    this.pos_pool = this.gameFx.shuffleArray([...pool]).slice(0, 5).map(item => {
+      let cleanPos = 'noun';
+      const posStr = item.pos ? item.pos.toLowerCase() : '';
+      if (posStr.includes('v') || posStr.includes('verb')) cleanPos = 'verb';
+      else if (posStr.includes('adj') || posStr.includes('adjective')) cleanPos = 'adjective';
+      else if (posStr.includes('adv') || posStr.includes('adverb')) cleanPos = 'adverb';
+      return {
+        word: item.word,
+        pos: cleanPos,
+        meaning: item.meaning
+      };
+    });
+    
+    this.pos_index = 0;
+    this.pos_score = 0;
+    this.pos_showFeedback = false;
+    this.pos_selected = '';
+    this.pos_finished = false;
+  }
+
+  submitPosAnswer(choice: string): void {
+    if (this.pos_finished || this.pos_showFeedback) return;
+    this.pos_selected = choice;
+    const current = this.pos_pool[this.pos_index];
+    if (choice === current.pos) {
+      this.pos_score++;
+    }
+    this.pos_showFeedback = true;
+  }
+
+  nextPosRound(): void {
+    this.pos_showFeedback = false;
+    this.pos_selected = '';
+    if (this.pos_index < this.pos_pool.length - 1) {
+      this.pos_index++;
+    } else {
+      this.finishPosSorterGame();
+    }
+  }
+
+  finishPosSorterGame(): void {
+    this.pos_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.pos_score / this.pos_pool.length) * 100);
+      localStorage.setItem(`game_possorter_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(15, 'POS Sorter', Math.round((this.pos_score / this.pos_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Synonym Matcher ──
+  initSynonymMatchGame(): void {
+    this.activeGameType = 'synonym-match';
+    const synonymBank: { [key: string]: string } = {
+      colleague: 'coworker',
+      collaborate: 'cooperate',
+      manage: 'direct',
+      deadline: 'due date',
+      responsibility: 'duty',
+      overtime: 'extra hours',
+      promote: 'advance',
+      career: 'profession',
+      strategy: 'plan',
+      feedback: 'evaluation',
+      agenda: 'schedule',
+      negotiate: 'bargain',
+      discuss: 'talk over',
+      presentation: 'pitch',
+      project: 'assignment',
+      task: 'job',
+      revenue: 'income',
+      assistance: 'help',
+      innovative: 'creative',
+      improve: 'enhance',
+      terminate: 'end',
+      commence: 'start',
+      object: 'goal',
+      resolve: 'solve'
+    };
+    
+    const pool = this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0].vocabularies;
+    let matchingWords = pool.filter(v => synonymBank[v.word.toLowerCase()]);
+    
+    if (matchingWords.length < 5) {
+      matchingWords = [
+        { word: 'colleague', meaning: 'เพื่อนร่วมงาน' },
+        { word: 'collaborate', meaning: 'ร่วมมือ' },
+        { word: 'manage', meaning: 'จัดการ' },
+        { word: 'deadline', meaning: 'กำหนดส่ง' },
+        { word: 'strategy', meaning: 'กลยุทธ์' },
+        { word: 'negotiate', meaning: 'เจรจา' },
+        { word: 'feedback', meaning: 'ข้อเสนอแนะ' },
+        { word: 'agenda', meaning: 'วาระการประชุม' }
+      ];
+    }
+    
+    const chosenWords = this.gameFx.shuffleArray([...matchingWords]).slice(0, 5);
+    
+    this.sm_pool = chosenWords.map(item => {
+      const targetWord = item.word.toLowerCase();
+      const synonym = synonymBank[targetWord] || 'cooperate';
+      const distractors = Object.values(synonymBank)
+        .filter(s => s !== synonym)
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 3);
+      const options = this.gameFx.shuffleArray([synonym, ...distractors]);
+      return {
+        word: item.word,
+        synonym: synonym,
+        options: options
+      };
+    });
+    
+    this.sm_index = 0;
+    this.sm_score = 0;
+    this.sm_selectedOption = '';
+    this.sm_showFeedback = false;
+    this.sm_finished = false;
+  }
+
+  submitSynonymAnswer(option: string): void {
+    if (this.sm_finished || this.sm_showFeedback) return;
+    this.sm_selectedOption = option;
+    const current = this.sm_pool[this.sm_index];
+    if (option === current.synonym) {
+      this.sm_score++;
+    }
+    this.sm_showFeedback = true;
+  }
+
+  nextSynonymRound(): void {
+    this.sm_showFeedback = false;
+    this.sm_selectedOption = '';
+    if (this.sm_index < this.sm_pool.length - 1) {
+      this.sm_index++;
+    } else {
+      this.finishSynonymMatchGame();
+    }
+  }
+
+  finishSynonymMatchGame(): void {
+    this.sm_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.sm_score / this.sm_pool.length) * 100);
+      localStorage.setItem(`game_synonymmatch_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(15, 'Synonym Matcher', Math.round((this.sm_score / this.sm_pool.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Save the Mascot ──
+  initSaveMascotGame(): void {
+    this.activeGameType = 'save-mascot';
+    const pool = this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0].vocabularies;
+    const filterPool = pool.filter(v => !v.word.includes(' ') && !v.word.includes('-'));
+    const cleanPool = filterPool.length >= 3 ? filterPool : pool;
+    
+    this.hm_roundWords = this.gameFx.shuffleArray([...cleanPool]).slice(0, 3);
+    this.hm_index = 0;
+    this.hm_score = 0;
+    this.hm_finished = false;
+    this.startMascotRound();
+  }
+
+  startMascotRound(): void {
+    this.hm_wordObj = this.hm_roundWords[this.hm_index];
+    this.hm_lives = 5;
+    this.hm_guessedLetters = new Set<string>();
+    
+    if (this.hm_wordObj) {
+      this.hm_wordLetters = this.hm_wordObj.word.toUpperCase().split('');
+    }
+  }
+
+  guessMascotLetter(letter: string): void {
+    if (this.hm_finished || this.hm_lives <= 0 || this.hm_guessedLetters.has(letter) || this.hm_isGuessed) return;
+    
+    this.hm_guessedLetters.add(letter);
+    const isCorrect = this.hm_wordLetters.includes(letter);
+    if (!isCorrect) {
+      this.hm_lives--;
+      if (this.hm_lives <= 0) {
+        setTimeout(() => this.nextMascotRound(), 1500);
+      }
+    } else {
+      if (this.hm_isGuessed) {
+        this.hm_score++;
+        setTimeout(() => this.nextMascotRound(), 1500);
+      }
+    }
+  }
+
+  get hm_isGuessed(): boolean {
+    if (!this.hm_wordLetters.length) return false;
+    return this.hm_wordLetters.every((char: string) => this.hm_guessedLetters.has(char));
+  }
+
+  get hm_displayWord(): string {
+    if (!this.hm_wordObj) return '';
+    return this.hm_wordLetters
+      .map((char: string) => (this.hm_guessedLetters.has(char) ? char : '_'))
+      .join(' ');
+  }
+
+  nextMascotRound(): void {
+    if (this.hm_index < this.hm_roundWords.length - 1) {
+      this.hm_index++;
+      this.startMascotRound();
+    } else {
+      this.finishSaveMascotGame();
+    }
+  }
+
+  finishSaveMascotGame(): void {
+    this.hm_finished = true;
+    if (this.session.currentUser) {
+      const scorePct = Math.round((this.hm_score / this.hm_roundWords.length) * 100);
+      localStorage.setItem(`game_savemascot_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(25, 'Save the Mascot', Math.round((this.hm_score / this.hm_roundWords.length) * 100));
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game: Word Search (Drag to Find) ──
+  initWordSearchGame(): void {
+    this.activeGameType = 'word-search';
+    this.startNewWordSearchRound();
+  }
+
+  startNewWordSearchRound(): void {
+    this.ws_selectedCells = [];
+    this.ws_isDragging = false;
+    this.ws_startCell = null;
+    this.ws_wordCellMap = {};
+    this.ws_score = 0;
+    this.ws_finished = false;
+    this.ws_invalidFlash = false;
+
+    const fallbackWords = [
+      { word: 'welcome', meaning: 'ยินดีต้อนรับ' },
+      { word: 'schedule', meaning: 'ตารางเวลา' },
+      { word: 'teacher', meaning: 'ครู' },
+      { word: 'student', meaning: 'นักเรียน' },
+      { word: 'lesson', meaning: 'บทเรียน' },
+      { word: 'meeting', meaning: 'การประชุม' },
+      { word: 'colleague', meaning: 'เพื่อนร่วมงาน' },
+      { word: 'feedback', meaning: 'ข้อเสนอแนะ' },
+      { word: 'question', meaning: 'คำถาม' },
+      { word: 'answer', meaning: 'คำตอบ' },
+    ];
+
+    const source = this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0]?.vocabularies || [];
+    const seen = new Set<string>();
+    const candidatePool = source
+      .filter((v) => /^[A-Za-z]+$/.test(v.word) && v.word.length >= 3 && v.word.length <= 10)
+      .map((v) => ({ word: v.word, meaning: v.meaning }))
+      .filter((v) => {
+        const key = v.word.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+    if (candidatePool.length < 6) {
+      fallbackWords.forEach((fw) => {
+        const key = fw.word.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          candidatePool.push(fw);
+        }
+      });
+    }
+
+    const shuffled = this.gameFx.shuffleArray(candidatePool);
+    const targetCount = 8;
+    const directions = [
+      { dr: 0, dc: 1 },
+      { dr: 1, dc: 0 },
+      { dr: 1, dc: 1 },
+      { dr: 1, dc: -1 },
+    ];
+    const grid: string[][] = Array.from({ length: this.ws_gridSize }, () => Array(this.ws_gridSize).fill(''));
+    const placed: { word: string; meaning: string; cells: { row: number; col: number }[] }[] = [];
+
+    for (const candidate of shuffled) {
+      if (placed.length >= targetCount) break;
+      const letters = candidate.word.toUpperCase().split('');
+      if (letters.length > this.ws_gridSize) continue;
+
+      let cells: { row: number; col: number }[] | null = null;
+      for (let attempt = 0; attempt < 30 && !cells; attempt++) {
+        const dir = directions[Math.floor(Math.random() * directions.length)];
+        cells = this.ws_tryPlaceWord(grid, letters, dir);
+      }
+      if (cells) {
+        placed.push({ word: candidate.word.toUpperCase(), meaning: candidate.meaning, cells });
+      }
+    }
+
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let r = 0; r < this.ws_gridSize; r++) {
+      for (let c = 0; c < this.ws_gridSize; c++) {
+        if (!grid[r][c]) grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
+      }
+    }
+
+    this.ws_grid = grid;
+    this.ws_words = placed.map((p, idx) => ({
+      word: p.word,
+      meaning: p.meaning,
+      found: false,
+      colorIndex: idx % this.ws_colorCount,
+    }));
+  }
+
+  private ws_randomStart(dir: { dr: number; dc: number }, len: number): { row: number; col: number } | null {
+    const size = this.ws_gridSize;
+    const rowMin = 0;
+    const rowMax = dir.dr === 1 ? size - len : size - 1;
+    const colMin = dir.dc === -1 ? len - 1 : 0;
+    const colMax = dir.dc === 1 ? size - len : size - 1;
+    if (rowMax < rowMin || colMax < colMin) return null;
+    const row = rowMin + Math.floor(Math.random() * (rowMax - rowMin + 1));
+    const col = colMin + Math.floor(Math.random() * (colMax - colMin + 1));
+    return { row, col };
+  }
+
+  private ws_tryPlaceWord(
+    grid: string[][],
+    letters: string[],
+    dir: { dr: number; dc: number },
+  ): { row: number; col: number }[] | null {
+    const start = this.ws_randomStart(dir, letters.length);
+    if (!start) return null;
+
+    const cells: { row: number; col: number }[] = [];
+    for (let i = 0; i < letters.length; i++) {
+      const row = start.row + dir.dr * i;
+      const col = start.col + dir.dc * i;
+      const existing = grid[row][col];
+      if (existing && existing !== letters[i]) return null;
+      cells.push({ row, col });
+    }
+    cells.forEach((cell, i) => {
+      grid[cell.row][cell.col] = letters[i];
+    });
+    return cells;
+  }
+
+  getWsCellClass(row: number, col: number): string {
+    const found = this.ws_wordCellMap[`${row}-${col}`];
+    if (found) return `ws-cell ws-found ws-color-${found.colorIndex}`;
+    if (this.ws_selectedCells.some((c) => c.row === row && c.col === col)) {
+      return this.ws_invalidFlash ? 'ws-cell ws-selected ws-invalid' : 'ws-cell ws-selected';
+    }
+    return 'ws-cell';
+  }
+
+  startWordSelect(row: number, col: number, event: PointerEvent): void {
+    if (this.ws_finished) return;
+    const target = event.target as Element;
+    if (target && target.hasPointerCapture && target.hasPointerCapture(event.pointerId)) {
+      target.releasePointerCapture(event.pointerId);
+    }
+    this.ws_isDragging = true;
+    this.ws_startCell = { row, col };
+    this.ws_selectedCells = [{ row, col }];
+  }
+
+  continueWordSelect(row: number, col: number): void {
+    if (!this.ws_isDragging || !this.ws_startCell) return;
+    this.ws_selectedCells = this.ws_computeSelectionLine(this.ws_startCell, { row, col });
+  }
+
+  // NOTE: no longer @HostListener here (services can't use it) — StudentGamesComponent
+  // adds its own @HostListener('document:pointerup') that calls this method.
+  onWordSearchPointerUp(): void {
+    if (!this.ws_isDragging) return;
+    this.ws_isDragging = false;
+    this.ws_startCell = null;
+
+    if (this.ws_selectedCells.length < 2) {
+      this.ws_selectedCells = [];
+      return;
+    }
+
+    const cells = this.ws_selectedCells;
+    const letters = cells.map((c) => this.ws_grid[c.row][c.col]).join('');
+    const reversed = letters.split('').reverse().join('');
+    const match = this.ws_words.find((w) => !w.found && (w.word === letters || w.word === reversed));
+
+    if (match) {
+      match.found = true;
+      cells.forEach((cell) => {
+        this.ws_wordCellMap[`${cell.row}-${cell.col}`] = { word: match.word, colorIndex: match.colorIndex };
+      });
+      this.ws_score++;
+      this.ws_selectedCells = [];
+      this.gameFx.playSoundEffect('success');
+      if (this.ws_words.every((w) => w.found)) {
+        setTimeout(() => this.finishWordSearchGame(), 400);
+      }
+    } else {
+      this.ws_invalidFlash = true;
+      this.gameFx.playSoundEffect('error');
+      setTimeout(() => {
+        this.ws_invalidFlash = false;
+        this.ws_selectedCells = [];
+      }, 350);
+    }
+  }
+
+  private ws_computeSelectionLine(
+    start: { row: number; col: number },
+    end: { row: number; col: number },
+  ): { row: number; col: number }[] {
+    const dRow = end.row - start.row;
+    const dCol = end.col - start.col;
+    if (dRow === 0 && dCol === 0) return [start];
+
+    const eightDirs = [
+      { dr: 0, dc: 1 },
+      { dr: 1, dc: 1 },
+      { dr: 1, dc: 0 },
+      { dr: 1, dc: -1 },
+      { dr: 0, dc: -1 },
+      { dr: -1, dc: -1 },
+      { dr: -1, dc: 0 },
+      { dr: -1, dc: 1 },
+    ];
+    const angle = Math.atan2(dRow, dCol);
+    const idx = (Math.round(angle / (Math.PI / 4)) + 8) % 8;
+    const dir = eightDirs[idx];
+    const steps = Math.max(Math.abs(dRow), Math.abs(dCol));
+
+    const cells: { row: number; col: number }[] = [];
+    for (let i = 0; i <= steps; i++) {
+      const row = start.row + dir.dr * i;
+      const col = start.col + dir.dc * i;
+      if (row < 0 || row >= this.ws_gridSize || col < 0 || col >= this.ws_gridSize) break;
+      cells.push({ row, col });
+    }
+    return cells;
+  }
+
+  finishWordSearchGame(): void {
+    this.ws_finished = true;
+    const scorePct = this.ws_words.length > 0 ? Math.round((this.ws_score / this.ws_words.length) * 100) : 0;
+    if (this.session.currentUser) {
+      localStorage.setItem(`game_wordsearch_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(20, 'Word Search Puzzle', scorePct);
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game 7: Drag & Drop Word Builder (เกมลากคำ) ──
+  initDragWordGame(): void {
+    this.activeGameType = 'drag-word';
+    this.dw_index = 0;
+    this.dw_score = 0;
+    this.dw_finished = false;
+    this.dw_showFeedback = false;
+    this.dw_draggedWord = null;
+
+    this.dw_questions = [
+      {
+        id: 1,
+        thaiHint: 'เราจำเป็นต้องจัดการประชุมด่วนกับลูกค้าในบ่ายวันนี้',
+        sentenceTemplate: 'We need to [slot0] an urgent [slot1] with the client this afternoon.',
+        slots: [
+          { placeholder: 'เลือกคำกริยา', targetWord: 'schedule', currentWord: null },
+          { placeholder: 'เลือกคำนาม', targetWord: 'meeting', currentWord: null }
+        ],
+        wordBank: this.gameFx.shuffleArray(['schedule', 'meeting', 'cancel', 'contract', 'feedback', 'deliver']),
+        explanation: 'ใช้ "schedule an urgent meeting" หมายถึง นัดหมายประชุมด่วน'
+      },
+      {
+        id: 2,
+        thaiHint: 'กรุณาส่งใบเสนอราคาให้ฝ่ายจัดซื้อภายในวันศุกร์นี้',
+        sentenceTemplate: 'Please send the [slot0] to the [slot1] department by Friday.',
+        slots: [
+          { placeholder: 'เลือกคำนาม 1', targetWord: 'quotation', currentWord: null },
+          { placeholder: 'เลือกคำนาม 2', targetWord: 'purchasing', currentWord: null }
+        ],
+        wordBank: this.gameFx.shuffleArray(['quotation', 'purchasing', 'proposal', 'accounting', 'strategy', 'refund']),
+        explanation: 'ใช้ "quotation" (ใบเสนอราคา) และ "purchasing department" (ฝ่ายจัดซื้อ)'
+      },
+      {
+        id: 3,
+        thaiHint: 'ผลิตภัณฑ์ใหม่ของเราได้รับการตอบรับในเชิงบวกจากตลาด',
+        sentenceTemplate: 'Our new [slot0] received [slot1] feedback from the market.',
+        slots: [
+          { placeholder: 'เลือกคำนาม', targetWord: 'product', currentWord: null },
+          { placeholder: 'เลือกคำคุณศัพท์', targetWord: 'positive', currentWord: null }
+        ],
+        wordBank: this.gameFx.shuffleArray(['product', 'positive', 'invoice', 'negative', 'report', 'budget']),
+        explanation: 'ใช้ "product" (ผลิตภัณฑ์) และ "positive feedback" (คำชม/ตอบรับในเชิงบวก)'
+      },
+      {
+        id: 4,
+        thaiHint: 'ผู้จัดการเสนอกลยุทธ์ใหม่เพื่อเพิ่มยอดขายของบริษัท',
+        sentenceTemplate: 'The manager proposed a new [slot0] to increase company [slot1].',
+        slots: [
+          { placeholder: 'เลือกคำนาม 1', targetWord: 'strategy', currentWord: null },
+          { placeholder: 'เลือกคำนาม 2', targetWord: 'sales', currentWord: null }
+        ],
+        wordBank: this.gameFx.shuffleArray(['strategy', 'sales', 'agenda', 'expenses', 'discount', 'timeline']),
+        explanation: 'ใช้ "strategy" (กลยุทธ์) และ "company sales" (ยอดขายของบริษัท)'
+      },
+      {
+        id: 5,
+        thaiHint: 'กรุณาตรวจสอบรายละเอียดก่อนอนุมัติงบประมาณโครงการ',
+        sentenceTemplate: 'Please check the details before approving the project [slot0].',
+        slots: [
+          { placeholder: 'เลือกคำนาม', targetWord: 'budget', currentWord: null }
+        ],
+        wordBank: this.gameFx.shuffleArray(['budget', 'deadline', 'partner', 'negotiation', 'vacancy', 'supplier']),
+        explanation: 'ใช้ "project budget" หมายถึง งบประมาณของโครงการ'
+      }
+    ];
+  }
+
+  onDwDragStart(event: DragEvent, word: string): void {
+    this.dw_draggedWord = word;
+    event.dataTransfer?.setData('text/plain', word);
+  }
+
+  onDwDragOver(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  onDwDrop(event: DragEvent, slotIndex: number): void {
+    event.preventDefault();
+    const word = event.dataTransfer?.getData('text/plain') || this.dw_draggedWord;
+    if (word) {
+      this.placeWordInSlot(word, slotIndex);
+    }
+    this.dw_draggedWord = null;
+  }
+
+  placeWordInSlot(word: string, slotIndex: number): void {
+    if (this.dw_showFeedback || this.dw_finished) return;
+    const currentQ = this.dw_questions[this.dw_index];
+    if (!currentQ) return;
+
+    currentQ.slots.forEach(s => {
+      if (s.currentWord === word) s.currentWord = null;
+    });
+
+    currentQ.slots[slotIndex].currentWord = word;
+    this.gameFx.playSoundEffect('click');
+  }
+
+  clearDwSlot(slotIndex: number): void {
+    if (this.dw_showFeedback || this.dw_finished) return;
+    const currentQ = this.dw_questions[this.dw_index];
+    if (currentQ && currentQ.slots[slotIndex]) {
+      currentQ.slots[slotIndex].currentWord = null;
+    }
+  }
+
+  quickPlaceWord(word: string): void {
+    if (this.dw_showFeedback || this.dw_finished) return;
+    const currentQ = this.dw_questions[this.dw_index];
+    if (!currentQ) return;
+
+    const existingSlot = currentQ.slots.find(s => s.currentWord === word);
+    if (existingSlot) {
+      existingSlot.currentWord = null;
+      return;
+    }
+
+    const emptySlot = currentQ.slots.find(s => !s.currentWord);
+    if (emptySlot) {
+      emptySlot.currentWord = word;
+      this.gameFx.playSoundEffect('click');
+    }
+  }
+
+  checkDragWordAnswer(): void {
+    const currentQ = this.dw_questions[this.dw_index];
+    if (!currentQ || this.dw_showFeedback) return;
+
+    const allCorrect = currentQ.slots.every(s => s.currentWord === s.targetWord);
+    this.dw_isCorrect = allCorrect;
+    this.dw_showFeedback = true;
+
+    if (allCorrect) {
+      this.dw_score++;
+      this.gameFx.playSoundEffect('success');
+    } else {
+      this.gameFx.playSoundEffect('error');
+    }
+  }
+
+  nextDragWordQuestion(): void {
+    this.dw_showFeedback = false;
+    if (this.dw_index < this.dw_questions.length - 1) {
+      this.dw_index++;
+    } else {
+      this.finishDragWordGame();
+    }
+  }
+
+  finishDragWordGame(): void {
+    this.dw_finished = true;
+    const scorePct = Math.round((this.dw_score / this.dw_questions.length) * 100);
+    if (this.session.currentUser) {
+      localStorage.setItem(`game_dragword_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(15, 'เกมลากคำ (Drag & Drop Word Builder)', scorePct);
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game 8: Sentence Converter (เกมคอนเวิด - แปลงรูปประโยค) ──
+  initConvertSentenceGame(): void {
+    this.activeGameType = 'convert-sentence';
+    this.cs_index = 0;
+    this.cs_score = 0;
+    this.cs_input = '';
+    this.cs_showHint = false;
+    this.cs_showFeedback = false;
+    this.cs_finished = false;
+
+    this.cs_questions = [
+      {
+        id: 1,
+        instruction: 'แปลงเป็น Past Simple Tense (เหตุการณ์ในอดีต)',
+        originalSentence: 'She sends the weekly sales report to the manager every Friday.',
+        hint: '💡 คำใบ้: ต้องเปลี่ยนกริยาแสดงการส่ง (send) ให้เป็นรูป Past Tense (ช่อง 2)',
+        correctAnswers: [
+          'She sent the weekly sales report to the manager every Friday.',
+          'She sent the weekly sales report to the manager.',
+          'She sent the weekly sales report to the manager last Friday.',
+          'She sent the weekly sales report to the manager'
+        ],
+        explanation: 'Past Simple ใช้กริยาช่อง 2: send -> sent'
+      },
+      {
+        id: 2,
+        instruction: 'แปลงเป็น Passive Voice (ประธานเป็นผู้ถูกกระทำ)',
+        originalSentence: 'The marketing team created a brilliant campaign.',
+        hint: '💡 คำใบ้: นำสิ่งที่ถูกกระทำ (A brilliant campaign) ขึ้นเป็นประธาน ตามด้วย was/were + V.3 + by...',
+        correctAnswers: [
+          'A brilliant campaign was created by the marketing team.',
+          'A brilliant campaign was created by the marketing team'
+        ],
+        explanation: 'A brilliant campaign เป็นเอกพจน์ในอดีต ใช้ was created by...'
+      },
+      {
+        id: 3,
+        instruction: 'แปลงเป็นประโยคปฏิเสธ (Negative Sentence)',
+        originalSentence: 'We have approved the project proposal.',
+        hint: '💡 คำใบ้: เติมคำปฏิเสธ (not) ต่อท้ายกริยาช่วย have',
+        correctAnswers: [
+          'We have not approved the project proposal.',
+          'We haven\'t approved the project proposal.',
+          'We have not approved the project proposal',
+          'We haven\'t approved the project proposal'
+        ],
+        explanation: 'Present Perfect ปฏิเสธใส่ not หลัง have -> have not approved'
+      },
+      {
+        id: 4,
+        instruction: 'แปลงเป็นประโยคคำถาม (Question Form)',
+        originalSentence: 'The client accepts our pricing terms.',
+        hint: '💡 คำใบ้: ขึ้นต้นประโยคด้วยกริยาช่วย (Does) สำหรับประธานเอกพจน์ แล้วเปลี่ยนกริยาหลักกลับเป็น V.inf',
+        correctAnswers: [
+          'Does the client accept our pricing terms?',
+          'Does the client accept our pricing terms'
+        ],
+        explanation: 'ประโยคคำถาม Present Simple ใช้ Does + Subject + V.inf'
+      },
+      {
+        id: 5,
+        instruction: 'แปลงเป็น Future Simple Tense (บอกอนาคตด้วย will)',
+        originalSentence: 'They launch the new product next month.',
+        hint: '💡 คำใบ้: แทรกกริยาช่วยบอกอนาคต (will) ไว้ข้างหน้ากริยาหลัก',
+        correctAnswers: [
+          'They will launch the new product next month.',
+          'They will launch the new product next month'
+        ],
+        explanation: 'Future Simple ใช้ will + V.inf (will launch)'
+      }
+    ];
+  }
+
+  toggleConvertHint(): void {
+    this.cs_showHint = !this.cs_showHint;
+  }
+
+  checkConvertSentenceAnswer(): void {
+    if (this.cs_showFeedback || !this.cs_input.trim()) return;
+    const currentQ = this.cs_questions[this.cs_index];
+    if (!currentQ) return;
+
+    const normalizedInput = this.cs_input.trim().toLowerCase().replace(/[.,?!]/g, '').replace(/\s+/g, ' ');
+    const isMatched = currentQ.correctAnswers.some(ans => {
+      const normAns = ans.trim().toLowerCase().replace(/[.,?!]/g, '').replace(/\s+/g, ' ');
+      return normAns === normalizedInput;
+    });
+
+    this.cs_isCorrect = isMatched;
+    this.cs_showFeedback = true;
+
+    if (isMatched) {
+      this.cs_score++;
+      this.gameFx.playSoundEffect('success');
+    } else {
+      this.gameFx.playSoundEffect('error');
+    }
+  }
+
+  nextConvertSentenceQuestion(): void {
+    this.cs_showFeedback = false;
+    this.cs_showHint = false;
+    this.cs_input = '';
+    if (this.cs_index < this.cs_questions.length - 1) {
+      this.cs_index++;
+    } else {
+      this.finishConvertSentenceGame();
+    }
+  }
+
+  finishConvertSentenceGame(): void {
+    this.cs_finished = true;
+    const scorePct = Math.round((this.cs_score / this.cs_questions.length) * 100);
+    if (this.session.currentUser) {
+      localStorage.setItem(`game_convertsentence_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(15, 'คอนเวิด - แปลงประโยค (Sentence Converter)', scorePct);
+    this.progress.loadProgressHistory();
+  }
+
+  // ── Game 9: English to Thai Translation Recall (แปลอังกฤษ พิมพ์ไทย) ──
+  initEngToThaiGame(): void {
+    this.activeGameType = 'eng-to-thai';
+    this.et_index = 0;
+    this.et_score = 0;
+    this.et_input = '';
+    this.et_showHint = false;
+    this.et_showFeedback = false;
+    this.et_finished = false;
+
+    this.et_questions = [
+      {
+        id: 1,
+        englishSentence: 'Could you please confirm the meeting schedule with our client?',
+        thaiHint: '💡 คำใบ้: ประโยคขอร้องอย่างสุภาพ ให้ช่วยตรวจสอบหรือยืนยันเวลาพบปะกับลูกค้า',
+        primaryThai: 'คุณช่วยยืนยันกำหนดการประชุมกับลูกค้าของเราได้ไหม',
+        keyKeywords: ['ยืนยัน', 'กำหนดการ', 'ประชุม', 'ลูกค้า'],
+        explanation: 'confirm = ยืนยัน, meeting schedule = กำหนดการประชุม, client = ลูกค้า'
+      },
+      {
+        id: 2,
+        englishSentence: 'We need to submit the financial report by the end of this week.',
+        thaiHint: '💡 คำใบ้: บอกความจำเป็นในการส่งเอกสารสรุปตัวเลขการเงินก่อนถึงวันหยุดสัปดาห์',
+        primaryThai: 'เราจำเป็นต้องส่งรายงานการเงินภายในสิ้นสัปดาห์นี้',
+        keyKeywords: ['ส่ง', 'รายงานการเงิน', 'สิ้นสัปดาห์'],
+        explanation: 'submit = ส่ง/ยื่น, financial report = รายงานการเงิน, end of this week = สิ้นสัปดาห์นี้'
+      },
+      {
+        id: 3,
+        englishSentence: 'The customer service team provides 24-hour support.',
+        thaiHint: '💡 คำใบ้: การทำงานของแผนกดูแลผู้ซื้อที่พร้อมช่วยเหลือตลอดทั้งวันทั้งคืน',
+        primaryThai: 'ทีมบริการลูกค้าให้บริการช่วยเหลือตลอด 24 ชั่วโมง',
+        keyKeywords: ['บริการลูกค้า', '24', 'ชั่วโมง'],
+        explanation: 'customer service = บริการลูกค้า, provides support = ให้บริการช่วยเหลือ'
+      },
+      {
+        id: 4,
+        englishSentence: 'Thank you for your valuable feedback on our new product.',
+        thaiHint: '💡 คำใบ้: การแสดงความซาบซึ้งต่อข้อคิดเห็นหรือคำติชมที่มีประโยชน์ต่อสินค้าใหม่',
+        primaryThai: 'ขอบคุณสำหรับข้อเสนอแนะที่มีคุณค่าต่อผลิตภัณฑ์ใหม่ของเรา',
+        keyKeywords: ['ขอบคุณ', 'ข้อเสนอแนะ', 'ผลิตภัณฑ์'],
+        explanation: 'valuable feedback = ข้อเสนอแนะที่มีคุณค่า, new product = ผลิตภัณฑ์ใหม่'
+      },
+      {
+        id: 5,
+        englishSentence: 'Our manager will present the annual marketing strategy tomorrow.',
+        thaiHint: '💡 คำใบ้: ผู้นำทีมกำลังจะนำเสนอแผนงานใหญ่ของฝ่ายการตลาดประจำปีในวันพรุ่งนี้',
+        primaryThai: 'ผู้จัดการของเราจะนำเสนอกลยุทธ์การตลาดประจำปีในวันพรุ่งนี้',
+        keyKeywords: ['ผู้จัดการ', 'นำเสนอ', 'กลยุทธ์', 'การตลาด'],
+        explanation: 'present = นำเสนอ, annual marketing strategy = กลยุทธ์การตลาดประจำปี'
+      }
+    ];
+
+    setTimeout(() => this.speakEngToThaiCurrent(), 400);
+  }
+
+  speakEngToThaiCurrent(): void {
+    const current = this.et_questions[this.et_index];
+    if (current) {
+      this.gameFx.speakText(current.englishSentence);
+    }
+  }
+
+  toggleEngToThaiHint(): void {
+    this.et_showHint = !this.et_showHint;
+  }
+
+  checkEngToThaiAnswer(): void {
+    if (this.et_showFeedback || !this.et_input.trim()) return;
+    const currentQ = this.et_questions[this.et_index];
+    if (!currentQ) return;
+
+    const userInput = this.et_input.trim();
+    const matchedCount = currentQ.keyKeywords.filter(kw => userInput.includes(kw)).length;
+    const keywordRatio = matchedCount / currentQ.keyKeywords.length;
+    const isMatch = keywordRatio >= 0.5 || userInput.includes(currentQ.keyKeywords[0]);
+
+    this.et_isCorrect = isMatch;
+    this.et_showFeedback = true;
+
+    if (isMatch) {
+      this.et_score++;
+      this.gameFx.playSoundEffect('success');
+    } else {
+      this.gameFx.playSoundEffect('error');
+    }
+  }
+
+  nextEngToThaiQuestion(): void {
+    this.et_showFeedback = false;
+    this.et_showHint = false;
+    this.et_input = '';
+    if (this.et_index < this.et_questions.length - 1) {
+      this.et_index++;
+      setTimeout(() => this.speakEngToThaiCurrent(), 300);
+    } else {
+      this.finishEngToThaiGame();
+    }
+  }
+
+  finishEngToThaiGame(): void {
+    this.et_finished = true;
+    const scorePct = Math.round((this.et_score / this.et_questions.length) * 100);
+    if (this.session.currentUser) {
+      localStorage.setItem(`game_engtothai_${this.session.currentUser.id}`, scorePct.toString());
+    }
+    this.gameFx.awardGameXp(15, 'แปลอังกฤษ พิมพ์ไทย (English to Thai Recall)', scorePct);
+    this.progress.loadProgressHistory();
+  }
+
+}

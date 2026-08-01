@@ -1,1 +1,126 @@
 /* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Mitr:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Premium Soft Sky Blue & Mint Green Palette */
+  --pastel-blue-light:   #f0f9ff; /* Very soft sky blue */
+  --pastel-blue:         #e0f2fe; /* Light sky blue */
+  --pastel-blue-medium:   #bae6fd; /* Sky blue */
+  --pastel-blue-dark:    #0284c7; /* Sky blue accent */
+  
+  --pastel-green-light:  #f0fdf4; /* Very soft mint green */
+  --pastel-green:        #dcfce7; /* Light mint/sage green */
+  --pastel-green-medium:  #bbf7d0; /* Mint green */
+  --pastel-green-dark:   #16a34a; /* Green accent */
+
+  --pastel-purple-light: #faf5ff;
+  --pastel-purple:       #f3e8ff;
+  --pastel-purple-dark:  #7c3aed;
+  
+  --pastel-red-light:    #fef2f2;
+  --pastel-red:          #fecaca;
+  --pastel-red-dark:     #b91c1c;
+  
+  --pastel-yellow-light: #fefce8;
+  --pastel-yellow:       #fef08a;
+  --pastel-yellow-dark:  #ca8a04;
+
+  /* Neutrals */
+  --slate-900:           #0f172a;
+  --slate-800:           #1e293b;
+  --slate-700:           #334155;
+  --slate-600:           #475569;
+  --slate-500:           #64748b;
+  --slate-450:           #808ea3;
+  --slate-400:           #94a3b8;
+  --slate-300:           #cbd5e1;
+  --slate-200:           #e2e8f0;
+  --slate-100:           #f1f5f9;
+  --slate-50:            #f8fafc;
+  
+  /* Layout Metrics */
+  --radius-full:         9999px;
+  --radius-xl:           24px;
+  --radius-lg:           16px;
+  --radius-md:           12px;
+  --radius-sm:           8px;
+  
+  /* Shadows & Depth */
+  --shadow-sm:           0 2px 8px rgba(2, 132, 199, 0.03);
+  --shadow-md:           0 8px 24px rgba(2, 132, 199, 0.05);
+  --shadow-lg:           0 16px 40px rgba(2, 132, 199, 0.08);
+  --shadow-glow-blue:    0 0 15px rgba(2, 132, 199, 0.2);
+  --shadow-glow-green:   0 0 15px rgba(22, 163, 74, 0.15);
+  
+  /* Fonts & Animations */
+  --font-main:           'Outfit', 'Sarabun', sans-serif;
+  --transition-smooth:   all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce:   all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  outline: none;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--slate-50);
+  color: var(--slate-800);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.01);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--slate-300);
+  border-radius: var(--radius-full);
+  transition: var(--transition-smooth);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pastel-blue-dark);
+}
+
+.animate-fade {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.premium-gradient-bg {
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 50%, #fafcff 100%);
+}
+
+.floating-orb {
+  position: absolute;
+  border-radius: var(--radius-full);
+  filter: blur(100px);
+  z-index: 0;
+  opacity: 0.5;
+  pointer-events: none;
+}

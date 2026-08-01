@@ -1,0 +1,543 @@
+/* ============================================================
+   LOGIN / REGISTER  —  Psychological Pastel Color Scheme
+   Primary: Periwinkle Violet  |  Accent: Mint + Peach + Sun
+   ============================================================ */
+
+/* ── CSS Variables ─────────────────────────────────────────── */
+:host {
+  --pri:        #7B6CF6;
+  --pri-lt:     #A8BFFF;
+  --pri-dk:     #5448CC;
+  --coral:      #FF8FA3;
+  --mint:       #44C7B7;
+  --sun:        #FFD166;
+  --peach:      #FFB085;
+  --ink:        #2D2B55;
+  --ink-md:     #5A5880;
+  --ink-lt:     #9B99B8;
+  --bg-page:    #F5F0FF;
+  --card-r:     28px;
+  --field-r:    14px;
+  --trans:      all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --bounce:     all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ── Page Wrapper ──────────────────────────────────────────── */
+.page-wrapper {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  overflow: hidden;
+  background: linear-gradient(145deg, #F0EDFF 0%, #FFF0F8 45%, #EFF9FF 100%);
+  font-family: 'Outfit', 'Sarabun', sans-serif;
+}
+
+/* ── Background Blobs ──────────────────────────────────────── */
+.bg-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
+}
+.blob-1 {
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, #C8C0FF 0%, transparent 70%);
+  top: -120px; left: -60px;
+  animation: driftBlob 18s infinite alternate ease-in-out;
+}
+.blob-2 {
+  width: 380px; height: 380px;
+  background: radial-gradient(circle, #FFD4E8 0%, transparent 70%);
+  bottom: -100px; right: -80px;
+  animation: driftBlob 22s infinite alternate-reverse ease-in-out;
+}
+.blob-3 {
+  width: 260px; height: 260px;
+  background: radial-gradient(circle, #B8F0E8 0%, transparent 70%);
+  top: 50%; left: 60%;
+  animation: driftBlob 16s infinite alternate ease-in-out;
+}
+.blob-4 {
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, #FFE4B2 0%, transparent 70%);
+  top: 30%; left: 5%;
+  animation: driftBlob 20s infinite alternate-reverse ease-in-out;
+}
+@keyframes driftBlob {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, 40px) scale(1.08); }
+}
+
+/* ── Celebration Characters ────────────────────────────────── */
+.celebrate-char {
+  position: fixed;
+  bottom: 30%;
+  width: 58px;
+  height: 58px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: floatUpOut 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  transform-origin: center bottom;
+}
+.char-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.18));
+}
+@keyframes floatUpOut {
+  0%   { transform: translateY(0) scale(0.2) rotate(-15deg); opacity: 0; }
+  12%  { transform: translateY(-30px) scale(1.25) rotate(12deg); opacity: 1; }
+  55%  { transform: translateY(-220px) scale(1.05) rotate(-8deg); opacity: 0.95; }
+  100% { transform: translateY(-440px) scale(0.75) rotate(20deg); opacity: 0; }
+}
+
+/* ── Auth Container ────────────────────────────────────────── */
+.auth-wrap {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 580px;
+}
+
+.animate-fade {
+  animation: fadeSlideUp 0.5s ease-out both;
+}
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Auth Card ─────────────────────────────────────────────── */
+.auth-card {
+  background: #ffffff;
+  border-radius: var(--card-r);
+  box-shadow:
+    0 4px 16px rgba(123, 108, 246, 0.10),
+    0 20px 60px rgba(123, 108, 246, 0.14);
+  overflow: hidden;
+  transition: var(--trans);
+}
+
+/* ── Card Top — Mascot Header ──────────────────────────────── */
+.card-top {
+  position: relative;
+  background: linear-gradient(145deg, #EDE9FF 0%, #F5E8FF 55%, #FFE8F2 100%);
+  padding: 2rem 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+  border-bottom: 1.5px solid rgba(123, 108, 246, 0.08);
+}
+
+/* Duck stage: below name-plate in z-order, overlaps via negative margin */
+.duck-stage {
+  position: relative;
+  z-index: 1;
+  margin-bottom: -68px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Name plate: sits in FRONT of duck */
+.site-name-plate {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  background: linear-gradient(180deg, rgba(240,237,255,0.82) 0%, rgba(255,255,255,1) 40%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  padding: 1.4rem 2rem 1.6rem;
+  text-align: center;
+}
+
+.site-name-main {
+  font-size: 1.22rem;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.site-name-sub {
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: var(--ink-md);
+  margin-top: 0.28rem;
+  letter-spacing: 0.1px;
+}
+
+/* ── Card Bottom — Form Area ───────────────────────────────── */
+.card-bottom {
+  padding: 1.8rem 2rem 2.2rem;
+}
+
+/* ── Tab Bar ───────────────────────────────────────────────── */
+.tab-bar {
+  position: relative;
+  display: flex;
+  background: #F3F1FF;
+  border-radius: 14px;
+  padding: 5px;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(123, 108, 246, 0.1);
+}
+.tab-slider {
+  position: absolute;
+  top: 5px; bottom: 5px; left: 5px;
+  width: calc(50% - 5px);
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(123, 108, 246, 0.12);
+  border: 1px solid rgba(123, 108, 246, 0.08);
+  transition: var(--bounce);
+  z-index: 1;
+}
+.tab-slider.to-register {
+  transform: translateX(100%);
+}
+.tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.7rem 0.8rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--ink-lt);
+  cursor: pointer;
+  border-radius: 10px;
+  position: relative;
+  z-index: 2;
+  transition: var(--trans);
+  font-family: inherit;
+}
+.tab-btn.active {
+  color: var(--pri);
+}
+
+/* ── Alert Messages ────────────────────────────────────────── */
+.msg-box {
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1.2rem;
+  animation: msgSlideIn 0.3s ease-out;
+}
+@keyframes msgSlideIn {
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.msg-error {
+  background: #FFF0F3;
+  border: 1px solid #FFB8C8;
+  color: #C0305A;
+}
+.msg-success {
+  background: #F0FBF8;
+  border: 1px solid #A8EBD8;
+  color: #1A8C6A;
+}
+
+/* ── Form Layout ───────────────────────────────────────────── */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.field-row-3 {
+  grid-template-columns: 0.8fr 1.6fr 1.6fr;
+}
+@media (max-width: 520px) {
+  .field-row,
+  .field-row-3 { grid-template-columns: 1fr; }
+}
+
+/* ── Form Fields ───────────────────────────────────────────── */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.field-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-md);
+  padding-left: 2px;
+  letter-spacing: 0.1px;
+}
+.field-input,
+.field-select {
+  width: 100%;
+  padding: 0.78rem 1rem;
+  background: #FAFAFE;
+  border: 1.5px solid #E4E0FF;
+  border-radius: var(--field-r);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  transition: var(--trans);
+  font-family: inherit;
+}
+.field-input::placeholder {
+  color: #C0BDD8;
+  font-weight: 500;
+}
+.field-input:focus,
+.field-select:focus {
+  border-color: var(--pri);
+  background: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(123, 108, 246, 0.10);
+  outline: none;
+}
+.field-select {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239B99B8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 1rem;
+  padding-right: 2.4rem;
+}
+
+/* ── Role Cards ────────────────────────────────────────────── */
+.role-row {
+  display: flex;
+  gap: 0.7rem;
+}
+.role-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.8rem 0.5rem;
+  background: #FAFAFE;
+  border: 1.5px solid #E4E0FF;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: var(--bounce);
+  text-align: center;
+}
+.role-card input[type="radio"] {
+  display: none;
+}
+.role-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  transition: var(--bounce);
+}
+.role-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-md);
+}
+.role-card:hover {
+  border-color: var(--pri-lt);
+  background: #F0EDFF;
+  transform: translateY(-2px);
+}
+.role-card.picked {
+  border-color: var(--pri);
+  background: linear-gradient(135deg, #F0EDFF, #EDE8FF);
+  box-shadow: 0 4px 14px rgba(123, 108, 246, 0.15);
+}
+.role-card.picked .role-icon {
+  transform: scale(1.2);
+}
+.role-card.picked .role-label {
+  color: var(--pri);
+}
+
+/* ── Submit Button ─────────────────────────────────────────── */
+.btn-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.95rem;
+  background: linear-gradient(135deg, var(--pri) 0%, #9B8DF8 100%);
+  border: none;
+  border-radius: 14px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 6px 20px rgba(123, 108, 246, 0.30);
+  transition: var(--bounce);
+  margin-top: 0.3rem;
+  letter-spacing: 0.2px;
+  position: relative;
+  overflow: hidden;
+}
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(123, 108, 246, 0.38);
+}
+.btn-submit:active:not(:disabled) {
+  transform: translateY(0px) scale(0.98);
+}
+.btn-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-rocket {
+  font-size: 1.15rem;
+  transition: var(--bounce);
+}
+.btn-submit:hover:not(:disabled) .btn-rocket {
+  transform: translateX(4px) scale(1.15);
+}
+
+/* Loading dots animation */
+.dot-wrap {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  animation: dotBounce 1.2s infinite ease-in-out;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+  40%            { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Hint Text ─────────────────────────────────────────────── */
+.hint-text {
+  text-align: center;
+  font-size: 0.73rem;
+  color: var(--ink-lt);
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 460px) {
+  .page-wrapper      { padding: 1.25rem 0.75rem; }
+  .card-top          { padding: 1.5rem 1.2rem 1.2rem; }
+  .site-name-plate   { padding: 1.1rem 1.2rem 1.3rem; }
+  .card-bottom       { padding: 1.4rem 1.2rem 1.8rem; }
+  .mascot-duck-anim  { width: 130px; }
+  .duck-stage        { margin-bottom: -46px; }
+  .site-name-main    { font-size: 1.05rem; }
+  .site-name-sub     { font-size: 0.72rem; }
+  .role-row          { gap: 0.5rem; }
+}
+
+/* ── Bouncing and Sliding celebration inside button ── */
+.celebrate-char-btn {
+  position: absolute;
+  bottom: 4px;
+  width: 32px;
+  height: 32px;
+  pointer-events: none;
+  z-index: 5;
+  animation: bounceAndSlideBtn 1.8s ease-in-out forwards;
+}
+
+@keyframes bounceAndSlideBtn {
+  0% {
+    left: -40px;
+    transform: translateY(0) rotate(0deg) scale(0.3);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-12px) rotate(15deg) scale(1.15);
+  }
+  30% {
+    transform: translateY(2px) rotate(-10deg) scale(0.9);
+  }
+  45% {
+    transform: translateY(-14px) rotate(12deg) scale(1.05);
+  }
+  60% {
+    transform: translateY(1px) rotate(-5deg) scale(0.95);
+  }
+  75% {
+    transform: translateY(-10px) rotate(8deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    left: 110%;
+    transform: translateY(0) rotate(30deg) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.forgot-link:hover {
+  opacity: 0.75;
+  text-decoration: underline !important;
+}
+
+/* ── Animated Duck Mascot ──────────────────────────────────── */
+.mascot-duck-anim {
+  width: 190px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  animation: duckBounceMain 2s ease-in-out infinite;
+  filter: drop-shadow(0 10px 24px rgba(123, 108, 246, 0.22));
+}
+
+.duck-wing-wave {
+  transform-box: fill-box;
+  transform-origin: 12% 75%;
+  animation: wingWaveAnim 1.5s ease-in-out infinite;
+}
+
+.duck-shadow-pulse {
+  transform-origin: center;
+  animation: shadowScale 2s ease-in-out infinite;
+}
+
+.speech-bubble-anim {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bubbleFloat 2s ease-in-out infinite;
+}
+
+@keyframes duckBounceMain {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-16px); }
+}
+
+@keyframes wingWaveAnim {
+  0%   { transform: rotate(-18deg); }
+  35%  { transform: rotate(32deg); }
+  65%  { transform: rotate(10deg); }
+  100% { transform: rotate(-18deg); }
+}
+
+@keyframes shadowScale {
+  0%, 100% { transform: scaleX(1);    opacity: 0.55; }
+  50%       { transform: scaleX(0.62); opacity: 0.22; }
+}
+
+@keyframes bubbleFloat {
+  0%, 100% { transform: translateY(0)    scale(1);    opacity: 1; }
+  50%       { transform: translateY(-6px) scale(1.05); opacity: 0.88; }
+}
+
+

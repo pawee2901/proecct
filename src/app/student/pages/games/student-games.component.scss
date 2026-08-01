@@ -1,0 +1,1274 @@
+@use '../../shared' as *;
+
+// Games tab styles — extracted verbatim from student.component.scss:
+//  - "TAB: GAMES" menu grid (2737-2930)
+//  - "CAMPUS CORPORATE GAME OVERRIDES" + "5 NEW LEARNING GAMES STYLING" (9606-10647)
+// Per-game body/round UI for scramble & dialogue (shared with the Lessons
+// roadmap step overlay) comes from the `shared` partial imported above.
+
+/* ====================================================
+   TAB: GAMES
+   ==================================================== */
+.game-unit-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.75rem;
+}
+.games-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+.game-card-item {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  border: 1.5px solid var(--slate-100);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+  }
+}
+.gc-green {
+  border-top: 3px solid var(--pastel-green-dark);
+}
+.gc-purple {
+  border-top: 3px solid var(--pastel-purple-dark);
+}
+.gc-yellow {
+  border-top: 3px solid var(--pastel-yellow-dark);
+}
+.gc-red {
+  border-top: 3px solid var(--pastel-red-dark);
+}
+.gc-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+.gc-green .gc-icon {
+  background: var(--pastel-green);
+  color: var(--pastel-green-dark);
+}
+.gc-purple .gc-icon {
+  background: var(--pastel-purple);
+  color: var(--pastel-purple-dark);
+}
+.gc-yellow .gc-icon {
+  background: var(--pastel-yellow-light);
+  color: var(--pastel-yellow-dark);
+}
+.gc-red .gc-icon {
+  background: var(--pastel-red-light);
+  color: var(--pastel-red-dark);
+}
+.gc-body {
+  flex: 1;
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--slate-800);
+    margin-bottom: 0.3rem;
+  }
+  p {
+    font-size: 0.83rem;
+    color: var(--slate-500);
+    line-height: 1.55;
+  }
+}
+.gc-tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+.gc-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+}
+.gc-tag.green {
+  background: var(--pastel-green);
+  color: var(--pastel-green-dark);
+}
+.gc-tag.blue {
+  background: var(--pastel-blue);
+  color: var(--pastel-blue-dark);
+}
+.gc-tag.purple {
+  background: var(--pastel-purple);
+  color: var(--pastel-purple-dark);
+}
+.gc-tag.orange {
+  background: var(--pastel-yellow-light);
+  color: #d97706;
+}
+.gc-tag.red {
+  background: var(--pastel-red-light);
+  color: var(--pastel-red-dark);
+}
+.btn-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s ease;
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+.gc-green .btn-play {
+  background: linear-gradient(135deg, var(--pastel-green-dark) 0%, #2f9d90 100%);
+  &:hover {
+    box-shadow: 0 6px 18px rgba(68, 199, 183, 0.35);
+  }
+}
+.gc-purple .btn-play {
+  background: linear-gradient(135deg, var(--pastel-purple-dark) 0%, #8b5cf6 100%);
+  &:hover {
+    box-shadow: 0 6px 18px rgba(139, 92, 246, 0.35);
+  }
+}
+.gc-yellow .btn-play {
+  background: linear-gradient(135deg, var(--pastel-yellow-dark) 0%, #f59e0b 100%);
+  &:hover {
+    box-shadow: 0 6px 18px rgba(255, 176, 133, 0.4);
+  }
+}
+.gc-red .btn-play {
+  background: linear-gradient(135deg, var(--pastel-red-dark) 0%, #ef4444 100%);
+  &:hover {
+    box-shadow: 0 6px 18px rgba(255, 143, 163, 0.4);
+  }
+}
+
+.active-game-area {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  border: 1.5px solid var(--slate-100);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+.active-game-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  h3 {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--slate-800);
+  }
+}
+.btn-exit-game {
+  padding: 0.4rem 1rem;
+  background: var(--slate-100);
+  border: none;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--slate-600);
+  cursor: pointer;
+  &:hover {
+    background: var(--slate-200);
+  }
+}
+
+
+/* ====================================================
+   CAMPUS CORPORATE GAME OVERRIDES
+   ==================================================== */
+.gc-orange {
+  border-top: 3px solid #f97316 !important;
+}
+
+.gc-orange .btn-play {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+  color: white !important;
+  &:hover {
+    box-shadow: 0 6px 18px rgba(249, 115, 22, 0.35) !important;
+  }
+}
+
+/* ====================================================
+   EXTRA EFFECTS AND ANIMATIONS (CONFETTI, SHAKE, DUOLINGO SETUP)
+   ==================================================== */
+.shake-anim {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.duo-setup-wizard {
+  .duo-option-card, .duo-level-card, .duo-avatar-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+      border-color: #a855f7 !important;
+    }
+
+    &.selected {
+      border-color: #6366f1 !important;
+      background: rgba(99, 102, 241, 0.03) !important;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15) !important;
+    }
+  }
+}
+
+/* Setup Wizard — mobile: the inline 3-col/2-col grids overflow narrow
+   viewports (grid tracks don't shrink below content's min-content by
+   default), so force everything to stack in a single column. */
+@media (max-width: 640px) {
+  .duo-setup-wizard {
+    padding: 1.1rem !important;
+    margin: 1rem auto !important;
+    max-width: 100% !important;
+    border-radius: 16px !important;
+  }
+  .duo-setup-header {
+    gap: 0.6rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+  .duo-setup-step-count {
+    min-width: auto !important;
+    font-size: 0.68rem !important;
+  }
+  .duo-setup-title {
+    font-size: 1.1rem !important;
+  }
+  .duo-setup-desc {
+    font-size: 0.82rem !important;
+  }
+  .duo-options-grid,
+  .duo-avatar-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .duo-option-card,
+  .duo-level-card,
+  .duo-avatar-card {
+    padding: 1rem !important;
+  }
+  .duo-setup-footer {
+    margin-top: 1.5rem !important;
+    padding-top: 1rem !important;
+  }
+  .duo-setup-btn-prev,
+  .duo-setup-btn-next {
+    padding: 0.65rem 1rem !important;
+    font-size: 0.82rem !important;
+  }
+}
+
+/* Sound Wave animation */
+.voice-wave-circle {
+  &.speaking {
+    animation: pulse-wave 1.5s infinite ease-in-out;
+  }
+}
+
+@keyframes pulse-wave {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+}
+
+
+
+
+
+
+
+/* ====================================================
+   5 NEW LEARNING GAMES STYLING
+   ==================================================== */
+
+/* Game 1: Memory Card Match */
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin: 1.5rem auto;
+  perspective: 1000px;
+  width: 100%;
+  max-width: 480px;
+}
+.memory-card {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+  position: relative;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  
+  &.flipped {
+    transform: rotateY(180deg);
+  }
+  &.matched {
+    opacity: 0.7;
+    cursor: default;
+    pointer-events: none;
+    box-shadow: 0 0 0 3px #10b981;
+  }
+}
+.card-inner {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 2px solid var(--slate-200);
+  font-weight: 700;
+  text-align: center;
+  padding: 0.5rem;
+}
+.card-front {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 1.5rem;
+}
+.card-back {
+  background: #eff6ff;
+  color: #1d4ed8;
+  transform: rotateY(180deg);
+  font-size: 0.85rem;
+  line-height: 1.3;
+  &.type-th {
+    background: #f0fdf4;
+    color: #15803d;
+    border-color: #bbf7d0;
+  }
+}
+
+/* Game 2: Dictation Master */
+.dictation-audio-wrap {
+  text-align: center;
+  margin: 2rem 0;
+  width: 100%;
+  max-width: 480px;
+}
+.btn-dictation-speaker {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: var(--pastel-blue-light);
+  border: 3px solid var(--pastel-blue);
+  color: var(--pastel-blue-dark);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
+  transition: all 0.2s ease;
+  svg {
+    width: 32px;
+    height: 32px;
+  }
+  &:hover {
+    transform: scale(1.08);
+    background: var(--pastel-blue);
+  }
+}
+.dictation-hint-txt {
+  font-size: 0.8rem;
+  color: var(--slate-400);
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+.dictation-thai-meaning {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--slate-600);
+  margin-top: 1rem;
+}
+.feedback-block {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1.5px solid transparent;
+  text-align: center;
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  
+  &.correct {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+  }
+  &.wrong {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+  }
+  .feedback-msg {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem 0;
+  }
+  .feedback-sub {
+    font-size: 0.9rem;
+    margin: 0 0 1rem 0;
+    font-weight: 500;
+  }
+}
+
+/* Game 3: POS Sorter */
+.pos-word-card {
+  background: #f8fafc;
+  border: 2px solid var(--slate-100);
+  border-radius: 20px;
+  padding: 2rem 1rem;
+  text-align: center;
+  margin: 1.5rem 0;
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+}
+.pos-target-word {
+  font-size: 2.2rem;
+  font-weight: 850;
+  color: var(--slate-800);
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.02em;
+}
+.pos-word-meaning {
+  font-size: 0.95rem;
+  color: var(--slate-500);
+  margin: 0;
+  font-weight: 600;
+}
+.pos-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+  width: 100%;
+  max-width: 480px;
+}
+.pos-opt-btn {
+  padding: 1rem;
+  border-radius: 14px;
+  border: 2px solid var(--slate-200);
+  background: white;
+  font-size: 0.9rem;
+  font-weight: 750;
+  color: var(--slate-700);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  
+  &:hover {
+    border-color: var(--pastel-blue-dark);
+    color: var(--pastel-blue-dark);
+    background: var(--pastel-blue-light);
+    transform: translateY(-1px);
+  }
+  &.selected {
+    border-color: var(--pastel-blue-dark) !important;
+    background: var(--pastel-blue) !important;
+    color: white !important;
+  }
+}
+
+/* Game 4: Synonym Matcher */
+.synonym-target-wrap {
+  text-align: center;
+  margin: 1.5rem 0;
+  width: 100%;
+  max-width: 480px;
+  .synonym-instruction {
+    font-size: 0.88rem;
+    color: var(--slate-400);
+    margin: 0 0 0.25rem 0;
+    font-weight: 600;
+  }
+  .synonym-target-word {
+    font-size: 2.4rem;
+    font-weight: 850;
+    color: var(--slate-800);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+}
+.synonym-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 1.5rem 0;
+  width: 100%;
+  max-width: 480px;
+}
+.synonym-opt-row {
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  border: 2px solid var(--slate-200);
+  background: white;
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: var(--slate-750);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+  
+  &:hover {
+    border-color: var(--pastel-blue-dark);
+    background: var(--pastel-blue-light);
+  }
+  &.selected {
+    border-color: var(--pastel-blue-dark);
+    background: var(--pastel-blue-light);
+  }
+  &.correct-highlight {
+    border-color: #bbf7d0 !important;
+    background: #f0fdf4 !important;
+    color: #15803d !important;
+  }
+  &.wrong-highlight {
+    border-color: #fca5a5 !important;
+    background: #fef2f2 !important;
+    color: #b91c1c !important;
+  }
+}
+
+/* Game 5: Save the Mascot */
+.hangman-mascot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border-radius: 20px;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+}
+.hangman-lives-wrap {
+  display: flex;
+  gap: 0.35rem;
+}
+.heart-icon {
+  font-size: 1.3rem;
+  transition: all 0.3s ease;
+  &.broken {
+    opacity: 0.2;
+    transform: scale(0.85);
+    filter: grayscale(1);
+  }
+}
+.hangman-mascot-pic {
+  font-size: 2.8rem;
+  line-height: 1;
+  transition: transform 0.2s;
+  
+  &.sad {
+    animation: shake 0.5s ease-in-out;
+  }
+  &.happy {
+    transform: scale(1.1) rotate(5deg);
+  }
+}
+.hangman-word-area {
+  text-align: center;
+  margin: 1.5rem 0;
+  width: 100%;
+  max-width: 480px;
+}
+.hangman-thai-hint {
+  font-size: 0.9rem;
+  color: var(--slate-500);
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.hangman-blanks {
+  font-size: 2.2rem;
+  font-weight: 850;
+  color: var(--slate-800);
+  letter-spacing: 0.15em;
+  margin: 0;
+  text-transform: uppercase;
+}
+.hangman-keyboard-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+  margin: 1.5rem 0;
+  width: 100%;
+  max-width: 480px;
+}
+.hm-key-btn {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1.5px solid var(--slate-250);
+  background: white;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--slate-700);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  
+  &:hover {
+    border-color: var(--slate-400);
+    background: #f1f5f9;
+  }
+  &.used {
+    opacity: 0.35;
+    background: var(--slate-100);
+    border-color: var(--slate-200);
+    cursor: default;
+  }
+}
+
+@media (max-width: 640px) {
+  .memory-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .hangman-keyboard-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* ── Animated Duck Mascot in Practice Hub ──────────────────────────────────── */
+.practice-duck-mascot {
+  animation: practiceDuckBounceMain 2.2s ease-in-out infinite;
+}
+
+.practice-duck-mascot .duck-wing-wave {
+  transform-box: fill-box;
+  transform-origin: 12% 75%;
+  animation: practiceWingWaveAnim 1.5s ease-in-out infinite;
+}
+
+.practice-duck-mascot .speech-bubble-anim {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: practiceBubbleFloat 2.2s ease-in-out infinite;
+}
+
+@keyframes practiceDuckBounceMain {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes practiceWingWaveAnim {
+  0%   { transform: rotate(-18deg); }
+  35%  { transform: rotate(32deg); }
+  65%  { transform: rotate(10deg); }
+  100% { transform: rotate(-18deg); }
+}
+
+@keyframes practiceBubbleFloat {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 1; }
+  50%       { transform: translateY(-4px) scale(1.05); opacity: 0.88; }
+}
+
+/* Speech bubble next to Duck Mascot */
+.mascot-speech-bubble {
+  position: relative;
+  background: white;
+  border: 1.5px solid var(--slate-200);
+  border-radius: 18px;
+  padding: 0.85rem 1.15rem;
+  max-width: 480px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  flex: 1;
+
+  /* Speech bubble pointer arrow pointing left */
+  &::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-left: 1.5px solid var(--slate-200);
+    border-bottom: 1.5px solid var(--slate-200);
+    border-radius: 0 0 0 3px;
+  }
+
+  .speech-bubble-title {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--violet-600);
+    margin-bottom: 0.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .speech-bubble-text {
+    font-size: 0.88rem;
+    color: var(--slate-600);
+    margin: 0;
+    line-height: 1.45;
+    font-weight: 500;
+  }
+}
+
+@media (max-width: 576px) {
+  .practice-mascot-header-row {
+    gap: 0.75rem !important;
+    margin-bottom: 1rem !important;
+  }
+  .practice-duck-mascot {
+    width: 65px !important;
+  }
+  .mascot-speech-bubble {
+    padding: 0.65rem 0.85rem !important;
+    .speech-bubble-text {
+      font-size: 0.78rem !important;
+    }
+  }
+}
+
+/* ─── 3 New Games Styling (Drag-Word, Convert-Sentence, Eng-to-Thai) ─── */
+.gc-cyan {
+  .gc-icon {
+    background: rgba(6, 182, 212, 0.12);
+    color: #0891b2;
+  }
+  .gc-tag.cyan {
+    background: rgba(6, 182, 212, 0.12);
+    color: #0891b2;
+  }
+}
+
+.gc-emerald {
+  .gc-icon {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+  }
+  .gc-tag.green {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+  }
+}
+
+/* Game 1: Drag & Drop Word Builder Styles */
+.drag-sentence-container {
+  background: var(--slate-50, #f8fafc);
+  border: 2px dashed var(--slate-300, #cbd5e1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin: 1.25rem 0;
+  text-align: center;
+}
+
+.sentence-template-text {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--slate-800, #1e293b);
+  line-height: 2.2;
+}
+
+.drop-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  height: 42px;
+  padding: 0 0.85rem;
+  margin: 0 0.35rem;
+  border: 2px dashed #0284c7;
+  border-radius: 10px;
+  background: #f0f9ff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+
+  &.filled {
+    border-style: solid;
+    background: white;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.15);
+  }
+
+  &.correct {
+    border-color: #10b981;
+    background: #ecfdf5;
+  }
+
+  &.wrong {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+}
+
+.placed-word-chip {
+  font-weight: 700;
+  color: #0284c7;
+  font-size: 1.05rem;
+}
+
+.empty-slot-placeholder {
+  font-size: 0.88rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.drag-instruction-sub {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.word-bank-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.word-drag-chip {
+  padding: 0.65rem 1.2rem;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  color: #1e293b;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: grab;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #0284c7;
+    background: #f0f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(2, 132, 199, 0.15);
+  }
+
+  &:active {
+    cursor: grabbing;
+    transform: scale(0.96);
+  }
+}
+
+/* Game 2: Sentence Converter Styles */
+.convert-instruction-badge {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(79, 70, 229, 0.1));
+  border: 1.5px solid #a855f7;
+  color: #6b21a8;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1rem 0;
+}
+
+.convert-source-box {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+
+  .source-label {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .source-sentence {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 0.35rem;
+  }
+}
+
+.convert-hint-wrap {
+  margin-bottom: 1rem;
+
+  .btn-toggle-hint {
+    background: none;
+    border: none;
+    color: #6366f1;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .hint-text {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    padding: 0.6rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-top: 0.4rem;
+  }
+}
+
+.convert-input-wrap {
+  margin-bottom: 1.25rem;
+
+  .convert-textarea,
+  .convert-input-field {
+    width: 100%;
+    padding: 0.85rem 1.1rem;
+    border: 2px solid #cbd5e1;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+
+    &:disabled {
+      background: #f8fafc;
+    }
+  }
+}
+
+/* Game 3: English to Thai Translation Recall Styles */
+.eng-prompt-card {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border-radius: 16px;
+  padding: 1.4rem 1.6rem;
+  color: white;
+  margin: 1rem 0;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
+
+  .eng-prompt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+
+    .prompt-tag {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-audio-speak {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: white;
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+    }
+  }
+
+  .eng-sentence-display {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+}
+
+.sample-ans {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+/* ─── Word Search Puzzle Styles ─── */
+.gc-indigo {
+  .gc-icon {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
+  }
+  .gc-tag.indigo {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
+  }
+}
+
+.ws-game-card {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.ws-header-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+
+  .btn-restart-ws {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 0.35rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+  }
+}
+
+.ws-instruction {
+  font-size: 0.92rem;
+  color: #64748b;
+  text-align: center;
+  margin-bottom: 1.2rem;
+}
+
+.ws-grid-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  user-select: none;
+  touch-action: none;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ws-grid {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 16px;
+  border: 2px solid #e2e8f0;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.ws-row {
+  display: flex;
+  gap: 4px;
+}
+
+.ws-cell {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #334155;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #e0e7ff;
+    color: #4338ca;
+  }
+
+  &.ws-selected {
+    background: #818cf8;
+    color: white;
+    transform: scale(1.06);
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+
+    &.ws-invalid {
+      background: #f87171;
+      animation: shake 0.3s ease;
+    }
+  }
+
+  &.ws-found {
+    font-weight: 900;
+    color: white;
+
+    &.ws-color-0 { background: #10b981; }
+    &.ws-color-1 { background: #06b6d4; }
+    &.ws-color-2 { background: #8b5cf6; }
+    &.ws-color-3 { background: #f59e0b; }
+    &.ws-color-4 { background: #ec4899; }
+    &.ws-color-5 { background: #3b82f6; }
+  }
+}
+
+.ws-word-list-area {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 1.25rem;
+  border: 1.5px solid #e2e8f0;
+
+  h4 {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #475569;
+    margin-bottom: 0.85rem;
+  }
+}
+
+.ws-target-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.ws-target-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 20px;
+  background: white;
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #334155;
+  transition: all 0.25s ease;
+
+  .ws-chip-meaning {
+    font-weight: 500;
+    font-size: 0.82rem;
+    color: #64748b;
+  }
+
+  &.found {
+    text-decoration: line-through;
+    opacity: 0.75;
+
+    &.color-0 { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+    &.color-1 { background: #ecfeff; border-color: #06b6d4; color: #155e75; }
+    &.color-2 { background: #f5f3ff; border-color: #8b5cf6; color: #5b21b6; }
+    &.color-3 { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
+    &.color-4 { background: #fdf2f8; border-color: #ec4899; color: #9d174d; }
+    &.color-5 { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+    .ws-check {
+      font-weight: 900;
+      font-size: 1rem;
+    }
+  }
+}
+
+.btn-secondary-exit {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  margin-left: 0.5rem;
+
+  &:hover {
+    background: #e2e8f0 !important;
+  }
+}
+
+/* ── Responsive (small screens) ── */
+@media (max-width: 640px) {
+  .active-game-area {
+    padding: 1rem;
+  }
+  .ws-grid {
+    padding: 6px;
+    gap: 3px;
+  }
+  .ws-row {
+    gap: 3px;
+  }
+  .ws-cell {
+    width: 26px;
+    height: 26px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .ws-cell {
+    width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+}
+
+

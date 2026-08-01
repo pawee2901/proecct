@@ -1,0 +1,2004 @@
+      <section class="tab-section animate-fade">
+        <div class="tab-header-row">
+          <h1 class="tab-title">เกม</h1>
+          <p class="tab-subtitle">ฝึกทักษะภาษาอังกฤษผ่านเกมสนุกๆ</p>
+        </div>
+        @if (engine.activeGameType === null) {
+          <div class="games-cards-grid">
+            @if (engine.isGameAllowed('scramble')) {
+              <div class="game-card-item gc-green">
+                <div class="gc-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                </div>
+                <div class="gc-body">
+                  <h3>สลับตัวอักษร</h3>
+                  <p>Word Scramble · เรียงตัวอักษรให้เป็นคำศัพท์ที่ถูกต้อง ฝึกการสะกดและจำคำ</p>
+                  <div class="gc-tags">
+                    <span class="gc-tag green">สนุก</span> <span class="gc-tag blue">ฝึกการสะกด</span>
+                  </div>
+                </div>
+                <button class="btn-play" (click)="engine.startGameFromTab('scramble')">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                  </svg>
+                  เล่นเกม
+                </button>
+              </div>
+            }
+
+            @if (engine.isGameAllowed('dialogue')) {
+              <div class="game-card-item gc-purple">
+                <div class="gc-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <div class="gc-body">
+                  <h3>เรียงบทสนทนา</h3>
+                  <p>Dialogue Sequencer · จัดเรียงประโยคสนทนาให้ถูกต้องตามลำดับ</p>
+                  <div class="gc-tags">
+                    <span class="gc-tag purple">ท้าทาย</span>
+                    <span class="gc-tag orange">ฝึกสนทนา</span>
+                  </div>
+                </div>
+                <button class="btn-play" (click)="engine.startGameFromTab('dialogue')">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                  </svg>
+                  เล่นเกม
+                </button>
+              </div>
+            }
+
+            <div class="game-card-item gc-yellow">
+              <div class="gc-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>ดูภาพ พิมพ์คำศัพท์</h3>
+                <p>Picture to Word · ดูรูปภาพแล้วพิมพ์คำศัพท์ภาษาอังกฤษให้ถูกต้อง รวมคำจากทุกบทเรียน</p>
+                <div class="gc-tags">
+                  <span class="gc-tag orange">ฝึกพิมพ์</span>
+                  <span class="gc-tag blue">คำศัพท์รวม</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initPictureWordGame()">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <div class="game-card-item gc-red">
+              <div class="gc-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M4 7V4h16v3" />
+                  <path d="M9 20h6" />
+                  <path d="M12 4v16" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>แปลไทย พิมพ์อังกฤษ</h3>
+                <p>Thai to English Recall · ดูความหมายไทยแล้วพิมพ์คำศัพท์อังกฤษ ตอบผิดแล้วผิดเลย ห้ามแก้ตัว!</p>
+                <div class="gc-tags">
+                  <span class="gc-tag purple">ท้าทาย</span>
+                  <span class="gc-tag orange">ตอบครั้งเดียว</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initTypingRecallGame()">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <div class="game-card-item gc-green">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>เติมคำในประโยค</h3>
+                <p>Fill in the Blank · ดูประโยคสนทนาจริงที่เว้นคำสำคัญไว้ แล้วพิมพ์คำที่หายไป</p>
+                <div class="gc-tags">
+                  <span class="gc-tag green">ฝึกพิมพ์</span> <span class="gc-tag blue">บทสนทนาจริง</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initFillBlankGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <div class="game-card-item gc-purple">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>จับเวลาพิมพ์คำศัพท์</h3>
+                <p>Typing Sprint · แข่งกับเวลา 45 วินาที พิมพ์คำศัพท์ให้ได้มากที่สุด สร้างคอมโบ!</p>
+                <div class="gc-tags">
+                  <span class="gc-tag purple">จับเวลา</span> <span class="gc-tag orange">คอมโบ</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initSprintGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <div class="game-card-item gc-yellow">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>จับผิดประโยค</h3>
+                <p>Spot & Fix the Typo · หาจุดผิดในประโยคธุรกิจแล้วพิมพ์ประโยคที่แก้ไขแล้วทั้งประโยค</p>
+                <div class="gc-tags">
+                  <span class="gc-tag orange">พิสูจน์อักษร</span> <span class="gc-tag blue">ภาษาทำงาน</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initTypoFixGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <div class="game-card-item gc-red">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18h6" /><path d="M10 22h4" />
+                  <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>ทายคำศัพท์</h3>
+                <p>Word Riddle · ดูความหมายและตัวอักษรที่ค่อยๆ เปิด พิมพ์คำศัพท์ให้ถูกก่อนหมดโอกาส</p>
+                <div class="gc-tags">
+                  <span class="gc-tag purple">ท้าทาย</span> <span class="gc-tag green">คำใบ้</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initWordRiddleGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <div class="game-card-item gc-green">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18" /><path d="M3 12h18" /><path d="M3 18h18" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>เรียงประโยค พิมพ์ใหม่</h3>
+                <p>Sentence Reorder · ดูคำที่สลับกันอยู่ แล้วพิมพ์ประโยคให้เรียงลำดับถูกต้อง</p>
+                <div class="gc-tags">
+                  <span class="gc-tag green">ไวยากรณ์</span> <span class="gc-tag blue">บทสนทนาจริง</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initSentenceReorderGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <div class="game-card-item gc-purple">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>ตอบบทสนทนาเอง</h3>
+                <p>Open Dialogue Reply · อ่านสถานการณ์แล้วพิมพ์คำตอบของตัวเอง ให้คะแนนจากคำสำคัญ</p>
+                <div class="gc-tags">
+                  <span class="gc-tag purple">เขียนอิสระ</span> <span class="gc-tag orange">ให้คะแนนคำสำคัญ</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initOpenReplyGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <div class="game-card-item gc-yellow">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                  <line x1="4" y1="22" x2="4" y2="15" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>รับมือสถานการณ์จริง</h3>
+                <p>Scenario Construction · อ่านสถานการณ์ภาษาไทย แล้วพิมพ์ประโยคภาษาอังกฤษที่เหมาะสมเอง</p>
+                <div class="gc-tags">
+                  <span class="gc-tag orange">ท้าทายสุด</span> <span class="gc-tag purple">เขียนอิสระ</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initScenarioGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <div class="game-card-item gc-red">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>ตอบอีเมลลูกค้า</h3>
+                <p>Email Reply Capstone · ด่านจบ! อ่านอีเมลแล้วพิมพ์อีเมลตอบกลับอย่างมืออาชีพ</p>
+                <div class="gc-tags">
+                  <span class="gc-tag red">ด่านจบ</span> <span class="gc-tag purple">เขียนอิสระ</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initEmailCapstoneGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <!-- Game 1: Memory Card Match -->
+            <div class="game-card-item gc-purple">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="9" rx="1" />
+                  <rect x="14" y="3" width="7" height="9" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>จับคู่การ์ดความจำ</h3>
+                <p>Memory Match · เปิดการ์ดจับคู่ภาษาอังกฤษและแปลไทย แข่งกับเวลา!</p>
+                <div class="gc-tags">
+                  <span class="gc-tag purple">ฝึกความจำ</span> <span class="gc-tag orange">จับคู่ความหมาย</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initMemoryMatchGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <!-- Game 2: Dictation Master -->
+            <div class="game-card-item gc-yellow">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>สะกดตามคำบอก</h3>
+                <p>Dictation Master · ฟังเสียงออกเสียงคำศัพท์ธุรกิจจาก AI แล้วพิมพ์สะกดให้ถูกต้อง</p>
+                <div class="gc-tags">
+                  <span class="gc-tag orange">ฝึกฟัง</span> <span class="gc-tag green">สะกดคำ</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initDictationGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <!-- Game 3: POS Sorter -->
+            <div class="game-card-item gc-green">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="4" y1="9" x2="20" y2="9" />
+                  <line x1="4" y1="15" x2="20" y2="15" />
+                  <line x1="10" y1="3" x2="8" y2="21" />
+                  <line x1="16" y1="3" x2="14" y2="21" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>แยกแยะประเภทคำ</h3>
+                <p>POS Sorter · จัดประเภทคำศัพท์ Noun, Verb, Adjective, หรือ Adverb</p>
+                <div class="gc-tags">
+                  <span class="gc-tag green">ไวยากรณ์</span> <span class="gc-tag blue">ประเภทของคำ</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initPosSorterGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <!-- Game 4: Synonym Matcher -->
+            <div class="game-card-item gc-blue">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 3h5v5" />
+                  <path d="M8 3H3v5" />
+                  <path d="M12 22V12" />
+                  <path d="M12 12H2" />
+                  <path d="M12 12h10" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>คำพ้องความหมาย</h3>
+                <p>Synonym Matcher · ค้นหาคำศัพท์ที่มีความหมายทดแทนกันได้ในภาษาอังกฤษธุรกิจ</p>
+                <div class="gc-tags">
+                  <span class="gc-tag blue">คลังคำศัพท์</span> <span class="gc-tag purple">คำเหมือน</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initSynonymMatchGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <!-- Game 5: ช่วยชีวิตนกฮูกมาสคอต -->
+            <div class="game-card-item gc-orange">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v20" />
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>ช่วยชีวิตนกฮูกมาสคอต</h3>
+                <p>Save the Mascot · ทายคำศัพท์จากคำแปลไทยทีละตัวอักษรก่อนหมดสิทธิ์!</p>
+                <div class="gc-tags">
+                  <span class="gc-tag orange">ท้าทาย</span> <span class="gc-tag red">เดาตัวอักษร</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initSaveMascotGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <!-- Game 6: Drag & Drop Word Builder -->
+            <div class="game-card-item gc-cyan">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 9l4 4 4-4" />
+                  <path d="M5 15l4 4 4-4" />
+                  <path d="M11 19h8" />
+                  <path d="M11 13h8" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>เกมลากคำ</h3>
+                <p>Drag & Drop Word Builder · ลากบล็อกคำศัพท์ไปวางในช่องว่างเพื่อสร้างประโยคธุรกิจที่ถูกต้อง</p>
+                <div class="gc-tags">
+                  <span class="gc-tag cyan">ลากวาง</span> <span class="gc-tag blue">โครงสร้างประโยค</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initDragWordGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <!-- Game 7: Sentence Transformation / Converter -->
+            <div class="game-card-item gc-purple">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="17 1 21 5 17 9" />
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                  <polyline points="7 23 3 19 7 15" />
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>คอนเวิด (แปลงรูปประโยค)</h3>
+                <p>Sentence Converter · แปลงรูปประโยคตามไวยากรณ์ (Tense, Active/Passive, คำถาม/ปฏิเสธ)</p>
+                <div class="gc-tags">
+                  <span class="gc-tag purple">แปลงไวยากรณ์</span> <span class="gc-tag orange">ท้าทาย</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initConvertSentenceGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            <!-- Game 8: English to Thai Translation Recall -->
+            <div class="game-card-item gc-emerald">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 8l6 6" />
+                  <path d="M4 14l6-6" />
+                  <path d="M2 5h12" />
+                  <path d="M7 2h1" />
+                  <path d="M22 22l-5-10-5 10" />
+                  <path d="M14 18h6" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>แปลอังกฤษ พิมพ์ไทย</h3>
+                <p>English to Thai Recall · อ่านประโยคภาษาอังกฤษ ฟังเสียง AI แล้วพิมพ์ความหมายภาษาไทยให้ถูกต้อง</p>
+                <div class="gc-tags">
+                  <span class="gc-tag green">แปลภาษา</span> <span class="gc-tag blue">ฟังเสียง AI</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initEngToThaiGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+            <!-- Game 9: Word Search Puzzle (ค้นหาคำศัพท์) -->
+            <div class="game-card-item gc-indigo">
+              <div class="gc-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="9" y1="3" x2="9" y2="21" />
+                  <line x1="15" y1="3" x2="15" y2="21" />
+                  <line x1="3" y1="9" x2="21" y2="9" />
+                  <line x1="3" y1="15" x2="21" y2="15" />
+                </svg>
+              </div>
+              <div class="gc-body">
+                <h3>ค้นหาคำศัพท์</h3>
+                <p>Word Search Puzzle · ค้นหาและลากไฮไลต์คำศัพท์ภาษาอังกฤษที่ซ่อนอยู่ในตารางตัวอักษร</p>
+                <div class="gc-tags">
+                  <span class="gc-tag indigo">ปริศนาตาราง</span> <span class="gc-tag orange">ลากลากสายตา</span>
+                </div>
+              </div>
+              <button class="btn-play" (click)="engine.initWordSearchGame()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                เล่นเกม
+              </button>
+            </div>
+
+            @if (!engine.isGameAllowed('scramble') && !engine.isGameAllowed('dialogue')) {
+              <div style="grid-column: 1 / -1; padding: 2.5rem; background: rgba(255, 255, 255, 0.9); border: 2px dashed var(--slate-200); border-radius: 16px; text-align: center; color: var(--slate-500); font-weight: 750;">
+                🔒 อาจารย์ผู้สอนยังไม่เปิดสิทธิ์ใช้งานเกมการเรียนรู้สำหรับบทเรียนนี้
+              </div>
+            }
+          </div>
+        }
+        <!-- Active Game: Scramble -->
+        @if (engine.activeGameType === 'scramble') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>สลับตัวอักษร · {{ lessonsData.currentUnit.number }}</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.scrambleCompleted) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag"
+                    >คำที่ {{ engine.scrambleIndex + 1 }} / {{ engine.scrambleRoundIndices.length }}</span
+                  >
+                  <p class="scramble-hint">{{ lessonsData.currentUnit.scrambleHints[engine.scrambleRoundIndices[engine.scrambleIndex]] }}</p>
+                  <div class="user-word-display">
+                    @for (item of engine.scrambleUserWordList; track item; let uIdx = $index) {
+                      <span class="user-letter" (click)="engine.deselectLetter(item, uIdx)">{{
+                        item.char
+                      }}</span>
+                    }
+                    @if (engine.scrambleUserWordList.length === 0) {
+                      <span class="empty-display">คลิกตัวอักษรด้านล่าง</span>
+                    }
+                  </div>
+                  <div class="letter-keyboard">
+                    @for (letter of engine.clickableLetters; track letter) {
+                      <button
+                        class="letter-key"
+                        [class.used]="letter.used"
+                        [disabled]="letter.used"
+                        (click)="engine.selectLetter(letter)"
+                      >
+                        {{ letter.char }}
+                      </button>
+                    }
+                  </div>
+                  <div class="scramble-actions">
+                    <button class="btn-clear-sc" (click)="engine.clearScrambleWord()">ล้าง</button>
+                    <button
+                      class="btn-check-sc"
+                      (click)="engine.checkScrambleAnswer()"
+                      [disabled]="engine.scrambleUserWordList.length === 0"
+                    >
+                      ตรวจสอบ
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (engine.scrambleCompleted) {
+                <div class="game-done-card">
+                  <h3>🎉 เสร็จแล้ว!</h3>
+                  <p>
+                    ถูก {{ engine.scrambleScores.filter((s) => s).length }} /
+                    {{ engine.scrambleScores.length }} คำ
+                  </p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+        <!-- Active Game: Dialogue -->
+        @if (engine.activeGameType === 'dialogue') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>เรียงบทสนทนา · {{ lessonsData.currentUnit.number }}</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-dialogue">
+              <p class="dialogue-instruction">คลิก ↑ / ↓ เพื่อเรียงประโยคให้ถูกต้อง</p>
+              <div class="dialogue-seq-list">
+                @for (line of engine.scrambledDialogueLines; track line; let idx = $index) {
+                  <div class="dialogue-seq-row">
+                    <span class="seq-num">{{ idx + 1 }}</span>
+                    <span class="seq-text">{{ line.text }}</span>
+                    <div class="seq-moves">
+                      <button class="btn-move" (click)="engine.moveLine(idx, 'up')" [disabled]="idx === 0">
+                        ↑
+                      </button>
+                      <button
+                        class="btn-move"
+                        (click)="engine.moveLine(idx, 'down')"
+                        [disabled]="idx === engine.scrambledDialogueLines.length - 1"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+              @if (!engine.dialogueFinished) {
+                <button
+                  class="btn-check-sc"
+                  style="margin-top: 1rem"
+                  (click)="engine.checkDialogueOrder()"
+                >
+                  ตรวจสอบลำดับ
+                </button>
+              }
+              @if (engine.dialogueFinished) {
+                <div class="game-done-card">
+                  <h3>{{ engine.dialogueSuccessMessage }}</h3>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Picture to Word -->
+        @if (engine.activeGameType === 'picture-word') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>ดูภาพ พิมพ์คำศัพท์</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.pw_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag"
+                    >คำที่ {{ engine.pw_index + 1 }} / {{ engine.pw_pool.length }} · คะแนน {{ engine.pw_score }}</span
+                  >
+                  <div
+                    class="vocab-image-frame"
+                    [class]="gameFx.iconColorClass(engine.pwCurrentWord?.word || '')"
+                  >
+                    @if (engine.pwCurrentWord?.image && !engine.pw_imgError) {
+                      <img
+                        [src]="engine.pwCurrentWord?.image"
+                        (error)="engine.onPwImageError()"
+                        [alt]="engine.pwCurrentWord?.word || ''"
+                        class="vocab-image"
+                      />
+                    } @else {
+                      <svg
+                        class="vocab-icon-svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        @switch (engine.pwCurrentWord?.icon) {
+                          @case ('phone') {
+                            <rect x="8" y="2" width="8" height="20" rx="1.5" />
+                            <line x1="8" y1="17" x2="16" y2="17" />
+                          }
+                          @case ('calendar') {
+                            <rect x="3" y="4" width="18" height="17" rx="2" />
+                            <line x1="3" y1="9" x2="21" y2="9" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                          }
+                          @case ('person') {
+                            <circle cx="12" cy="8" r="4" />
+                            <path d="M4 20a8 8 0 0 1 16 0" />
+                          }
+                          @case ('chat') {
+                            <rect x="3" y="4" width="18" height="12" rx="3" />
+                            <path d="M8 16l-2 4 5-4z" />
+                          }
+                          @case ('document') {
+                            <rect x="5" y="2" width="14" height="20" rx="1.5" />
+                            <line x1="8" y1="7" x2="16" y2="7" />
+                            <line x1="8" y1="11" x2="16" y2="11" />
+                            <line x1="8" y1="15" x2="13" y2="15" />
+                          }
+                          @case ('clock') {
+                            <circle cx="12" cy="12" r="9" />
+                            <polyline points="12 7 12 12 16 14" />
+                          }
+                          @case ('chart') {
+                            <rect x="4" y="10" width="4" height="10" />
+                            <rect x="10" y="5" width="4" height="15" />
+                            <rect x="16" y="13" width="4" height="7" />
+                          }
+                          @case ('book') {
+                            <rect x="3" y="4" width="8" height="16" rx="1" />
+                            <rect x="13" y="4" width="8" height="16" rx="1" />
+                          }
+                          @case ('mic') {
+                            <rect x="9" y="2" width="6" height="12" rx="3" />
+                            <path d="M6 11a6 6 0 0 0 12 0" />
+                            <line x1="12" y1="18" x2="12" y2="22" />
+                            <line x1="8" y1="22" x2="16" y2="22" />
+                          }
+                          @case ('briefcase') {
+                            <rect x="3" y="8" width="18" height="12" rx="2" />
+                            <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+                            <line x1="3" y1="13" x2="21" y2="13" />
+                          }
+                          @case ('question') {
+                            <circle cx="12" cy="12" r="9" />
+                            <text x="12" y="16" text-anchor="middle" font-size="11" font-weight="800" fill="currentColor" stroke="none">?</text>
+                          }
+                          @case ('list') {
+                            <circle cx="4" cy="6" r="1" fill="currentColor" stroke="none" />
+                            <line x1="8" y1="6" x2="20" y2="6" />
+                            <circle cx="4" cy="12" r="1" fill="currentColor" stroke="none" />
+                            <line x1="8" y1="12" x2="20" y2="12" />
+                            <circle cx="4" cy="18" r="1" fill="currentColor" stroke="none" />
+                            <line x1="8" y1="18" x2="20" y2="18" />
+                          }
+                          @case ('monitor') {
+                            <rect x="3" y="4" width="18" height="12" rx="1.5" />
+                            <line x1="8" y1="20" x2="16" y2="20" />
+                            <line x1="12" y1="16" x2="12" y2="20" />
+                          }
+                          @case ('award') {
+                            <circle cx="12" cy="8" r="5" />
+                            <path d="M9 12l-2 8 5-3 5 3-2-8" />
+                          }
+                          @case ('puzzle') {
+                            <rect x="4" y="4" width="7" height="7" rx="1" />
+                            <rect x="13" y="4" width="7" height="7" rx="1" />
+                            <rect x="4" y="13" width="7" height="7" rx="1" />
+                            <rect x="13" y="13" width="7" height="7" rx="1" />
+                          }
+                          @case ('check') {
+                            <circle cx="12" cy="12" r="9" />
+                            <polyline points="8 12 11 15 16 9" />
+                          }
+                          @case ('link') {
+                            <rect x="3" y="9" width="9" height="6" rx="3" />
+                            <rect x="12" y="9" width="9" height="6" rx="3" />
+                          }
+                          @case ('smile') {
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M8 14a4 4 0 0 0 8 0" />
+                            <circle cx="9" cy="10" r="0.8" fill="currentColor" stroke="none" />
+                            <circle cx="15" cy="10" r="0.8" fill="currentColor" stroke="none" />
+                          }
+                          @case ('lightbulb') {
+                            <circle cx="12" cy="9" r="6" />
+                            <line x1="9.5" y1="19" x2="14.5" y2="19" />
+                            <line x1="10" y1="22" x2="14" y2="22" />
+                            <line x1="12" y1="15" x2="12" y2="19" />
+                          }
+                          @default {
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M15 9l-2 6-6 2 2-6z" />
+                          }
+                        }
+                      </svg>
+                    }
+                  </div>
+                  <input
+                    type="text"
+                    class="typing-input"
+                    placeholder="พิมพ์คำศัพท์ภาษาอังกฤษ..."
+                    [(ngModel)]="engine.pw_input"
+                    [disabled]="engine.pw_feedback === 'correct'"
+                    (keyup.enter)="engine.checkPictureWordAnswer()"
+                    autocomplete="off"
+                  />
+                  @if (engine.pw_feedback === 'wrong') {
+                    <p class="typing-feedback wrong">ยังไม่ถูก ลองอีกครั้งนะ</p>
+                  }
+                  @if (engine.pw_feedback === 'correct') {
+                    <p class="typing-feedback correct">ถูกต้อง! 🎉</p>
+                  }
+                  @if (engine.pwHintText) {
+                    <p class="typing-hint">💡 {{ engine.pwHintText }}</p>
+                  }
+                  <div class="scramble-actions">
+                    @if (engine.pw_wrongAttempts >= 2 && engine.pw_feedback !== 'correct') {
+                      <button class="btn-clear-sc" (click)="engine.skipPictureWord()">ข้ามคำนี้</button>
+                    }
+                    <button
+                      class="btn-check-sc"
+                      (click)="engine.checkPictureWordAnswer()"
+                      [disabled]="engine.pw_feedback === 'correct' || !engine.pw_input.trim()"
+                    >
+                      ตรวจสอบ
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (engine.pw_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 เสร็จแล้ว!</h3>
+                  <p>ถูก {{ engine.pw_score }} / {{ engine.pw_pool.length }} คำ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Thai to English Typing Recall -->
+        @if (engine.activeGameType === 'thai-recall') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>แปลไทย พิมพ์อังกฤษ</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.tr_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag"
+                    >คำที่ {{ engine.tr_index + 1 }} / {{ engine.tr_pool.length }} · คะแนน {{ engine.tr_score }}</span
+                  >
+                  <p class="scramble-hint">{{ engine.trCurrentWord?.meaning }}</p>
+                  <input
+                    type="text"
+                    class="typing-input"
+                    placeholder="พิมพ์คำศัพท์ภาษาอังกฤษ..."
+                    [(ngModel)]="engine.tr_input"
+                    [disabled]="engine.tr_feedback !== ''"
+                    (keyup.enter)="engine.submitTypingRecallAnswer()"
+                    autocomplete="off"
+                  />
+                  @if (engine.tr_feedback === 'correct') {
+                    <p class="typing-feedback correct">ถูกต้อง! 🎉</p>
+                  }
+                  @if (engine.tr_feedback === 'wrong') {
+                    <p class="typing-feedback wrong">
+                      ผิด คำตอบที่ถูกคือ "{{ engine.trCurrentWord?.word }}"
+                    </p>
+                  }
+                  <div class="scramble-actions">
+                    <button
+                      class="btn-check-sc"
+                      (click)="engine.submitTypingRecallAnswer()"
+                      [disabled]="engine.tr_feedback !== '' || !engine.tr_input.trim()"
+                    >
+                      ส่งคำตอบ
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (engine.tr_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 เสร็จแล้ว!</h3>
+                  <p>ถูก {{ engine.tr_score }} / {{ engine.tr_pool.length }} คำ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Fill in the Blank -->
+        @if (engine.activeGameType === 'fill-blank') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>เติมคำในประโยค</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.fb_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag"
+                    >ประโยคที่ {{ engine.fb_index + 1 }} / {{ engine.fb_pool.length }} · คะแนน {{ engine.fb_score }}</span
+                  >
+                  <p class="scramble-hint">{{ engine.fbCurrentItem?.blanked }}</p>
+                  <input
+                    type="text"
+                    class="typing-input"
+                    placeholder="พิมพ์คำที่หายไป..."
+                    [(ngModel)]="engine.fb_input"
+                    [disabled]="engine.fb_feedback !== ''"
+                    (keyup.enter)="engine.checkFillBlankAnswer()"
+                    autocomplete="off"
+                  />
+                  @if (engine.fb_feedback === 'correct') {
+                    <p class="typing-feedback correct">ถูกต้อง! 🎉</p>
+                  }
+                  @if (engine.fb_feedback === 'wrong') {
+                    <p class="typing-feedback wrong">
+                      ผิด คำตอบที่ถูกคือ "{{ engine.fbCurrentItem?.answer }}"
+                    </p>
+                  }
+                  @if (engine.fb_feedback !== '') {
+                    <p class="typing-hint">ประโยคเต็ม: {{ engine.fbCurrentItem?.full }}</p>
+                  }
+                  <div class="scramble-actions">
+                    <button
+                      class="btn-check-sc"
+                      (click)="engine.checkFillBlankAnswer()"
+                      [disabled]="engine.fb_feedback !== '' || !engine.fb_input.trim()"
+                    >
+                      ตรวจสอบ
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (engine.fb_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 เสร็จแล้ว!</h3>
+                  <p>ถูก {{ engine.fb_score }} / {{ engine.fb_pool.length }} ประโยค</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Vocabulary Typing Sprint -->
+        @if (engine.activeGameType === 'sprint') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>จับเวลาพิมพ์คำศัพท์</h3>
+              <button class="btn-exit-game" (click)="engine.exitSprintGame()">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.sprint_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag sprint-timer" [class.low]="engine.sprint_timeLeft <= 10"
+                    >⏱️ {{ engine.sprint_timeLeft }} วินาที · คะแนน {{ engine.sprint_score }} · คอมโบ
+                    {{ engine.sprint_combo }}</span
+                  >
+                  <p class="scramble-hint">{{ engine.sprintCurrentWord?.meaning }}</p>
+                  <input
+                    type="text"
+                    class="typing-input"
+                    [class.wrong-flash]="engine.sprint_lastResult === 'wrong'"
+                    [class.correct-flash]="engine.sprint_lastResult === 'correct'"
+                    placeholder="พิมพ์คำศัพท์ภาษาอังกฤษ..."
+                    [(ngModel)]="engine.sprint_input"
+                    (keyup.enter)="engine.submitSprintAnswer()"
+                    autocomplete="off"
+                  />
+                  <div class="scramble-actions">
+                    <button
+                      class="btn-check-sc"
+                      (click)="engine.submitSprintAnswer()"
+                      [disabled]="!engine.sprint_input.trim()"
+                    >
+                      ส่งคำตอบ
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (engine.sprint_finished) {
+                <div class="game-done-card">
+                  <h3>⏱️ หมดเวลา!</h3>
+                  <p>ตอบถูก {{ engine.sprint_score }} คำ · คอมโบสูงสุด {{ engine.sprint_bestCombo }}</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Spot & Fix the Typo -->
+        @if (engine.activeGameType === 'typo-fix') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>จับผิดประโยค</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.tf_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag"
+                    >ประโยคที่ {{ engine.tf_index + 1 }} / {{ engine.tf_pool.length }} · คะแนน {{ engine.tf_score }}</span
+                  >
+                  <p class="typo-original">❌ {{ engine.tfCurrentItem?.wrong }}</p>
+                  <input
+                    type="text"
+                    class="typing-input typing-input-wide"
+                    placeholder="พิมพ์ประโยคที่แก้ไขแล้วทั้งประโยค..."
+                    [(ngModel)]="engine.tf_input"
+                    [disabled]="engine.tf_feedback !== ''"
+                    (keyup.enter)="engine.checkTypoFixAnswer()"
+                    autocomplete="off"
+                  />
+                  @if (engine.tf_feedback === 'correct') {
+                    <p class="typing-feedback correct">ถูกต้อง! 🎉</p>
+                  }
+                  @if (engine.tf_feedback === 'wrong') {
+                    <p class="typing-feedback wrong">
+                      ยังไม่ถูก คำตอบที่ถูกคือ: "{{ engine.tfCurrentItem?.correct }}"
+                    </p>
+                  }
+                  <div class="scramble-actions">
+                    <button
+                      class="btn-check-sc"
+                      (click)="engine.checkTypoFixAnswer()"
+                      [disabled]="engine.tf_feedback !== '' || !engine.tf_input.trim()"
+                    >
+                      ตรวจสอบ
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (engine.tf_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 เสร็จแล้ว!</h3>
+                  <p>ถูก {{ engine.tf_score }} / {{ engine.tf_pool.length }} ประโยค</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Word Riddle -->
+        @if (engine.activeGameType === 'word-riddle') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>ทายคำศัพท์</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.wr_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag"
+                    >คำที่ {{ engine.wr_index + 1 }} / {{ engine.wr_pool.length }} · คะแนน {{ engine.wr_score }}</span
+                  >
+                  <p class="scramble-hint">{{ engine.wrCurrentWord?.meaning }}</p>
+                  <p class="riddle-mask">{{ engine.wrMaskedWord }}</p>
+                  <p class="typing-hint">
+                    เดาผิดได้อีก {{ engine.wr_maxAttempts - engine.wr_wrongAttempts }} ครั้ง
+                  </p>
+                  <input
+                    type="text"
+                    class="typing-input"
+                    placeholder="พิมพ์คำศัพท์ภาษาอังกฤษ..."
+                    [(ngModel)]="engine.wr_input"
+                    [disabled]="engine.wr_feedback === 'correct' || engine.wr_feedback === 'revealed'"
+                    (keyup.enter)="engine.checkWordRiddleAnswer()"
+                    autocomplete="off"
+                  />
+                  @if (engine.wr_feedback === 'correct') {
+                    <p class="typing-feedback correct">ถูกต้อง! 🎉</p>
+                  }
+                  @if (engine.wr_feedback === 'wrong') {
+                    <p class="typing-feedback wrong">ยังไม่ถูก ลองอีกครั้ง</p>
+                  }
+                  @if (engine.wr_feedback === 'revealed') {
+                    <p class="typing-feedback wrong">
+                      หมดโอกาส คำตอบคือ "{{ engine.wrCurrentWord?.word }}"
+                    </p>
+                  }
+                  <div class="scramble-actions">
+                    <button
+                      class="btn-check-sc"
+                      (click)="engine.checkWordRiddleAnswer()"
+                      [disabled]="
+                        engine.wr_feedback === 'correct' || engine.wr_feedback === 'revealed' || !engine.wr_input.trim()
+                      "
+                    >
+                      ตรวจสอบ
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (engine.wr_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 เสร็จแล้ว!</h3>
+                  <p>ถูก {{ engine.wr_score }} / {{ engine.wr_pool.length }} คำ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Sentence Reorder -->
+        @if (engine.activeGameType === 'sentence-reorder') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>เรียงประโยค พิมพ์ใหม่</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.ss_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag"
+                    >ประโยคที่ {{ engine.ss_index + 1 }} / {{ engine.ss_pool.length }} · คะแนน {{ engine.ss_score }}</span
+                  >
+                  <div class="word-bank">
+                    @for (w of engine.ss_wordBank; track $index) {
+                      <span class="word-chip">{{ w }}</span>
+                    }
+                  </div>
+                  <input
+                    type="text"
+                    class="typing-input typing-input-wide"
+                    placeholder="พิมพ์ประโยคให้เรียงลำดับถูกต้อง..."
+                    [(ngModel)]="engine.ss_input"
+                    [disabled]="engine.ss_feedback !== ''"
+                    (keyup.enter)="engine.checkSentenceReorderAnswer()"
+                    autocomplete="off"
+                  />
+                  @if (engine.ss_feedback === 'correct') {
+                    <p class="typing-feedback correct">ถูกต้อง! 🎉</p>
+                  }
+                  @if (engine.ss_feedback === 'wrong') {
+                    <p class="typing-feedback wrong">
+                      ยังไม่ถูก ประโยคที่ถูกคือ: "{{ engine.ssCurrentSentence }}"
+                    </p>
+                  }
+                  <div class="scramble-actions">
+                    <button
+                      class="btn-check-sc"
+                      (click)="engine.checkSentenceReorderAnswer()"
+                      [disabled]="engine.ss_feedback !== '' || !engine.ss_input.trim()"
+                    >
+                      ตรวจสอบ
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (engine.ss_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 เสร็จแล้ว!</h3>
+                  <p>ถูก {{ engine.ss_score }} / {{ engine.ss_pool.length }} ประโยค</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Open Dialogue Reply -->
+        @if (engine.activeGameType === 'open-reply') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>ตอบบทสนทนาเอง</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.odr_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag"
+                    >ข้อที่ {{ engine.odr_index + 1 }} / {{ engine.odr_pool.length }} · ผ่านแล้ว {{ engine.odr_score }}</span
+                  >
+                  <p class="dialogue-instruction" style="white-space: pre-line">
+                    {{ engine.odrCurrentItem?.context }}
+                  </p>
+                  <p class="scramble-hint">{{ engine.odrCurrentItem?.label }}</p>
+                  <textarea
+                    class="email-textarea"
+                    placeholder="พิมพ์คำตอบของคุณเป็นภาษาอังกฤษ..."
+                    [(ngModel)]="engine.odr_input"
+                    [disabled]="engine.odr_submitted"
+                  ></textarea>
+                  @if (!engine.odr_submitted) {
+                    <div class="scramble-actions">
+                      <button
+                        class="btn-check-sc"
+                        (click)="engine.submitOpenReplyAnswer()"
+                        [disabled]="!engine.odr_input.trim()"
+                      >
+                        ส่งคำตอบ
+                      </button>
+                    </div>
+                  }
+                  @if (engine.odr_submitted) {
+                    <div class="keyword-result">
+                      <p class="typing-feedback" [class.correct]="engine.odr_matchedKeywords.length / (engine.odrCurrentItem?.keywords?.length || 1) >= 0.5" [class.wrong]="engine.odr_matchedKeywords.length / (engine.odrCurrentItem?.keywords?.length || 1) < 0.5">
+                        ตรงคำสำคัญ {{ engine.odr_matchedKeywords.length }} / {{ engine.odrCurrentItem?.keywords?.length }}
+                      </p>
+                      <div class="keyword-badges">
+                        @for (k of engine.odrCurrentItem?.keywords; track k) {
+                          <span class="keyword-badge" [class.matched]="engine.odr_matchedKeywords.includes(k)">{{ k }}</span>
+                        }
+                      </div>
+                      <p class="typing-hint">ตัวอย่างคำตอบ: {{ engine.odrCurrentItem?.sampleAnswer }}</p>
+                      <button class="btn-ok-step" (click)="engine.nextOpenReplyRound()">ข้อถัดไป</button>
+                    </div>
+                  }
+                </div>
+              }
+              @if (engine.odr_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 เสร็จแล้ว!</h3>
+                  <p>ผ่าน {{ engine.odr_score }} / {{ engine.odr_pool.length }} ข้อ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Scenario Sentence Construction -->
+        @if (engine.activeGameType === 'scenario') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>รับมือสถานการณ์จริง</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.scn_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag"
+                    >ข้อที่ {{ engine.scn_index + 1 }} / {{ engine.scn_pool.length }} · ผ่านแล้ว {{ engine.scn_score }}</span
+                  >
+                  <p class="scramble-hint">{{ engine.scnCurrentItem?.situationEn }}</p>
+                  <p class="typing-hint" style="margin-top: -0.5rem;">🇹🇭 {{ engine.scnCurrentItem?.situationTh }}</p>
+                  <textarea
+                    class="email-textarea"
+                    placeholder="พิมพ์ประโยคภาษาอังกฤษที่เหมาะสม..."
+                    [(ngModel)]="engine.scn_input"
+                    [disabled]="engine.scn_submitted"
+                  ></textarea>
+                  @if (!engine.scn_submitted) {
+                    <div class="scramble-actions">
+                      <button
+                        class="btn-check-sc"
+                        (click)="engine.submitScenarioAnswer()"
+                        [disabled]="!engine.scn_input.trim()"
+                      >
+                        ส่งคำตอบ
+                      </button>
+                    </div>
+                  }
+                  @if (engine.scn_submitted) {
+                    <div class="keyword-result">
+                      <p class="typing-feedback" [class.correct]="engine.scn_matchedKeywords.length / (engine.scnCurrentItem?.keywords?.length || 1) >= 0.5" [class.wrong]="engine.scn_matchedKeywords.length / (engine.scnCurrentItem?.keywords?.length || 1) < 0.5">
+                        ตรงคำสำคัญ {{ engine.scn_matchedKeywords.length }} / {{ engine.scnCurrentItem?.keywords?.length }}
+                      </p>
+                      <div class="keyword-badges">
+                        @for (k of engine.scnCurrentItem?.keywords; track k) {
+                          <span class="keyword-badge" [class.matched]="engine.scn_matchedKeywords.includes(k)">{{ k }}</span>
+                        }
+                      </div>
+                      <p class="typing-hint">ตัวอย่างคำตอบ: {{ engine.scnCurrentItem?.sampleAnswer }}</p>
+                      <button class="btn-ok-step" (click)="engine.nextScenarioRound()">ข้อถัดไป</button>
+                    </div>
+                  }
+                </div>
+              }
+              @if (engine.scn_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 เสร็จแล้ว!</h3>
+                  <p>ผ่าน {{ engine.scn_score }} / {{ engine.scn_pool.length }} ข้อ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Memory Card Match -->
+        @if (engine.activeGameType === 'match-pair') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>จับคู่การ์ดความจำ</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.mm_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag">รอบที่ {{ engine.mm_round }} / {{ engine.mm_maxRounds }} · คู่ที่จับได้ {{ engine.mm_score }} คู่</span>
+                  
+                  <div class="memory-grid">
+                    @for (card of engine.mm_cards; track card.id; let cIdx = $index) {
+                      <div
+                        class="memory-card"
+                        [class.flipped]="card.isFlipped || card.isMatched"
+                        [class.matched]="card.isMatched"
+                        (click)="engine.selectMemoryMatchCard(cIdx)"
+                      >
+                        <div class="card-inner">
+                          <div class="card-front">
+                            <span>❓</span>
+                          </div>
+                          <div class="card-back" [class.type-th]="card.type === 'th'">
+                            <span>{{ card.text }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              @if (engine.mm_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 เสร็จสิ้นการจับคู่!</h3>
+                  <p>จับคู่ได้ถูกต้องทั้งหมดครบถ้วน!</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Dictation Master -->
+        @if (engine.activeGameType === 'dictation') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>สะกดตามคำบอก</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.dc_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag">คำที่ {{ engine.dc_index + 1 }} / {{ engine.dc_pool.length }} · คะแนน {{ engine.dc_score }}</span>
+                  
+                  <div class="dictation-audio-wrap">
+                    <button type="button" class="btn-dictation-speaker" (click)="engine.playDictationWord()">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      </svg>
+                    </button>
+                    <p class="dictation-hint-txt">แตะลำโพงเพื่อฟังเสียงสะกดคำ</p>
+                    <p class="dictation-thai-meaning">ความหมาย: {{ engine.dc_pool[engine.dc_index]?.meaning }}</p>
+                  </div>
+                  
+                  <input
+                    type="text"
+                    class="styled-input-scramble"
+                    placeholder="พิมพ์คำศัพท์ภาษาอังกฤษที่ได้ยิน..."
+                    [(ngModel)]="engine.dc_input"
+                    [disabled]="engine.dc_showFeedback"
+                    (keyup.enter)="engine.submitDictationAnswer()"
+                  />
+                  
+                  @if (!engine.dc_showFeedback) {
+                    <div class="scramble-actions">
+                      <button class="btn-check-sc" (click)="engine.submitDictationAnswer()" [disabled]="!engine.dc_input.trim()">
+                        ตรวจสอบ
+                      </button>
+                    </div>
+                  }
+                  
+                  @if (engine.dc_showFeedback) {
+                    <div class="feedback-block" [class.correct]="engine.dc_isCorrect" [class.wrong]="!engine.dc_isCorrect">
+                      <p class="feedback-msg">
+                        {{ engine.dc_isCorrect ? 'ถูกต้อง! 🌟' : 'ยังไม่ถูก! ❌' }}
+                      </p>
+                      <p class="feedback-sub">
+                        คำที่ถูกต้องคือ: <strong class="correct-word">{{ engine.dc_pool[engine.dc_index]?.word }}</strong>
+                      </p>
+                      <button class="btn-ok-step" (click)="engine.nextDictationRound()">คำถัดไป</button>
+                    </div>
+                  }
+                </div>
+              }
+              @if (engine.dc_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 จบการสะกดคำ!</h3>
+                  <p>คุณตอบถูกทั้งหมด {{ engine.dc_score }} / {{ engine.dc_pool.length }} คำ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: POS Sorter -->
+        @if (engine.activeGameType === 'pos-sorter') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>แยกแยะประเภทคำ</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.pos_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag">คำที่ {{ engine.pos_index + 1 }} / {{ engine.pos_pool.length }} · คะแนน {{ engine.pos_score }}</span>
+                  
+                  <div class="pos-word-card">
+                    <h2 class="pos-target-word">{{ engine.pos_pool[engine.pos_index]?.word }}</h2>
+                    <p class="pos-word-meaning">ความหมาย: {{ engine.pos_pool[engine.pos_index]?.meaning }}</p>
+                  </div>
+                  
+                  <div class="pos-options-grid">
+                    <button
+                      class="pos-opt-btn"
+                      [class.selected]="engine.pos_selected === 'noun'"
+                      [disabled]="engine.pos_showFeedback"
+                      (click)="engine.submitPosAnswer('noun')"
+                    >
+                      Noun (คำนาม)
+                    </button>
+                    <button
+                      class="pos-opt-btn"
+                      [class.selected]="engine.pos_selected === 'verb'"
+                      [disabled]="engine.pos_showFeedback"
+                      (click)="engine.submitPosAnswer('verb')"
+                    >
+                      Verb (คำกริยา)
+                    </button>
+                    <button
+                      class="pos-opt-btn"
+                      [class.selected]="engine.pos_selected === 'adjective'"
+                      [disabled]="engine.pos_showFeedback"
+                      (click)="engine.submitPosAnswer('adjective')"
+                    >
+                      Adjective (คุณศัพท์)
+                    </button>
+                    <button
+                      class="pos-opt-btn"
+                      [class.selected]="engine.pos_selected === 'adverb'"
+                      [disabled]="engine.pos_showFeedback"
+                      (click)="engine.submitPosAnswer('adverb')"
+                    >
+                      Adverb (กริยาวิเศษณ์)
+                    </button>
+                  </div>
+                  
+                  @if (engine.pos_showFeedback) {
+                    <div class="feedback-block" [class.correct]="engine.pos_selected === engine.pos_pool[engine.pos_index]?.pos" [class.wrong]="engine.pos_selected !== engine.pos_pool[engine.pos_index]?.pos">
+                      <p class="feedback-msg">
+                        {{ engine.pos_selected === engine.pos_pool[engine.pos_index]?.pos ? 'ถูกต้อง! 🌟' : 'ยังไม่ถูก! ❌' }}
+                      </p>
+                      <p class="feedback-sub">
+                        ประเภทคำที่ถูกต้องคือ: <strong>{{ engine.pos_pool[engine.pos_index]?.pos | uppercase }}</strong>
+                      </p>
+                      <button class="btn-ok-step" (click)="engine.nextPosRound()">คำถัดไป</button>
+                    </div>
+                  }
+                </div>
+              }
+              @if (engine.pos_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 จบการคัดแยกประเภทคำ!</h3>
+                  <p>คุณตอบถูกทั้งหมด {{ engine.pos_score }} / {{ engine.pos_pool.length }} คำ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Synonym Matcher -->
+        @if (engine.activeGameType === 'synonym-match') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>คำพ้องความหมาย</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.sm_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag">คำที่ {{ engine.sm_index + 1 }} / {{ engine.sm_pool.length }} · คะแนน {{ engine.sm_score }}</span>
+                  
+                  <div class="synonym-target-wrap">
+                    <p class="synonym-instruction">คำใดเป็นคำพ้องความหมายของ:</p>
+                    <h2 class="synonym-target-word">{{ engine.sm_pool[engine.sm_index]?.word }}</h2>
+                  </div>
+                  
+                  <div class="synonym-options-list">
+                    @for (option of engine.sm_pool[engine.sm_index]?.options; track option) {
+                      <button
+                        class="synonym-opt-row"
+                        [class.selected]="engine.sm_selectedOption === option"
+                        [class.correct-highlight]="engine.sm_showFeedback && option === engine.sm_pool[engine.sm_index]?.synonym"
+                        [class.wrong-highlight]="engine.sm_showFeedback && engine.sm_selectedOption === option && option !== engine.sm_pool[engine.sm_index]?.synonym"
+                        [disabled]="engine.sm_showFeedback"
+                        (click)="engine.submitSynonymAnswer(option)"
+                      >
+                        {{ option }}
+                      </button>
+                    }
+                  </div>
+                  
+                  @if (engine.sm_showFeedback) {
+                    <div class="feedback-block" [class.correct]="engine.sm_selectedOption === engine.sm_pool[engine.sm_index]?.synonym" [class.wrong]="engine.sm_selectedOption !== engine.sm_pool[engine.sm_index]?.synonym">
+                      <p class="feedback-msg">
+                        {{ engine.sm_selectedOption === engine.sm_pool[engine.sm_index]?.synonym ? 'ถูกต้อง! 🌟' : 'ยังไม่ถูก! ❌' }}
+                      </p>
+                      <p class="feedback-sub">
+                        คำพ้องความหมายที่ถูกต้องคือ: <strong>{{ engine.sm_pool[engine.sm_index]?.synonym }}</strong>
+                      </p>
+                      <button class="btn-ok-step" (click)="engine.nextSynonymRound()">คำถัดไป</button>
+                    </div>
+                  }
+                </div>
+              }
+              @if (engine.sm_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 จบเกมคำพ้องความหมาย!</h3>
+                  <p>คุณตอบถูกทั้งหมด {{ engine.sm_score }} / {{ engine.sm_pool.length }} คำ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Save the Mascot -->
+        @if (engine.activeGameType === 'save-mascot') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>ช่วยชีวิตนกฮูกมาสคอต</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.hm_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag">คำที่ {{ engine.hm_index + 1 }} / {{ engine.hm_roundWords.length }} · ช่วยสำเร็จ {{ engine.hm_score }} คำ</span>
+                  
+                  <div class="hangman-mascot-row">
+                    <div class="hangman-lives-wrap">
+                      @for (heart of [1, 2, 3, 4, 5]; track heart) {
+                        <span class="heart-icon" [class.broken]="heart > engine.hm_lives">❤️</span>
+                      }
+                    </div>
+                    <div class="hangman-mascot-pic" [class.sad]="engine.hm_lives <= 2" [class.happy]="engine.hm_isGuessed">
+                      @if (engine.hm_lives > 2 && !engine.hm_isGuessed) {
+                        <span>🦉</span>
+                      }
+                      @if (engine.hm_lives <= 2 && engine.hm_lives > 0 && !engine.hm_isGuessed) {
+                        <span>😢</span>
+                      }
+                      @if (engine.hm_lives === 0) {
+                        <span>💀</span>
+                      }
+                      @if (engine.hm_isGuessed) {
+                        <span>🥳</span>
+                      }
+                    </div>
+                  </div>
+                  
+                  <div class="hangman-word-area">
+                    <p class="hangman-thai-hint">คำใบ้: {{ engine.hm_wordObj?.meaning }}</p>
+                    <h2 class="hangman-blanks">{{ engine.hm_displayWord }}</h2>
+                  </div>
+                  
+                  @if (engine.hm_lives > 0 && !engine.hm_isGuessed) {
+                    <div class="hangman-keyboard-grid">
+                      @for (letter of engine.hm_keyboard; track letter) {
+                        <button
+                          class="hm-key-btn"
+                          [disabled]="engine.hm_guessedLetters.has(letter)"
+                          [class.used]="engine.hm_guessedLetters.has(letter)"
+                          (click)="engine.guessMascotLetter(letter)"
+                        >
+                          {{ letter }}
+                        </button>
+                      }
+                    </div>
+                  }
+                  
+                  @if (engine.hm_lives <= 0) {
+                    <div class="feedback-block wrong">
+                      <p class="feedback-msg">คำตอบที่ถูกต้องคือ: <strong>{{ engine.hm_wordObj?.word | uppercase }}</strong></p>
+                      <button class="btn-ok-step" (click)="engine.nextMascotRound()">คำถัดไป</button>
+                    </div>
+                  }
+                  
+                  @if (engine.hm_isGuessed) {
+                    <div class="feedback-block correct">
+                      <p class="feedback-msg">เก่งมาก! ตอบถูกแล้ว 🌟</p>
+                      <button class="btn-ok-step" (click)="engine.nextMascotRound()">คำถัดไป</button>
+                    </div>
+                  }
+                </div>
+              }
+              @if (engine.hm_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 จบภารกิจช่วยชีวิตมาสคอต!</h3>
+                  <p>คุณช่วยสำเร็จทั้งหมด {{ engine.hm_score }} / {{ engine.hm_roundWords.length }} คำ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Email Reply Capstone -->
+        @if (engine.activeGameType === 'email-capstone') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>ตอบอีเมลลูกค้า</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.em_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag"
+                    >อีเมลที่ {{ engine.em_index + 1 }} / {{ engine.em_pool.length }} · ผ่านแล้ว {{ engine.em_score }}</span
+                  >
+                  <div class="email-preview">
+                    <p class="email-subject">📧 {{ engine.emCurrentItem?.subject }}</p>
+                    <p class="email-body">{{ engine.emCurrentItem?.body }}</p>
+                  </div>
+                  <textarea
+                    class="email-textarea"
+                    placeholder="พิมพ์อีเมลตอบกลับอย่างมืออาชีพ (อย่างน้อย {{ engine.emCurrentItem?.minWords }} คำ)..."
+                    [(ngModel)]="engine.em_input"
+                    [disabled]="engine.em_submitted"
+                  ></textarea>
+                  <p class="typing-hint">จำนวนคำ: {{ engine.emWordCount }} / {{ engine.emCurrentItem?.minWords }}</p>
+                  @if (!engine.em_submitted) {
+                    <div class="scramble-actions">
+                      <button
+                        class="btn-check-sc"
+                        (click)="engine.submitEmailCapstoneAnswer()"
+                        [disabled]="!engine.em_input.trim()"
+                      >
+                        ส่งอีเมล
+                      </button>
+                    </div>
+                  }
+                  @if (engine.em_submitted) {
+                    <div class="keyword-result">
+                      <p class="typing-feedback" [class.correct]="engine.em_matchedKeywords.length / (engine.emCurrentItem?.keywords?.length || 1) >= 0.5 && engine.em_wordCountOk" [class.wrong]="engine.em_matchedKeywords.length / (engine.emCurrentItem?.keywords?.length || 1) < 0.5 || !engine.em_wordCountOk">
+                        ตรงคำสำคัญ {{ engine.em_matchedKeywords.length }} / {{ engine.emCurrentItem?.keywords?.length }}
+                        · {{ engine.em_wordCountOk ? 'ความยาวผ่าน ✅' : 'สั้นเกินไป ❌' }}
+                      </p>
+                      <div class="keyword-badges">
+                        @for (k of engine.emCurrentItem?.keywords; track k) {
+                          <span class="keyword-badge" [class.matched]="engine.em_matchedKeywords.includes(k)">{{ k }}</span>
+                        }
+                      </div>
+                      <p class="typing-hint">ตัวอย่างคำตอบ: {{ engine.emCurrentItem?.sampleAnswer }}</p>
+                      <button class="btn-ok-step" (click)="engine.nextEmailCapstoneRound()">อีเมลถัดไป</button>
+                    </div>
+                  }
+                </div>
+              }
+              @if (engine.em_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 จบด่าน Capstone!</h3>
+                  <p>ผ่าน {{ engine.em_score }} / {{ engine.em_pool.length }} อีเมล</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">ตกลง</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Drag & Drop Word Builder -->
+        @if (engine.activeGameType === 'drag-word') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>เกมลากคำ · Drag & Drop Word Builder</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.dw_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag">ข้อที่ {{ engine.dw_index + 1 }} / {{ engine.dw_questions.length }} · คะแนน {{ engine.dw_score }}</span>
+                  <p class="scramble-hint">🎯 ความหมายประโยคที่ต้องสร้าง: {{ engine.dw_questions[engine.dw_index].thaiHint }}</p>
+                  
+                  <!-- Sentence Drop Container -->
+                  <div class="drag-sentence-container">
+                    <p class="sentence-template-text">
+                      We need to 
+                      <span
+                        class="drop-slot"
+                        [class.filled]="engine.dw_questions[engine.dw_index].slots[0].currentWord !== null"
+                        [class.correct]="engine.dw_showFeedback && engine.dw_questions[engine.dw_index].slots[0].currentWord === engine.dw_questions[engine.dw_index].slots[0].targetWord"
+                        [class.wrong]="engine.dw_showFeedback && engine.dw_questions[engine.dw_index].slots[0].currentWord !== engine.dw_questions[engine.dw_index].slots[0].targetWord"
+                        (dragover)="engine.onDwDragOver($event)"
+                        (drop)="engine.onDwDrop($event, 0)"
+                        (click)="engine.clearDwSlot(0)"
+                      >
+                        @if (engine.dw_questions[engine.dw_index].slots[0].currentWord) {
+                          <span class="placed-word-chip">{{ engine.dw_questions[engine.dw_index].slots[0].currentWord }} ✕</span>
+                        } @else {
+                          <span class="empty-slot-placeholder">[{{ engine.dw_questions[engine.dw_index].slots[0].placeholder }}]</span>
+                        }
+                      </span>
+                      an urgent 
+                      @if (engine.dw_questions[engine.dw_index].slots.length > 1) {
+                        <span
+                          class="drop-slot"
+                          [class.filled]="engine.dw_questions[engine.dw_index].slots[1].currentWord !== null"
+                          [class.correct]="engine.dw_showFeedback && engine.dw_questions[engine.dw_index].slots[1].currentWord === engine.dw_questions[engine.dw_index].slots[1].targetWord"
+                          [class.wrong]="engine.dw_showFeedback && engine.dw_questions[engine.dw_index].slots[1].currentWord !== engine.dw_questions[engine.dw_index].slots[1].targetWord"
+                          (dragover)="engine.onDwDragOver($event)"
+                          (drop)="engine.onDwDrop($event, 1)"
+                          (click)="engine.clearDwSlot(1)"
+                        >
+                          @if (engine.dw_questions[engine.dw_index].slots[1].currentWord) {
+                            <span class="placed-word-chip">{{ engine.dw_questions[engine.dw_index].slots[1].currentWord }} ✕</span>
+                          } @else {
+                            <span class="empty-slot-placeholder">[{{ engine.dw_questions[engine.dw_index].slots[1].placeholder }}]</span>
+                          }
+                        </span>
+                      }
+                      with the client.
+                    </p>
+                  </div>
+                  
+                  <p class="drag-instruction-sub">👇 ลากคำศัพท์ลงในช่องว่าง หรือคลิกที่คำเพื่อวาง/ยกเลิก</p>
+                  
+                  <!-- Draggable Word Bank -->
+                  <div class="word-bank-grid">
+                    @for (word of engine.dw_questions[engine.dw_index].wordBank; track word) {
+                      <button
+                        class="word-drag-chip"
+                        draggable="true"
+                        (dragstart)="engine.onDwDragStart($event, word)"
+                        (click)="engine.quickPlaceWord(word)"
+                      >
+                        {{ word }}
+                      </button>
+                    }
+                  </div>
+
+                  @if (!engine.dw_showFeedback) {
+                    <div class="scramble-actions">
+                      <button class="btn-check-sc" (click)="engine.checkDragWordAnswer()">ตรวจสอบคำตอบ</button>
+                    </div>
+                  }
+
+                  @if (engine.dw_showFeedback) {
+                    <div class="feedback-block" [class.correct]="engine.dw_isCorrect" [class.wrong]="!engine.dw_isCorrect">
+                      @if (engine.dw_isCorrect) {
+                        <p class="feedback-msg">🎉 ถูกต้องครับ! {{ engine.dw_questions[engine.dw_index].explanation }}</p>
+                      } @else {
+                        <p class="feedback-msg">❌ ยังไม่ถูกต้องครับ! {{ engine.dw_questions[engine.dw_index].explanation }}</p>
+                      }
+                      <button class="btn-ok-step" (click)="engine.nextDragWordQuestion()">ข้อถัดไป</button>
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (engine.dw_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 จบเกมลากคำ!</h3>
+                  <p>คุณตอบถูกต้อง {{ engine.dw_score }} / {{ engine.dw_questions.length }} ข้อ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">กลับหน้าหลักเกม</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Sentence Converter -->
+        @if (engine.activeGameType === 'convert-sentence') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>คอนเวิด · Sentence Transformation</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.cs_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag">ข้อที่ {{ engine.cs_index + 1 }} / {{ engine.cs_questions.length }} · คะแนน {{ engine.cs_score }}</span>
+                  <div class="convert-instruction-badge">
+                    ⚡ คำสั่ง: <strong>{{ engine.cs_questions[engine.cs_index].instruction }}</strong>
+                  </div>
+                  
+                  <div class="convert-source-box">
+                    <span class="source-label">ประโยคตั้งต้น:</span>
+                    <p class="source-sentence">"{{ engine.cs_questions[engine.cs_index].originalSentence }}"</p>
+                  </div>
+                  
+                  <div class="convert-hint-wrap">
+                    <button class="btn-toggle-hint" (click)="engine.toggleConvertHint()">
+                      {{ engine.cs_showHint ? '🙈 ซ่อนคำใบ้' : '💡 ขอคำใบ้' }}
+                    </button>
+                    @if (engine.cs_showHint) {
+                      <p class="hint-text animate-fade">{{ engine.cs_questions[engine.cs_index].hint }}</p>
+                    }
+                  </div>
+                  
+                  <div class="convert-input-wrap">
+                    <textarea
+                      class="convert-textarea"
+                      rows="2"
+                      placeholder="พิมพ์ประโยคที่แปลงรูปแล้วภาษาอังกฤษ..."
+                      [(ngModel)]="engine.cs_input"
+                      [disabled]="engine.cs_showFeedback"
+                    ></textarea>
+                  </div>
+
+                  @if (!engine.cs_showFeedback) {
+                    <div class="scramble-actions">
+                      <button class="btn-check-sc" [disabled]="!engine.cs_input.trim()" (click)="engine.checkConvertSentenceAnswer()">ตรวจคำตอบ</button>
+                    </div>
+                  }
+
+                  @if (engine.cs_showFeedback) {
+                    <div class="feedback-block" [class.correct]="engine.cs_isCorrect" [class.wrong]="!engine.cs_isCorrect">
+                      @if (engine.cs_isCorrect) {
+                        <p class="feedback-msg">🌟 ถูกต้องเยี่ยมมาก! {{ engine.cs_questions[engine.cs_index].explanation }}</p>
+                      } @else {
+                        <p class="feedback-msg">❌ ยังไม่ถูกต้องครับ: {{ engine.cs_questions[engine.cs_index].explanation }}</p>
+                        <p class="sample-ans">เฉลย: <strong>{{ engine.cs_questions[engine.cs_index].correctAnswers[0] }}</strong></p>
+                      }
+                      <button class="btn-ok-step" (click)="engine.nextConvertSentenceQuestion()">ข้อถัดไป</button>
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (engine.cs_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 จบเกมคอนเวิด!</h3>
+                  <p>คุณแปลงประโยคถูกต้อง {{ engine.cs_score }} / {{ engine.cs_questions.length }} ข้อ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">กลับหน้าหลักเกม</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: English to Thai Translation -->
+        @if (engine.activeGameType === 'eng-to-thai') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>แปลอังกฤษ พิมพ์ไทย · English to Thai Recall</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.et_finished) {
+                <div class="scramble-card">
+                  <span class="game-meta-tag">ข้อที่ {{ engine.et_index + 1 }} / {{ engine.et_questions.length }} · คะแนน {{ engine.et_score }}</span>
+                  
+                  <div class="eng-prompt-card">
+                    <div class="eng-prompt-header">
+                      <span class="prompt-tag">ประโยคภาษาอังกฤษ</span>
+                      <button class="btn-audio-speak" (click)="engine.speakEngToThaiCurrent()" title="ฟังเสียงอ่าน AI">
+                        🔊 ฟังเสียง
+                      </button>
+                    </div>
+                    <h3 class="eng-sentence-display">"{{ engine.et_questions[engine.et_index].englishSentence }}"</h3>
+                  </div>
+
+                  <div class="convert-hint-wrap">
+                    <button class="btn-toggle-hint" (click)="engine.toggleEngToThaiHint()">
+                      {{ engine.et_showHint ? '🙈 ซ่อนคำใบ้' : '💡 ขอคำใบ้' }}
+                    </button>
+                    @if (engine.et_showHint) {
+                      <p class="hint-text animate-fade">{{ engine.et_questions[engine.et_index].thaiHint }}</p>
+                    }
+                  </div>
+
+                  <div class="convert-input-wrap">
+                    <input
+                      type="text"
+                      class="convert-input-field"
+                      placeholder="พิมพ์ความหมาย / คำแปลภาษาไทย..."
+                      [(ngModel)]="engine.et_input"
+                      (keyup.enter)="engine.checkEngToThaiAnswer()"
+                      [disabled]="engine.et_showFeedback"
+                    />
+                  </div>
+
+                  @if (!engine.et_showFeedback) {
+                    <div class="scramble-actions">
+                      <button class="btn-check-sc" [disabled]="!engine.et_input.trim()" (click)="engine.checkEngToThaiAnswer()">ตรวจคำตอบ</button>
+                    </div>
+                  }
+
+                  @if (engine.et_showFeedback) {
+                    <div class="feedback-block" [class.correct]="engine.et_isCorrect" [class.wrong]="!engine.et_isCorrect">
+                      @if (engine.et_isCorrect) {
+                        <p class="feedback-msg">🎉 แปลได้ถูกต้องยอดเยี่ยม! {{ engine.et_questions[engine.et_index].explanation }}</p>
+                      } @else {
+                        <p class="feedback-msg">❌ ยังไม่ถูกต้องครับ: {{ engine.et_questions[engine.et_index].explanation }}</p>
+                      }
+                      <p class="sample-ans">คำแปลตัวอย่าง: <strong>{{ engine.et_questions[engine.et_index].primaryThai }}</strong></p>
+                      <button class="btn-ok-step" (click)="engine.nextEngToThaiQuestion()">ข้อถัดไป</button>
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (engine.et_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 จบเกมแปลอังกฤษ พิมพ์ไทย!</h3>
+                  <p>คุณแปลภาษาไทยถูกต้อง {{ engine.et_score }} / {{ engine.et_questions.length }} ข้อ</p>
+                  <button class="btn-ok-step" (click)="engine.activeGameType = null">กลับหน้าหลักเกม</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Active Game: Word Search Puzzle -->
+        @if (engine.activeGameType === 'word-search') {
+          <div class="active-game-area animate-fade">
+            <div class="active-game-topbar">
+              <h3>ค้นหาคำศัพท์ · Word Search Puzzle</h3>
+              <button class="btn-exit-game" (click)="engine.activeGameType = null">ออกจากเกม</button>
+            </div>
+            <div class="game-body-scramble">
+              @if (!engine.ws_finished) {
+                <div class="scramble-card ws-game-card">
+                  <div class="ws-header-meta">
+                    <span class="game-meta-tag">ค้นพบแล้ว {{ engine.ws_score }} / {{ engine.ws_words.length }} คำ</span>
+                    <button class="btn-restart-ws" (click)="engine.startNewWordSearchRound()">🔄 สุ่มตารางใหม่</button>
+                  </div>
+                  
+                  <p class="ws-instruction">👇 ลากตัวอักษรในตารางเพื่อไฮไลต์และจับคู่คำศัพท์ที่ซ่อนอยู่</p>
+                  
+                  <!-- Grid Area -->
+                  <div class="ws-grid-container">
+                    <div class="ws-grid">
+                      @for (row of engine.ws_grid; track $index; let r = $index) {
+                        <div class="ws-row">
+                          @for (char of row; track $index; let c = $index) {
+                            <div
+                              [class]="engine.getWsCellClass(r, c)"
+                              (pointerdown)="engine.startWordSelect(r, c, $event)"
+                              (pointerenter)="engine.continueWordSelect(r, c)"
+                            >
+                              {{ char }}
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Words List Below Grid -->
+                  <div class="ws-word-list-area">
+                    <h4>รายการคำศัพท์ที่ต้องค้นหา:</h4>
+                    <div class="ws-target-chips">
+                      @for (item of engine.ws_words; track item.word) {
+                        <div
+                          class="ws-target-chip"
+                          [class.found]="item.found"
+                          [class.color-0]="item.colorIndex === 0"
+                          [class.color-1]="item.colorIndex === 1"
+                          [class.color-2]="item.colorIndex === 2"
+                          [class.color-3]="item.colorIndex === 3"
+                          [class.color-4]="item.colorIndex === 4"
+                          [class.color-5]="item.colorIndex === 5"
+                        >
+                          <span class="ws-chip-word">{{ item.word }}</span>
+                          <span class="ws-chip-meaning">({{ item.meaning }})</span>
+                          @if (item.found) {
+                            <span class="ws-check">✓</span>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+
+              @if (engine.ws_finished) {
+                <div class="game-done-card">
+                  <h3>🎉 ค้นหาคำศัพท์สำเร็จครบทุกคำ!</h3>
+                  <p>ยินดีด้วย! คุณหาคำศัพท์เจอทั้งหมด {{ engine.ws_words.length }} คำ</p>
+                  <button class="btn-ok-step" (click)="engine.startNewWordSearchRound()">เล่นอีกรอบ</button>
+                  <button class="btn-ok-step btn-secondary-exit" (click)="engine.activeGameType = null">กลับหน้าหลักเกม</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+      </section>

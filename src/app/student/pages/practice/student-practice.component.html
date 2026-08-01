@@ -1,0 +1,1497 @@
+      <section class="tab-section animate-fade practice-tab-width" [class.workspace-active]="practiceSetupActive || practiceMode !== 'menu'">
+        <div class="practice-hub-container">
+          <!-- Duck Mascot Welcoming Header -->
+          @if (!practiceSetupActive && practiceMode === 'menu') {
+            <div class="practice-mascot-header-row animate-fade" style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; max-width: 720px; margin: 0.5rem auto 1.5rem; padding: 0 1rem; width: 100%;">
+              <!-- SVG Duck Mascot -->
+              <svg class="practice-duck-mascot" viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" style="width: 85px; height: auto; flex-shrink: 0; filter: drop-shadow(0 8px 16px rgba(123, 108, 246, 0.15));">
+                <!-- Feet -->
+                <path d="M 78,218 Q 68,228 56,225 Q 58,215 70,215 Z" fill="#FF9E1B"/>
+                <path d="M 122,218 Q 132,228 144,225 Q 142,215 130,215 Z" fill="#FF9E1B"/>
+                <!-- Body -->
+                <ellipse cx="100" cy="178" rx="46" ry="40" fill="#FFFFFF"/>
+                <ellipse cx="100" cy="183" rx="33" ry="28" fill="#F8F8FF"/>
+                <!-- Left Wing (resting) -->
+                <path d="M 54,178 C 36,168 23,152 27,139 C 31,127 44,132 51,144 C 57,155 57,169 54,178 Z" fill="#E8E4FF"/>
+                <!-- Right Wing (waving) -->
+                <g class="duck-wing-wave">
+                  <path d="M 148,170 C 166,157 180,140 175,127 C 170,114 157,120 152,133 C 147,145 145,160 148,170 Z" fill="#E8E4FF"/>
+                  <path d="M 175,127 Q 184,117 189,124" fill="none" stroke="#D8D4F8" stroke-width="5" stroke-linecap="round"/>
+                  <path d="M 172,122 Q 179,111 185,116" fill="none" stroke="#D8D4F8" stroke-width="4" stroke-linecap="round"/>
+                </g>
+                <!-- Head -->
+                <circle cx="100" cy="98" r="52" fill="#FFFFFF"/>
+                <!-- Hair tuft -->
+                <path d="M 94,47 Q 90,35 98,32 Q 96,41 100,47 Q 107,34 114,36 Q 111,44 106,49" fill="#E8E4FF" stroke="#D8D4F8" stroke-width="1"/>
+                <!-- Headphone band -->
+                <path d="M 50,94 Q 54,46 100,44 Q 146,46 150,94" fill="none" stroke="#7B6CF6" stroke-width="6" stroke-linecap="round"/>
+                <!-- Left ear cup -->
+                <ellipse cx="50" cy="97" rx="14" ry="16" fill="#9B8DF8"/>
+                <ellipse cx="50" cy="97" rx="9" ry="11" fill="#7B6CF6"/>
+                <ellipse cx="50" cy="97" rx="5" ry="6" fill="#5448CC"/>
+                <!-- Right ear cup -->
+                <ellipse cx="150" cy="97" rx="14" ry="16" fill="#9B8DF8"/>
+                <ellipse cx="150" cy="97" rx="9" ry="11" fill="#7B6CF6"/>
+                <ellipse cx="150" cy="97" rx="5" ry="6" fill="#5448CC"/>
+                <!-- Mic arm -->
+                <path d="M 138,118 Q 148,127 144,140" fill="none" stroke="#7B6CF6" stroke-width="3.5" stroke-linecap="round"/>
+                <circle cx="144" cy="143" r="6" fill="#9B8DF8"/>
+                <circle cx="144" cy="143" r="3.5" fill="#7B6CF6"/>
+                <!-- Left Eye -->
+                <circle cx="82" cy="95" r="14" fill="#3D2005"/>
+                <path d="M 69,98 A 14,14 0 0,0 95,98 A 14,14 0 0,1 69,98 Z" fill="#C68936"/>
+                <circle cx="88" cy="89" r="5.5" fill="white"/>
+                <circle cx="78" cy="98" r="2.2" fill="white"/>
+                <!-- Right Eye -->
+                <circle cx="118" cy="95" r="14" fill="#3D2005"/>
+                <path d="M 105,98 A 14,14 0 0,0 131,98 A 14,14 0 0,1 105,98 Z" fill="#C68936"/>
+                <circle cx="124" cy="89" r="5.5" fill="white"/>
+                <circle cx="114" cy="98" r="2.2" fill="white"/>
+                <!-- Blush cheeks -->
+                <ellipse cx="64" cy="110" rx="11" ry="8" fill="#FF8FA3" opacity="0.45"/>
+                <ellipse cx="136" cy="110" rx="11" ry="8" fill="#FF8FA3" opacity="0.45"/>
+                <!-- Beak - open happy -->
+                <path d="M 82,118 Q 100,110 118,118 Q 100,125 82,118 Z" fill="#FF9800"/>
+                <path d="M 84,119 Q 100,123 116,119 Q 100,134 84,119 Z" fill="#D84315"/>
+                <path d="M 88,122 Q 100,128 112,122" fill="#FF8FA3"/>
+                <!-- Speech bubble - mini loading (hidden/opacity-reduced) -->
+                <g class="speech-bubble-anim" style="opacity: 0.15;">
+                  <rect x="130" y="40" width="62" height="38" rx="12" fill="white" stroke="#D8D4F8" stroke-width="1.5"/>
+                  <path d="M 144,78 L 138,90 L 152,78 Z" fill="white" stroke="#D8D4F8" stroke-width="1.5" stroke-linejoin="round"/>
+                  <circle cx="149" cy="59" r="5" fill="#C8C0FF"/>
+                  <circle cx="161" cy="59" r="5" fill="#C8C0FF"/>
+                  <circle cx="173" cy="59" r="5" fill="#C8C0FF"/>
+                </g>
+              </svg>
+
+              <!-- Welcoming Chat Bubble next to Duck -->
+              <div class="mascot-speech-bubble">
+                <span class="speech-bubble-title">ครูเป็ด AI (AI Tutor Duck) 🦆✨</span>
+                <p class="speech-bubble-text">สวัสดีครับนักเรียน! ยินดีต้อนรับสู่ห้องฝึกฝนภาษาอังกฤษครับ วันนี้มาซ้อมทักษะการฟัง พูด อ่าน เขียนในแต่ละโหมดด้านล่างกันเถอะครับ!</p>
+              </div>
+            </div>
+          }
+
+          @if (practiceSetupActive) {
+            <!-- DUOLINGO SETUP WIZARD -->
+            <div class="duo-setup-wizard" style="background: white; border: 1px solid var(--slate-200); border-radius: 20px; padding: 1.25rem 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 700px; margin: 0.5rem auto; position: relative; max-height: calc(100vh - 120px); overflow-y: auto;">
+              <div class="duo-setup-header" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem;">
+                <button class="duo-setup-close" (click)="cancelPracticeSetup()" style="background: none; border: none; font-size: 1.8rem; color: var(--slate-400); cursor: pointer; line-height: 1;">×</button>
+                <div class="duo-setup-progress-bar" style="flex: 1; height: 16px; background: var(--slate-100); border-radius: 10px; overflow: hidden; border: 1px solid var(--slate-200);">
+                  <div class="duo-setup-progress-fill" [style.width.%]="(setupStep / 3) * 100" style="height: 100%; background: linear-gradient(90deg, #a855f7, #6366f1); border-radius: 10px; transition: width 0.3s ease;"></div>
+                </div>
+                <span class="duo-setup-step-count" style="font-size: 0.85rem; font-weight: 600; color: var(--slate-600); min-width: 90px; text-align: right;">ขั้นตอนที่ {{ setupStep }} จาก 3</span>
+              </div>
+
+              <!-- STEP 1: Select Topic / Goal -->
+              @if (setupStep === 1) {
+                <div class="duo-setup-step animate-fade" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <h2 class="duo-setup-title" style="font-size: 1.3rem; font-weight: 700; color: var(--slate-800); text-align: center; margin-bottom: 0.25rem;">คุณต้องการฝึกฝนบทสนทนาภาษาอังกฤษในด้านใด?</h2>
+                  <p class="duo-setup-desc" style="font-size: 0.82rem; color: var(--slate-500); text-align: center; margin-bottom: 1rem;">ระบบจะปรับแต่งคำถามและบริบทของ AI ให้ตรงกับเป้าหมายการเรียนรู้ของคุณ</p>
+                  
+                  <div class="duo-options-list" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                    <div class="duo-option-card" [class.selected]="selectedCategory === 'teaching'" (click)="selectedCategory = 'teaching'" style="display: flex; align-items: center; gap: 0.75rem; border-radius: 12px; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                      <span class="opt-icon" style="font-size: 2.2rem;">👩‍🏫</span>
+                      <div class="opt-info" style="flex: 1; display: flex; flex-direction: column; gap: 0.2rem;">
+                        <h4 style="font-weight: 700; color: var(--slate-800); margin: 0;">ภาษาอังกฤษสำหรับครู (English for Teaching)</h4>
+                        <p style="font-size: 0.8rem; color: var(--slate-500); margin: 0;">ซ้อมการต้อนรับนักเรียน กฎกติกา คุยโทรศัพท์ผู้ปกครอง และงานประชุมครู</p>
+                      </div>
+                      <span class="opt-badge recommend" style="position: absolute; top: -10px; right: 15px; font-size: 0.7rem; color: white; background: #a855f7; padding: 2px 10px; border-radius: 12px; font-weight: 700; box-shadow: 0 2px 4px rgba(168,85,247,0.3);">แนะนำ!</span>
+                    </div>
+
+                    <div class="duo-option-card" [class.selected]="selectedCategory === 'daily'" (click)="selectedCategory = 'daily'" style="display: flex; align-items: center; gap: 0.75rem; border-radius: 12px; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.2s ease;">
+                      <span class="opt-icon" style="font-size: 2rem;">💬</span>
+                      <div class="opt-info" style="flex: 1; display: flex; flex-direction: column; gap: 0.15rem;">
+                        <h4 style="font-weight: 700; color: var(--slate-800); margin: 0; font-size: 0.88rem;">บทสนทนาทั่วไป (Daily Conversation)</h4>
+                        <p style="font-size: 0.75rem; color: var(--slate-500); margin: 0;">ฝึกแนะนำตัว พูดคุยชีวิตประจำวัน งานอดิเรก และหัวข้อทั่วไป</p>
+                      </div>
+                    </div>
+
+                    <div class="duo-option-card" [class.selected]="selectedCategory === 'presentation'" (click)="selectedCategory = 'presentation'" style="display: flex; align-items: center; gap: 0.75rem; border-radius: 12px; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.2s ease;">
+                      <span class="opt-icon" style="font-size: 2rem;">📊</span>
+                      <div class="opt-info" style="flex: 1; display: flex; flex-direction: column; gap: 0.15rem;">
+                        <h4 style="font-weight: 700; color: var(--slate-800); margin: 0; font-size: 0.88rem;">การนำเสนอผลงาน (Academic Presentations)</h4>
+                        <p style="font-size: 0.75rem; color: var(--slate-500); margin: 0;">ฝึกซ้อมบทพูดนำเสนอและตอบคำถามหลังจากนำเสนองานทางวิชาการ</p>
+                      </div>
+                    </div>
+
+                    <div class="duo-option-card" [class.selected]="selectedCategory === 'interview'" (click)="selectedCategory = 'interview'" style="display: flex; align-items: center; gap: 0.75rem; border-radius: 12px; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.2s ease;">
+                      <span class="opt-icon" style="font-size: 2rem;">💼</span>
+                      <div class="opt-info" style="flex: 1; display: flex; flex-direction: column; gap: 0.15rem;">
+                        <h4 style="font-weight: 700; color: var(--slate-800); margin: 0; font-size: 0.88rem;">การสัมภาษณ์งาน (Job Interview Preparation)</h4>
+                        <p style="font-size: 0.75rem; color: var(--slate-500); margin: 0;">จำลองการสัมภาษณ์งานตำแหน่งอาจารย์/ครูภาษาอังกฤษ</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- STEP 2: Select Level -->
+              @if (setupStep === 2) {
+                <div class="duo-setup-step animate-fade" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <h2 class="duo-setup-title" style="font-size: 1.3rem; font-weight: 700; color: var(--slate-800); text-align: center; margin-bottom: 0.25rem;">ระดับภาษาอังกฤษในปัจจุบันของคุณคือระดับใด?</h2>
+                  <p class="duo-setup-desc" style="font-size: 0.82rem; color: var(--slate-500); text-align: center; margin-bottom: 1rem;">ระบบจะควบคุมคลังคำศัพท์และโครงสร้างประโยคของ AI ให้สอดรับกับความเหมาะสมของคุณ</p>
+
+                  <div class="duo-options-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 0.5rem;">
+                    <div class="duo-level-card" [class.selected]="selectedLevel === 'beginner'" (click)="selectedLevel = 'beginner'" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; border-radius: 12px; padding: 1rem 0.65rem; cursor: pointer; transition: all 0.2s ease; text-align: center;">
+                      <span class="lvl-icon" style="font-size: 2.2rem; line-height: 1;">🌱</span>
+                      <h4 style="font-weight: 700; color: var(--slate-800); margin: 0; font-size: 0.88rem; line-height: 1.25;">Beginner<br><span style="font-weight: 500; font-size: 0.72rem; color: var(--slate-500);">(ระดับเริ่มต้น)</span></h4>
+                      <p style="font-size: 0.72rem; color: var(--slate-500); margin: 0; line-height: 1.3;">เน้นตอบสั้น ๆ 1-2 ประโยค โครงสร้างไม่ซับซ้อน</p>
+                    </div>
+
+                    <div class="duo-level-card" [class.selected]="selectedLevel === 'intermediate'" (click)="selectedLevel = 'intermediate'" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; border-radius: 12px; padding: 1rem 0.65rem; cursor: pointer; transition: all 0.2s ease; text-align: center;">
+                      <span class="lvl-icon" style="font-size: 2.2rem; line-height: 1;">🌿</span>
+                      <h4 style="font-weight: 700; color: var(--slate-800); margin: 0; font-size: 0.88rem; line-height: 1.25;">Intermediate<br><span style="font-weight: 500; font-size: 0.72rem; color: var(--slate-500);">(ระดับกลาง)</span></h4>
+                      <p style="font-size: 0.72rem; color: var(--slate-500); margin: 0; line-height: 1.3;">ฝึกโต้ตอบ 2-3 ประโยค การใช้ศัพท์ที่เป็นธรรมชาติมากขึ้น</p>
+                    </div>
+
+                    <div class="duo-level-card" [class.selected]="selectedLevel === 'advanced'" (click)="selectedLevel = 'advanced'" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; border-radius: 12px; padding: 1rem 0.65rem; cursor: pointer; transition: all 0.2s ease; text-align: center;">
+                      <span class="lvl-icon" style="font-size: 2.2rem; line-height: 1;">🌳</span>
+                      <h4 style="font-weight: 700; color: var(--slate-800); margin: 0; font-size: 0.88rem; line-height: 1.25;">Advanced<br><span style="font-weight: 500; font-size: 0.72rem; color: var(--slate-500);">(ระดับสูง)</span></h4>
+                      <p style="font-size: 0.72rem; color: var(--slate-500); margin: 0; line-height: 1.3;">คุยแบบรวดเร็ว คำศัพท์ท้าทาย ฝึกให้ข้อคิดเห็นลึกซึ้ง</p>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- STEP 3: Select Avatar / Character -->
+              @if (setupStep === 3) {
+                <div class="duo-setup-step animate-fade" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <h2 class="duo-setup-title" style="font-size: 1.3rem; font-weight: 700; color: var(--slate-800); text-align: center; margin-bottom: 0.25rem;">เลือกติวเตอร์/คู่สนทนา AI ของคุณ</h2>
+                  <p class="duo-setup-desc" style="font-size: 0.82rem; color: var(--slate-500); text-align: center; margin-bottom: 1rem;">ติวเตอร์แต่ละท่านมีสำเนียงและบุคลิกเฉพาะตัวที่จะช่วยซ้อมให้คุณอย่างเป็นมิตร</p>
+
+                  <div class="duo-avatar-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-top: 0.5rem;">
+                    @for (item of ['jane', 'david', 'alex', 'maria']; track item) {
+                      <div class="duo-avatar-card" [class.selected]="selectedAvatar === item" (click)="selectAvatar(item)" style="display: flex; align-items: center; gap: 0.75rem; border-radius: 12px; padding: 0.75rem 1rem; cursor: pointer; transition: all 0.2s ease;">
+                        <div class="duo-avatar-face" style="font-size: 2rem; line-height: 1;">{{ avatarDetails[item].icon }}</div>
+                        <div style="display: flex; flex-direction: column; gap: 0.1rem; flex: 1;">
+                          <h4 style="font-weight: 700; color: var(--slate-800); margin: 0; font-size: 0.88rem;">{{ avatarDetails[item].name }}</h4>
+                          <p style="font-size: 0.7rem; color: var(--slate-500); margin: 0; line-height: 1.2;">{{ avatarDetails[item].desc }}</p>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- STEP NAVIGATION FOOTER -->
+              <div class="duo-setup-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px solid var(--slate-200); padding-top: 1rem;">
+                <button class="duo-setup-btn-prev" [disabled]="setupStep === 1" (click)="prevSetupStep()" style="background: white; border: 1px solid var(--slate-300); border-radius: 12px; padding: 0.65rem 1.25rem; font-weight: 600; color: var(--slate-600); cursor: pointer; transition: all 0.2s ease;">ย้อนกลับ</button>
+                <button class="duo-setup-btn-next" (click)="nextSetupStep()" style="background: linear-gradient(135deg, #a855f7, #6366f1); border: none; border-radius: 12px; padding: 0.65rem 1.5rem; font-weight: 700; color: white; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(99,102,241,0.35);">
+                  {{ setupStep === 3 ? 'เริ่มฝึกฝนทันที 🚀' : 'ขั้นตอนถัดไป' }}
+                </button>
+              </div>
+            </div>
+          } @else {
+            @if (practiceMode === 'menu') {
+            <!-- PRACTICE MENU (DASHBOARD) -->
+            <div class="practice-dashboard">
+              <!-- Unified Grid of All 9 Practice Modes & Utilities -->
+              <div class="practice-utils-grid" style="margin-top: 1rem;">
+                <!-- 1. Speech-to-Speech -->
+                <div class="util-card theme-teal animate-scale" (click)="startPracticeMode('speech-to-speech')">
+                  <div class="util-icon-wrapper">🎙️</div>
+                  <div class="util-info">
+                    <h4>สนทนาโต้ตอบด้วยเสียง (Speech-to-Speech)</h4>
+                    <p>ฝึกสวมบทบาทพูดคุยและโต้ตอบด้วยเสียงจริงของคุณกับ AI สองทางแบบเรียลไทม์</p>
+                  </div>
+                </div>
+                <!-- 1. Text-to-Text -->
+                <div class="util-card theme-blue animate-scale" (click)="startPracticeMode('text-to-text')">
+                  <div class="util-icon-wrapper">💬</div>
+                  <div class="util-info">
+                    <h4>พิมพ์โต้ตอบ (Text-to-Text)</h4>
+                    <p>พิมพ์พูดคุยกับ AI ตามสถานการณ์บทเรียน เพื่อฝึกทักษะการเลือกตอบและแต่งประโยคอังกฤษ</p>
+                  </div>
+                </div>
+
+                <!-- 2. Speech-to-Text -->
+                <div class="util-card theme-green animate-scale" (click)="startPracticeMode('speech-to-text')">
+                  <div class="util-icon-wrapper">🎙️</div>
+                  <div class="util-info">
+                    <h4>พูดให้ระบบพิมพ์ (Speech-to-Text)</h4>
+                    <p>ฝึกอ่านออกเสียงตามประโยคจากบทเรียน เพื่อให้ AI ช่วยถอดเสียงและให้คะแนนความแม่นยำ</p>
+                  </div>
+                </div>
+
+                <!-- 3. Text-to-Speech -->
+                <div class="util-card theme-indigo animate-scale" (click)="startPracticeMode('text-to-speech')">
+                  <div class="util-icon-wrapper">🔊</div>
+                  <div class="util-info">
+                    <h4>ฟังเสียงสำเนียง (Text-to-Speech)</h4>
+                    <p>กดฟังเสียงอ่านของประโยค หรือป้อนประโยคที่ต้องการฟังเพื่อฝึกซ้อมทักษะการฟังสำเนียงแท้</p>
+                  </div>
+                </div>
+
+                <!-- 4. Video Call -->
+                <div class="util-card theme-purple animate-scale" (click)="openVideoCall()">
+                  <div class="util-icon-wrapper">📞</div>
+                  <div class="util-info">
+                    <h4>สนทนาวิดีโอสดกับ AI (AI Video Call)</h4>
+                    <p>โทรวิดีโอคุยสดจำลองห้องเรียนจริงกับครู AI พร้อมประเมินผลการพูด</p>
+                  </div>
+                </div>
+
+
+                <!-- 6. Voice Settings -->
+                <div class="util-card theme-green animate-scale" (click)="sharedUi.openVoiceSettings()">
+                  <div class="util-icon-wrapper">🔊</div>
+                  <div class="util-info">
+                    <h4>ตั้งค่าเสียงและการเรียน (Voice Settings)</h4>
+                    <p>ปรับระดับความเร็วเสียง AI สำเนียง US/UK และเปิดคำแปลไทย</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          }
+
+          <!-- ====================================================          MODE 1: TEXT TO TEXT WORKSPACE          ==================================================== -->
+          @if (practiceMode === 'text-to-text') {
+            <div class="practice-workspace workspace-chat">
+              <div class="ws-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  @if (textPracticeSubMode === 'menu') {
+                    <button class="ws-back-btn" (click)="practiceMode = 'menu'">
+                      ⬅ กลับสู่เมนูฝึกฝน
+                    </button>
+                  } @else {
+                    <button class="ws-back-btn" (click)="textPracticeSubMode = 'menu'">
+                      ⬅ กลับไปเลือกโหมดย่อย
+                    </button>
+                  }
+                  <span class="ws-badge badge-blue">Text-to-Text Mode</span>
+                </div>
+                
+                @if (textPracticeSubMode !== 'menu') {
+                  <button
+                    class="toggle-qa-btn animate-scale"
+                    (click)="toggleHistoryPanel()"
+                    style="background: #4f46e5; color: white; border: none; padding: 6px 14px; border-radius: 12px; font-weight: 800; font-size: 0.76rem; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);"
+                  >
+                    <span>📜</span> {{ showHistoryPanel ? 'ปิดประวัติสนทนา' : 'ดูประวัติแชทย้อนหลัง' }}
+                  </button>
+                }
+              </div>
+
+              @if (textPracticeSubMode === 'menu') {
+                <!-- Sub-Modes Menu Selector -->
+                <div class="text-sub-modes-menu animate-fade" style="padding: 1.5rem 1rem;">
+                  <h3 class="sub-menu-title" style="font-size: 1.1rem; font-weight: 800; color: var(--slate-800); margin: 0 0 0.25rem 0;">🦉 เลือกแขนงย่อยเพื่อฝึกพิมพ์โต้ตอบ</h3>
+                  <p class="sub-menu-desc" style="font-size: 0.78rem; color: var(--slate-500); margin: 0 0 1.5rem 0;">โปรดเลือกโหมดการพิมพ์ที่ตรงกับความต้องการในการเรียนรู้ของคุณ:</p>
+                  
+                  <div class="sub-modes-grid" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- 1. Chat Mode -->
+                    <div class="sub-mode-card card-chat" (click)="startConversationalChatSetup()" style="display: flex; gap: 1rem; padding: 1.1rem; background: white; border: 2px solid var(--slate-100); border-radius: 18px; cursor: pointer; transition: all 0.2s;">
+                      <div class="card-icon" style="font-size: 1.8rem; line-height: 1; flex-shrink: 0; background: rgba(59, 130, 246, 0.1); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">💬</div>
+                      <div class="card-body">
+                        <h4 style="font-size: 0.88rem; font-weight: 800; color: var(--slate-800); margin: 0 0 0.25rem 0;">1. ฝึกพิมพ์โต้ตอบตามบทเรียน (Conversational Chat)</h4>
+                        <p style="font-size: 0.75rem; color: var(--slate-500); margin: 0; line-height: 1.45;">พูดคุยแลกเปลี่ยนภาษาอังกฤษกับ AI ตามกรอบความรู้ประเด็นการสนทนาของแต่ละบทเรียน</p>
+                      </div>
+                    </div>
+
+                    <!-- 2. Q&A Mode -->
+                    <div class="sub-mode-card card-qa" (click)="enterTextPracticeSubMode('qa')" style="display: flex; gap: 1rem; padding: 1.1rem; background: white; border: 2px solid var(--slate-100); border-radius: 18px; cursor: pointer; transition: all 0.2s;">
+                      <div class="card-icon" style="font-size: 1.8rem; line-height: 1; flex-shrink: 0; background: rgba(16, 185, 129, 0.1); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">❓</div>
+                      <div class="card-body">
+                        <h4 style="font-size: 0.88rem; font-weight: 800; color: var(--slate-800); margin: 0 0 0.25rem 0;">2. ถาม-ตอบรอบรู้ (Q&A English Tutor)</h4>
+                        <p style="font-size: 0.75rem; color: var(--slate-500); margin: 0; line-height: 1.45;">พิมพ์ถามคำศัพท์ แกรมม่า ไวยากรณ์ หรือการแต่งประโยค โดยมีครู AI ส่วนตัวคอยอธิบายอย่างเป็นระบบ</p>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              } @else {
+                <div class="text-workspace-split-layout" style="display: flex; flex-direction: row; flex-wrap: nowrap; width: 100%; height: clamp(450px, calc(100vh - 280px), 750px); position: relative; gap: 1rem; align-items: stretch; overflow: hidden;">
+                  
+                  <!-- Left Side: Main Chat Area -->
+                  <div class="chat-container" style="display: flex; flex-direction: column; flex: 1; min-width: 0; background: white; border-radius: 20px; border: 1px solid var(--slate-100); overflow: hidden;">
+                    <!-- Random Topic Banner (Chat sub-mode only) -->
+                    @if (textPracticeSubMode === 'chat' && currentChatTopic) {
+                      <div class="chat-topic-banner" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 1rem; background: linear-gradient(135deg, #EEF2FF, #F5F3FF); border-bottom: 1px solid var(--slate-100);">
+                        <span style="font-size: 1.35rem; line-height: 1;">{{ currentChatTopic.icon }}</span>
+                        <div>
+                          <p style="margin: 0; font-size: 0.66rem; font-weight: 800; color: #7C3AED; letter-spacing: 0.02em;">🎲 หัวข้อสนทนาวันนี้ (สุ่มโดยระบบ)</p>
+                          <p style="margin: 0; font-size: 0.82rem; font-weight: 800; color: var(--slate-800);">{{ currentChatTopic.titleTh }} · {{ currentChatTopic.titleEn }}</p>
+                        </div>
+                      </div>
+                    }
+                    <!-- Chat Message History -->
+                    <div class="chat-history-wrap" #chatScroll style="flex: 1; min-height: 250px; overflow-y: auto; padding: 1rem;">
+                      @for (msg of practiceMessages; track msg.time) {
+                        <div
+                          class="chat-bubble-row"
+                          [class.user-row]="msg.sender === 'user'"
+                          [class.ai-row]="msg.sender === 'ai'"
+                          style="display: flex; flex-direction: column; margin-bottom: 1rem;"
+                        >
+                          <div style="display: flex; gap: 0.75rem; align-items: flex-start; justify-content: inherit;">
+                            @if (msg.sender === 'ai') {
+                              <div class="chat-avatar" style="font-size: 1.25rem;">{{ avatarDetails[selectedAvatar]?.icon }}</div>
+                            }
+                            <div class="chat-bubble animate-scale" style="position: relative; max-width: 75%; padding: 0.75rem 1rem; border-radius: 18px; font-size: 0.83rem; line-height: 1.45; font-weight: 550; word-break: break-word;">
+                              <div class="bubble-txt markdown-body" style="margin: 0;" [innerHTML]="formatMarkdown(msg.text)"></div>
+                              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.35rem;">
+                                <span class="bubble-time" style="font-size: 0.65rem; opacity: 0.65;">{{ msg.time | date: 'HH:mm' }}</span>
+                                
+                                <!-- Speaker icon for AI messages -->
+                                @if (msg.sender === 'ai') {
+                                  <button class="speak-msg-btn animate-scale" (click)="practiceSpeakText(msg.text)" title="ฟังเสียงอ่าน" style="background: none; border: none; font-size: 0.78rem; cursor: pointer; padding: 2px 6px; border-radius: 6px; color: var(--pastel-blue-dark);">
+                                    🔊 ฟังเสียง
+                                  </button>
+                                }
+                              </div>
+                            </div>
+                            @if (msg.sender === 'user') {
+                              <div class="chat-avatar" style="font-size: 1.25rem; font-weight: 700;">{{ getInitial() }}</div>
+                            }
+                          </div>
+
+                          <!-- Grammar Suggestion Badge for User messages -->
+                          @if (msg.sender === 'user' && msg.grammarSuggestion) {
+                            <div class="grammar-badge animate-fade" style="display: flex; gap: 0.35rem; align-items: flex-start; align-self: flex-end; margin-top: 0.4rem; margin-right: 2.2rem; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 0.4rem 0.75rem; max-width: 70%;">
+                              <span class="badge-icon" style="font-size: 0.83rem; line-height: 1;">⚠️</span>
+                              <span class="badge-text" style="font-size: 0.72rem; color: #b45309; font-weight: 600; line-height: 1.35;">{{ msg.grammarSuggestion }}</span>
+                            </div>
+                          }
+                        </div>
+                      }
+                      @if (aiWriting) {
+                        <div class="chat-bubble-row ai-row" style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
+                          <div class="chat-avatar">🤖</div>
+                          <div class="chat-bubble typing-bubble" style="padding: 0.75rem 1.25rem; border-radius: 18px; display: flex; gap: 3px; align-items: center;">
+                            <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Input Row -->
+                    <div class="chat-input-row" style="padding: 0.75rem 1rem; border-top: 1px solid var(--slate-100); background: white; display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; box-sizing: border-box;">
+                      <input
+                        type="text"
+                        class="chat-text-input"
+                        placeholder="พิมพ์ประโยคภาษาอังกฤษโต้ตอบที่นี่..."
+                        [(ngModel)]="speechInputText"
+                        (keyup.enter)="sendPracticeMessage(speechInputText); speechInputText = ''"
+                        style="flex: 1; border: 1.5px solid var(--slate-200); padding: 10px 14px; border-radius: 14px; font-size: 0.82rem; font-weight: 600; outline: none;"
+                      />
+                      <button
+                        class="chat-send-btn"
+                        (click)="sendPracticeMessage(speechInputText); speechInputText = ''"
+                        [disabled]="!speechInputText.trim()"
+                        style="background: var(--pastel-blue-dark); color: white; border: none; padding: 10px 18px; border-radius: 14px; font-weight: 800; font-size: 0.82rem; cursor: pointer;"
+                      >
+                        ส่งข้อความ
+                      </button>
+                      @if (textPracticeSubMode === 'chat') {
+                        <button
+                          class="chat-finish-btn"
+                          (click)="finishTextChat()"
+                          title="จบการสนทนาและดูผลสรุปจาก AI"
+                          style="background: #10b981; color: white; border: none; padding: 10px 18px; border-radius: 14px; font-weight: 800; font-size: 0.82rem; cursor: pointer;"
+                        >
+                          ✅ จบการสนทนา
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Right Side: Sliding History Sidebar Panel -->
+                  <div class="qa-sidebar-panel animate-scale" 
+                       [style.width]="showHistoryPanel ? '360px' : '0px'" 
+                       [style.min-width]="showHistoryPanel ? '360px' : '0px'"
+                       [style.opacity]="showHistoryPanel ? '1' : '0'"
+                       [style.visibility]="showHistoryPanel ? 'visible' : 'hidden'"
+                       [style.pointer-events]="showHistoryPanel ? 'auto' : 'none'"
+                       [style.border]="showHistoryPanel ? '1px solid var(--slate-150)' : 'none'"
+                       style="display: flex; flex-direction: column; background: #ffffff; box-shadow: -4px 0 20px rgba(0,0,0,0.03); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; border-radius: 20px; height: 100%; flex-shrink: 0;">
+                    
+                    <!-- History Sidebar Header -->
+                    <div style="padding: 1rem; border-bottom: 1.5px solid var(--slate-100); background: #fbfbfb; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; box-sizing: border-box;">
+                      <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.35rem;">📜</span>
+                        <div style="text-align: left;">
+                          <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">ประวัติสนทนาย้อนหลัง</h4>
+                          <p style="margin: 0; font-size: 0.65rem; color: #4f46e5; font-weight: 600;">คลิกเพื่อเปิดดูรายละเอียดแชทที่ผ่านมา</p>
+                        </div>
+                      </div>
+                      <button (click)="toggleHistoryPanel()" style="background: none; border: none; font-size: 1.25rem; font-weight: 700; color: var(--slate-400); cursor: pointer; padding: 2px 6px;">×</button>
+                    </div>
+
+                    <!-- History List Area -->
+                    <div style="flex: 1; overflow-y: auto; padding: 0.75rem; background: #fafafa; display: flex; flex-direction: column; gap: 0.6rem; min-height: 0;">
+                      @for (log of learningLog.learningLogs; track log.date; let idx = $index) {
+                        <div style="display: flex; flex-direction: column; border: 1px solid var(--slate-200); border-radius: 14px; background: white; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.015); flex-shrink: 0;">
+                          
+                          <!-- History Row Trigger -->
+                          <div
+                            (click)="handleHistoryClick(log)"
+                            [style.cursor]="log.transcript ? 'pointer' : 'pointer'"
+                            style="padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.65rem; text-align: left; transition: background 0.15s; min-height: 56px; box-sizing: border-box;"
+                            onmouseover="this.style.background='#f8fafc'"
+                            onmouseout="this.style.background='white'"
+                          >
+                            <span style="font-size: 1.35rem; flex-shrink: 0;">🗒️</span>
+                            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
+                              <h5 style="margin: 0; font-size: 0.78rem; font-weight: 850; color: var(--slate-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;">{{ log.title }}</h5>
+                              <span style="font-size: 0.65rem; color: var(--slate-400); line-height: 1.2;">{{ log.date | date:'shortTime' }} · {{ log.date | date:'dd/MM/yyyy' }}</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; justify-content: center;">
+                              <span style="font-size: 0.65rem; font-weight: 800; color: #10b981; line-height: 1;">+{{ log.xp }} XP</span>
+                              @if (log.score !== undefined) {
+                                <span style="font-size: 0.65rem; font-weight: 850; background: #EEF2FF; color: #4F46E5; padding: 1px 6px; border-radius: 8px; line-height: 1.2; margin-top: 1px;">{{ log.score }}%</span>
+                              }
+                            </div>
+                          </div>
+
+                          <!-- Expanded Transcript -->
+                          @if (log.transcript && expandedLogIndex === idx) {
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; background: var(--slate-50); border-top: 1px solid var(--slate-150); max-height: 250px; overflow-y: auto;">
+                              @for (msg of log.transcript; track $index) {
+                                <div style="display: flex; flex-direction: column; gap: 1px;" [style.align-items]="msg.sender === 'user' ? 'flex-end' : 'flex-start'">
+                                  <span style="font-size: 0.6rem; font-weight: 800; color: var(--slate-400);">{{ msg.sender === 'user' ? 'คุณ' : 'AI' }}</span>
+                                  <div
+                                    style="max-width: 90%; padding: 0.45rem 0.65rem; border-radius: 10px; font-size: 0.72rem; line-height: 1.4; word-break: break-word; font-weight: 600; text-align: left;"
+                                    [style.background]="msg.sender === 'user' ? 'var(--pastel-blue-dark)' : 'white'"
+                                    [style.color]="msg.sender === 'user' ? 'white' : 'var(--slate-700)'"
+                                    [style.border]="msg.sender === 'user' ? 'none' : '1.5px solid var(--slate-200)'"
+                                  >
+                                    {{ gameFx.stripMarkdown(msg.text) }}
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          }
+
+                        </div>
+                      } @empty {
+                        <div style="text-align: center; padding: 2rem 1rem; color: var(--slate-400);">
+                          <p style="font-size: 1.5rem; margin: 0 0 0.5rem 0;">🗒️</p>
+                          <p style="font-size: 0.7rem; font-weight: 600; margin: 0;">ยังไม่มีประวัติแชทในเซสชันนี้</p>
+                        </div>
+                      }
+                    </div>
+
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- ====================================================          MODE 2: SPEECH TO TEXT WORKSPACE          ==================================================== -->
+          @if (practiceMode === 'speech-to-text') {
+            <div class="practice-workspace workspace-speaking" style="position: relative;">
+              <div class="ws-header">
+                <button class="ws-back-btn" (click)="exitSttPractice()">
+                  ⬅ กลับสู่เมนูฝึกฝน
+                </button>
+                <span class="ws-badge badge-green">Speech-to-Text Mode</span>
+              </div>
+
+              <!-- REVIEW OVERLAY MODAL -->
+              @if (showSttReviewModal) {
+                <div class="stt-review-overlay animate-scale" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.98); border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; z-index: 100; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+                  <div class="review-icon" style="font-size: 4rem; margin-bottom: 1rem; line-height: 1;">
+                    {{ sttWrongSentences.length > 0 ? '📝' : '🏆' }}
+                  </div>
+                  
+                  <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--slate-800); margin-bottom: 0.5rem;">
+                    {{ sttWrongSentences.length > 0 ? 'ฝึกฝนครบ 5 ประโยคแล้ว!' : 'สุดยอดมาก! ฝึกครบ 5 ประโยค' }}
+                  </h2>
+                  
+                  <p style="font-size: 0.95rem; color: var(--slate-500); max-width: 500px; margin-bottom: 1.5rem; line-height: 1.5;">
+                    @if (sttWrongSentences.length > 0) {
+                      คุณมีประโยคที่ออกเสียงไม่สมบูรณ์อยู่ทั้งหมด <strong>{{ sttWrongSentences.length }} ประโยค</strong> คุณต้องการปรับปรุงและลองฝึกพูดเฉพาะประโยคที่ยังผิดอยู่หรือไม่?
+                    } @else {
+                      คุณออกเสียงได้ถูกต้องสมบูรณ์แบบ 100% ครบทุกประโยค! ยอดเยี่ยมมากค่ะพัฒนาต่อไปนะคะ
+                    }
+                  </p>
+
+                  <div style="display: flex; gap: 1rem; width: 100%; max-width: 420px; justify-content: center;">
+                    @if (sttWrongSentences.length > 0) {
+                      <button (click)="startSttReview()" style="flex: 1; background: linear-gradient(135deg, #a855f7, #6366f1); color: white; border: none; border-radius: 12px; padding: 0.8rem 1.5rem; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(99,102,241,0.3);">
+                        🔄 ฝึกเฉพาะที่ผิด
+                      </button>
+                    }
+                    <button (click)="exitSttPractice()" style="flex: 1; background: var(--slate-100); color: var(--slate-700); border: 1px solid var(--slate-200); border-radius: 12px; padding: 0.8rem 1.5rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                      กลับเมนูหลัก
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <div class="speaking-card-wrapper animate-fade">
+                <div class="speaking-card">
+                  <span class="card-sentence-num"
+                    >ประโยคที่ {{ selectedSentenceIndex + 1 }} จาก
+                    {{ practiceSentences.length }}</span
+                  >
+                  <h2 class="target-sentence-text">
+                    " {{ practiceSentences[selectedSentenceIndex] }} "
+                  </h2>
+
+                  <div class="speaking-actions-row">
+                    <button
+                      class="listen-voice-btn"
+                      (click)="practiceSpeakText(practiceSentences[selectedSentenceIndex])"
+                    >
+                      🔊 ฟังเสียงต้นแบบ
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Recording Status & Waves -->
+                <div class="recording-block">
+                  <button
+                    class="mic-record-btn"
+                    [class.recording]="practiceIsRecording"
+                    (click)="practiceToggleRecording()"
+                  >
+                    <span class="mic-icon">🎙️</span>
+                    <div class="pulse-ring"></div>
+                  </button>
+                  <p class="rec-status-p">
+                    {{
+                      practiceIsRecording
+                        ? 'กำลังบันทึกเสียง... กรุณาออกเสียงประโยคด้านบน'
+                        : 'กดปุ่มไมโครโฟนและเริ่มพูด'
+                    }}
+                  </p>
+                </div>
+
+                <!-- Results display -->
+                @if (recognizedText) {
+                  <div class="recognized-result-box animate-scale">
+                    <h4>{{ practiceIsRecording ? 'กำลังฟัง...' : 'ข้อความที่ระบบได้ยิน:' }}</h4>
+                    <p class="recognized-txt">" {{ recognizedText }} "</p>
+
+                    @if (pronunciationScore !== null) {
+                      <div class="score-row">
+                        <div
+                          class="score-circle"
+                          [class.good]="pronunciationScore >= 80"
+                          [class.avg]="pronunciationScore < 80 && pronunciationScore >= 50"
+                          [class.poor]="pronunciationScore < 50"
+                        >
+                          <span class="score-num">{{ pronunciationScore }}%</span>
+                        </div>
+                        <div class="score-eval">
+                          <p class="score-lbl">ความถูกต้องของประโยค</p>
+                          <p class="score-desc-txt">
+                            {{
+                              pronunciationScore >= 80
+                                ? 'ยอดเยี่ยมมาก! ออกเสียงได้ชัดเจนใกล้เคียงเจ้าของภาษา'
+                                : pronunciationScore >= 50
+                                  ? 'ดีพอใช้! พยายามเน้นคำและเว้นวรรคให้ชัดเจนขึ้นอีกนิด'
+                                  : 'ต้องพยายามอีกนิด ลองกดปุ่มฟังเสียงแล้วลองพูดใหม่อีกครั้ง'
+                            }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button class="next-sentence-btn" (click)="nextSentence()">
+                        ฝึกประโยคถัดไป ➡
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- ====================================================          MODE 3: TEXT TO SPEECH WORKSPACE          ==================================================== -->
+          @if (practiceMode === 'text-to-speech') {
+            <div class="practice-workspace workspace-listening">
+              <div class="ws-header">
+                <button class="ws-back-btn" (click)="exitPracticeMode()">
+                  ⬅ กลับสู่เมนูฝึกฝน
+                </button>
+                <span class="ws-badge badge-indigo">Text-to-Speech Mode</span>
+              </div>
+
+              <div class="tts-grid">
+                <!-- Left: List of Unit Sentences -->
+                <div class="tts-sentences-list">
+                  <h3>ประโยคหลักประจำหน่วยการเรียนรู้</h3>
+                  <div class="sentence-list-scroll">
+                    @for (s of practiceSentences; track s; let idx = $index) {
+                      <div class="sentence-item" (click)="practiceSpeakText(s)">
+                        <span class="item-index">{{ idx + 1 }}</span>
+                        <p class="item-text">{{ s }}</p>
+                        <button class="play-item-btn">🔊 ฟังเสียง</button>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Right: Custom Text Area & Controls -->
+                <div class="tts-controls-panel">
+                  <h3>ควบคุมการสังเคราะห์เสียง</h3>
+
+                  <div class="control-group">
+                    <label>สำเนียงเสียงพูด:</label>
+                    <div class="voice-selector">
+                      <button [class.active]="sharedUi.ttsVoiceType === 'US'" (click)="sharedUi.ttsVoiceType = 'US'">
+                        อเมริกา (US)
+                      </button>
+                      <button [class.active]="sharedUi.ttsVoiceType === 'UK'" (click)="sharedUi.ttsVoiceType = 'UK'">
+                        อังกฤษ (UK)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="control-group">
+                    <label>ความเร็วเสียงอ่าน: ({{ sharedUi.ttsSpeed }}x)</label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="1.5"
+                      step="0.1"
+                      class="speed-slider"
+                      [(ngModel)]="sharedUi.ttsSpeed"
+                    />
+                    <div class="speed-labels">
+                      <span>ช้า</span>
+                      <span>ปกติ</span>
+                      <span>เร็ว</span>
+                    </div>
+                  </div>
+
+                  <div class="custom-tts-input-box">
+                    <label>ลองป้อนคำศัพท์หรือประโยคของคุณเอง:</label>
+                    <textarea
+                      class="custom-tts-textarea"
+                      placeholder="พิมพ์ประโยคภาษาอังกฤษตรงนี้ แล้วกดปุ่มเพื่อฟังเสียงพูดสำเนียง..."
+                      [(ngModel)]="speechInputText"
+                    ></textarea>
+                    <button
+                      class="custom-tts-play-btn"
+                      [disabled]="!speechInputText.trim()"
+                      (click)="practiceSpeakText(speechInputText)"
+                    >
+                      🔊 เล่นเสียงอ่านประโยคนี้
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- ====================================================          MODE 4: SPEECH TO SPEECH WORKSPACE          ==================================================== -->
+          @if (practiceMode === 'speech-to-speech') {
+            <div class="practice-workspace workspace-audio-call">
+              <div class="ws-header">
+                <button class="ws-back-btn" (click)="exitPracticeMode()">
+                  ⬅ กลับสู่เมนูฝึกฝน
+                </button>
+                <span class="ws-badge badge-violet">Real-Time Speech-to-Speech</span>
+                <span class="ws-badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">🎙️ ตัดเสียงรบกวน (Noise Suppression)</span>
+              </div>
+
+              <div class="audio-call-layout" [class.layout-split]="selectedCategory === 'interview' || selectedCategory === 'presentation'">
+                
+                <!-- LEFT COLUMN: INTERVIEW VISUAL PANEL -->
+                @if (selectedCategory === 'interview') {
+                  <div class="interview-visual-panel" style="background: rgba(15, 23, 42, 0.6); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; color: white; width: 100%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.75rem;">
+                      <h3 style="font-weight: 800; color: #a855f7; margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; letter-spacing: 0.5px;">💼 การสัมภาษณ์งานครู</h3>
+                      <span style="font-size: 0.75rem; background: rgba(168, 85, 247, 0.2); color: #c084fc; padding: 3px 12px; border-radius: 12px; font-weight: 700; border: 1px solid rgba(168, 85, 247, 0.3);">คำถามที่ {{ interviewQuestionIndex > 5 ? 5 : interviewQuestionIndex }} / 5</span>
+                    </div>
+
+                    <!-- Progress Dots -->
+                    <div style="display: flex; gap: 0.5rem; justify-content: space-between; margin: 0.25rem 0;">
+                      @for (step of [1, 2, 3, 4, 5]; track step) {
+                        <div style="flex: 1; height: 8px; border-radius: 4px; transition: all 0.3s ease;" 
+                             [style.background]="interviewQuestionIndex >= step ? 'linear-gradient(135deg, #a855f7, #6366f1)' : 'rgba(255, 255, 255, 0.15)'"
+                             [style.boxShadow]="interviewQuestionIndex === step ? '0 0 10px rgba(168, 85, 247, 0.8)' : 'none'">
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Active Interview Question Card -->
+                    <div class="active-question-card" style="background: rgba(255, 255, 255, 0.04); border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.08); padding: 1.15rem; margin-top: 0.25rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                      <span style="font-size: 0.72rem; text-transform: uppercase; color: #c084fc; font-weight: 800; letter-spacing: 0.08em; display: block; margin-bottom: 0.4rem;">คำถามผู้สัมภาษณ์ (Active Question)</span>
+                      <p style="font-size: 0.95rem; line-height: 1.5; margin: 0; font-weight: 600; color: #f3f4f6; font-style: italic;">
+                        " {{ interviewQuestions[interviewQuestionIndex - 1] || 'การสัมภาษณ์เสร็จสิ้นแล้ว ขอบคุณสำหรับความร่วมมือครับ' }} "
+                      </p>
+                    </div>
+
+                    <!-- Thai Tip for the Active Question -->
+                    @if (interviewQuestionIndex <= 5) {
+                      <div class="interview-tip-box" style="background: rgba(16, 185, 129, 0.08); border-radius: 14px; border: 1px solid rgba(16, 185, 129, 0.25); padding: 1rem; display: flex; gap: 0.75rem; align-items: flex-start; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <span style="font-size: 1.4rem; line-height: 1;">💡</span>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                          <strong style="color: #34d399; font-size: 0.85rem; font-weight: 800; letter-spacing: 0.3px;">คำแนะนำในการตอบ (Tips for Interviewee):</strong>
+                          <p style="font-size: 0.8rem; color: #a7f3d0; margin: 0; line-height: 1.45; font-weight: 500;">{{ interviewTips[interviewQuestionIndex - 1] }}</p>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="interview-tip-box" style="background: rgba(168, 85, 247, 0.08); border-radius: 14px; border: 1px solid rgba(168, 85, 247, 0.25); padding: 1rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+                        <span style="font-size: 1.4rem; line-height: 1;">🎉</span>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                          <strong style="color: #c084fc; font-size: 0.85rem; font-weight: 800;">สัมภาษณ์เสร็จสมบูรณ์แล้ว!</strong>
+                          <p style="font-size: 0.8rem; color: #e9d5ff; margin: 0; line-height: 1.45; font-weight: 500;">คุณได้ตอบคำถามครบถ้วนแล้ว กรุณากดปุ่มสีแดง **"จบการสนทนาและวิเคราะห์คะแนน"** ด้านล่างขวาเพื่อดูผลสรุปผลงานและการให้คะแนนการสัมภาษณ์แบบละเอียด</p>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- LEFT COLUMN: PRESENTATION SIMULATOR PANEL -->
+                @if (selectedCategory === 'presentation') {
+                  <div class="presentation-visual-panel" style="background: rgba(15, 23, 42, 0.6); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; color: white; width: 100%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px);">
+                    
+                    @if (presentationPhase === 'setup') {
+                      <!-- Topic Setup Sub-mode -->
+                      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <h3 style="font-weight: 800; color: #3b82f6; margin: 0; font-size: 1.1rem; letter-spacing: 0.5px;">📊 เลือกหัวขอนำเสนอผลงานวิชาการ</h3>
+                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); margin: 0; line-height: 1.4;">กรุณาเลือกหัวข้อที่คุณต้องการฝึกพูดนำเสนอ หรือเขียนหัวข้อขึ้นมาเองด้านล่าง</p>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin: 0.25rem 0;">
+                          @for (topic of presentationTopics; track topic.key) {
+                            <div (click)="presentationTopic = topic.key" 
+                                 style="padding: 0.85rem 1.1rem; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03); cursor: pointer; transition: all 0.2s;"
+                                 [style.borderColor]="presentationTopic === topic.key ? '#3b82f6' : 'rgba(255, 255, 255, 0.1)'"
+                                 [style.background]="presentationTopic === topic.key ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255, 255, 255, 0.03)'"
+                                 onmouseover="this.style.background='rgba(255, 255, 255, 0.07)'"
+                                 onmouseout="this.style.background=this.style.borderColor==='#3b82f6'?'rgba(59, 130, 246, 0.12)':'rgba(255, 255, 255, 0.03)'">
+                              <h4 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #f3f4f6;">{{ topic.titleTh }}</h4>
+                              <p style="margin: 0.2rem 0 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 500;">{{ topic.titleEn }}</p>
+                            </div>
+                          }
+                          
+                          <!-- Custom Topic option -->
+                          <div (click)="presentationTopic = 'custom'" 
+                               style="padding: 0.85rem 1.1rem; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03); cursor: pointer; transition: all 0.2s;"
+                               [style.borderColor]="presentationTopic === 'custom' ? '#3b82f6' : 'rgba(255, 255, 255, 0.1)'"
+                               [style.background]="presentationTopic === 'custom' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255, 255, 255, 0.03)'"
+                               onmouseover="this.style.background='rgba(255, 255, 255, 0.07)'"
+                               onmouseout="this.style.background=this.style.borderColor==='#3b82f6'?'rgba(59, 130, 246, 0.12)':'rgba(255, 255, 255, 0.03)'">
+                            <h4 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #f3f4f6;">✍️ กำหนดหัวข้อด้วยตนเอง (Custom Topic)</h4>
+                            @if (presentationTopic === 'custom') {
+                              <input type="text" [(ngModel)]="presentationCustomTopic" (click)="$event.stopPropagation()" placeholder="พิมพ์ชื่อหัวข้อภาษาอังกฤษที่นี่..." 
+                                     style="width: 100%; margin-top: 0.6rem; background: rgba(15, 23, 42, 0.8); border: 1.5px solid #3b82f6; border-radius: 8px; padding: 0.5rem 0.75rem; color: white; font-size: 0.82rem; font-weight: 600; outline: none;" />
+                            }
+                          </div>
+                        </div>
+
+                        <button (click)="presentationPhase = 'presenting'; presentationSlideIndex = 1;"
+                                style="margin-top: 0.5rem; padding: 0.75rem; border-radius: 12px; border: none; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; font-weight: 800; font-size: 0.92rem; cursor: pointer; box-shadow: 0 4px 14px rgba(37,99,235,0.4); transition: all 0.2s;"
+                                onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 18px rgba(37,99,235,0.5)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 14px rgba(37,99,235,0.4)'">
+                          เริ่มฝึกนำเสนอผลงาน 🚀
+                        </button>
+                      </div>
+                    } @else {
+                      <!-- Presenting Slides Sub-mode -->
+                      <div style="display: flex; flex-direction: column; gap: 0.75rem; height: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                          <h4 style="margin: 0; font-weight: 800; color: #3b82f6; font-size: 0.9rem; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">สไลด์: {{ getPresentationTopicName() }}</h4>
+                          <span style="font-size: 0.72rem; font-weight: 800; background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 3px 10px; border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.25);">
+                            {{ presentationPhase === 'qa' ? 'Q&A Session' : 'สไลด์ที่ ' + presentationSlideIndex + ' / 4' }}
+                          </span>
+                        </div>
+
+                        <!-- Slide Canvas Screen (Sleek Academic Slide Look) -->
+                        <div class="slide-canvas-screen" style="flex: 1; min-height: 200px; background: #ffffff; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; color: #1e293b; box-shadow: inset 0 2px 8px rgba(0,0,0,0.06); border: 2.5px solid #e2e8f0; position: relative;">
+                          
+                          @if (presentationPhase === 'presenting') {
+                            <!-- Standard Slide Rendering -->
+                            <div>
+                              <span style="font-size: 0.65rem; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.08em; display: block; margin-bottom: 0.2rem;">
+                                {{ getPresentationTopicName() }}
+                              </span>
+                              <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0 0 0.85rem 0; border-bottom: 2px solid #3b82f6; padding-bottom: 0.4rem; line-height: 1.2;">
+                                {{ presentationTopics.find(t => t.key === presentationTopic)?.slides?.[presentationSlideIndex - 1]?.title || 'Presentation Slide' }}
+                              </h2>
+                              <ul style="margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem;">
+                                @for (point of (presentationTopics.find(t => t.key === presentationTopic)?.slides?.[presentationSlideIndex - 1]?.points || ['• Bullet point text for presentation focus']); track point) {
+                                  <li style="font-size: 0.85rem; font-weight: 600; color: #334155; line-height: 1.45; list-style-type: square;">{{ point }}</li>
+                                }
+                              </ul>
+                            </div>
+                            
+                            <div style="font-size: 0.68rem; color: #64748b; font-weight: 600; font-style: italic; border-top: 1px solid #f1f5f9; padding-top: 0.6rem; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
+                              <span>📢</span> ฝึกพูดออกเสียงอธิบายเนื้อหาบนสไลด์ แล้วกดเลื่อนสไลด์ถัดไป
+                            </div>
+                          } @else if (presentationPhase === 'qa') {
+                            <!-- Q&A Slide Rendering -->
+                            <div style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.75rem; height: 100%; padding: 1.5rem 0;">
+                              <span style="font-size: 2.8rem; line-height: 1; animation: float 3s ease-in-out infinite;">💬</span>
+                              <h2 style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin: 0;">ช่วงถาม-ตอบ (Q&A Session)</h2>
+                              <p style="font-size: 0.82rem; color: #475569; margin: 0; line-height: 1.5; font-weight: 600; max-width: 90%;">
+                                ผู้ประเมินผลงาน (AI) กำลังวิเคราะห์ผลงานและจะถามคำถามภาษาอังกฤษ 2 ข้อ กรุณากดพูดไมค์เพื่อตอบคำถาม
+                              </p>
+                              <div style="background: rgba(59, 130, 246, 0.08); border: 1.5px dashed rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 6px 16px; font-weight: 800; color: #2563eb; font-size: 0.8rem; margin-top: 0.25rem;">
+                                ตอบคำถามกรรมการแล้ว: {{ presentationQaCount }} / 2
+                              </div>
+                            </div>
+                          } @else if (presentationPhase === 'feedback') {
+                            <!-- Completed presentation page -->
+                            <div style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.6rem; height: 100%; padding: 1.5rem 0;">
+                              <span style="font-size: 2.6rem; line-height: 1;">🎉</span>
+                              <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0; color: #10b981;">นำเสนอผลงานเสร็จสมบูรณ์!</h2>
+                              <p style="font-size: 0.8rem; color: #475569; margin: 0; line-height: 1.45; font-weight: 500; max-width: 90%;">
+                                คุณได้นำเสนอสไลด์ครบถ้วนและผ่านการตอบคำถามเรียบร้อยแล้ว
+                              </p>
+                              <p style="font-size: 0.78rem; color: #64748b; margin: 0; font-weight: 600;">
+                                กดปุ่มด้านล่างขวา **"จบการสนทนาและวิเคราะห์คะแนน"** เพื่อรับรายงานวิเคราะห์ผลคะแนนทันที
+                              </p>
+                            </div>
+                          }
+                        </div>
+
+                        <!-- Slide Navigation Controls -->
+                        @if (presentationPhase === 'presenting') {
+                          <div style="display: flex; justify-content: space-between; gap: 0.5rem; margin-top: 0.25rem;">
+                            <button (click)="presentationSlideIndex = presentationSlideIndex > 1 ? presentationSlideIndex - 1 : 1"
+                                    [disabled]="presentationSlideIndex === 1"
+                                    style="flex: 1; padding: 0.55rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white; cursor: pointer; font-size: 0.78rem; font-weight: 700; transition: all 0.2s;"
+                                    [style.opacity]="presentationSlideIndex === 1 ? '0.35' : '1'"
+                                    onmouseover="if(this.style.opacity!=='0.35') this.style.background='rgba(255,255,255,0.18)'"
+                                    onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                              ย้อนกลับ (Prev)
+                            </button>
+                            
+                            @if (presentationSlideIndex < 4) {
+                              <button (click)="presentationSlideIndex = presentationSlideIndex + 1"
+                                      style="flex: 1; padding: 0.55rem; border-radius: 10px; border: none; background: #3b82f6; color: white; font-weight: 800; cursor: pointer; font-size: 0.78rem; transition: all 0.2s; box-shadow: 0 4px 10px rgba(59,130,246,0.25);"
+                                      onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 12px rgba(59,130,246,0.35)';"
+                                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(59,130,246,0.25)';">
+                                สไลด์ถัดไป (Next Slide) ➡️
+                              </button>
+                            } @else {
+                              <button (click)="startPresentationQa()"
+                                      style="flex: 1; padding: 0.55rem; border-radius: 10px; border: none; background: #10b981; color: white; font-weight: 800; cursor: pointer; font-size: 0.78rem; transition: all 0.2s; box-shadow: 0 4px 10px rgba(16,185,129,0.25);"
+                                      onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 12px rgba(16,185,129,0.35)';"
+                                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(16,185,129,0.25)';">
+                                เริ่มช่วงถาม-ตอบ (Q&A) 💬
+                              </button>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+
+                  </div>
+                }
+
+                <!-- RIGHT COLUMN: INTERACTIVE CONTROLS WRAPPER -->
+                <div class="call-interactive-right-panel" 
+                     [style.width]="(selectedCategory === 'interview' || selectedCategory === 'presentation') ? '100%' : 'auto'" 
+                     style="display: flex; flex-direction: column; gap: 1rem; width: 100%;">
+                  
+                  <!-- Main Avatar Panel -->
+                  <div class="call-avatar-panel">
+                    <div
+                      class="avatar-ring"
+                      [class.speaking]="aiWriting"
+                      [class.listening]="practiceIsRecording"
+                    >
+                      <div class="inner-avatar" style="font-size: 3.5rem; display: flex; align-items: center; justify-content: center; height: 100%;">{{ avatarDetails[selectedAvatar]?.icon }}</div>
+                      <div class="voice-wave-circle w1"></div>
+                      <div class="voice-wave-circle w2"></div>
+                    </div>
+                    <h3 class="call-status-title">
+                      {{
+                        whisperLoading
+                          ? 'กำลังแปลงเสียงเป็นข้อความ...'
+                          : stsPendingConfirm
+                            ? 'ตรวจสอบข้อความก่อนส่ง'
+                            : aiWriting
+                              ? 'AI กำลังพูดโต้ตอบ...'
+                              : practiceIsRecording
+                                ? 'ระบบกำลังรับฟังเสียงของคุณ...'
+                                : 'เชื่อมต่อสายสนทนาแล้ว'
+                      }}
+                    </h3>
+                    <p class="call-substatus">
+                      {{
+                        whisperLoading
+                          ? 'กรุณารอสักครู่...'
+                          : stsPendingConfirm
+                            ? 'แก้ไขข้อความได้ตามต้องการ ก่อนกดส่งให้ AI'
+                            : practiceIsRecording
+                              ? 'กรุณาพูดตอบรับภาษาอังกฤษ'
+                              : 'กดปุ่มไมโครโฟนด้านล่างเพื่อพูด'
+                      }}
+                    </p>
+                  </div>
+
+                  <!-- Call Controls and Text Display -->
+                  <div class="call-text-box">
+                  <div class="call-last-exchange">
+                    <!-- Transcript Review: must confirm/edit before it's sent to the AI -->
+                    @if (stsPendingConfirm) {
+                      <div class="exchange-bubble user-exchange animate-scale sts-confirm-box" style="border-color: rgba(168, 85, 247, 0.4); background: rgba(168, 85, 247, 0.08);">
+                        <span class="ex-lbl" style="color: #a855f7;">คุณพูดว่า (ตรวจสอบ/แก้ไขก่อนส่ง):</span>
+                        <textarea
+                          class="sts-confirm-textarea"
+                          [(ngModel)]="stsConfirmText"
+                          rows="2"
+                          style="width: 100%; margin-top: 0.4rem; background: rgba(255,255,255,0.95); border: 1.5px solid rgba(168, 85, 247, 0.4); border-radius: 10px; padding: 0.5rem 0.7rem; font-size: 0.85rem; font-weight: 600; color: #1e293b; outline: none; resize: none; box-sizing: border-box; font-family: inherit;"
+                        ></textarea>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.6rem;">
+                          <button
+                            (click)="discardStsConfirmation()"
+                            style="flex: 1; padding: 0.5rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer;"
+                          >
+                            🔁 พูดใหม่
+                          </button>
+                          <button
+                            (click)="sendConfirmedStsMessage()"
+                            [disabled]="!stsConfirmText.trim()"
+                            [style.opacity]="stsConfirmText.trim() ? '1' : '0.5'"
+                            style="flex: 1; padding: 0.5rem; border-radius: 10px; border: none; background: linear-gradient(135deg, #a855f7, #6366f1); color: white; font-weight: 800; font-size: 0.8rem; cursor: pointer; box-shadow: 0 4px 10px rgba(168,85,247,0.35);"
+                          >
+                            ✅ ส่งให้ AI
+                          </button>
+                        </div>
+                      </div>
+                    } @else if (whisperLoading) {
+                      <div class="exchange-bubble user-exchange animate-scale">
+                        <span class="ex-lbl">🎧 กำลังประมวลผลเสียง...</span>
+                        <p class="ex-text">กำลังแปลงเสียงพูดของคุณเป็นข้อความ กรุณารอสักครู่</p>
+                      </div>
+                    } @else if (practiceIsRecording && recognizedText) {
+                      <div class="exchange-bubble user-exchange animate-scale">
+                        <span class="ex-lbl">คุณกำลังพูด:</span>
+                        <p class="ex-text">" {{ recognizedText }} "</p>
+                      </div>
+                    } @else if (!practiceIsRecording && getLastUserMessage()) {
+                      <div class="exchange-bubble user-exchange animate-scale" style="background: rgba(99, 102, 241, 0.08); border-color: rgba(99, 102, 241, 0.35);">
+                        <span class="ex-lbl" style="color: #818cf8;">คุณพูดว่า:</span>
+                        <p class="ex-text">" {{ getLastUserMessage() }} "</p>
+                      </div>
+                    }
+
+                    <!-- Last AI Response Text -->
+                    @if (practiceMessages.length > 0) {
+                      <div class="exchange-bubble ai-exchange animate-scale">
+                        <span class="ex-lbl">AI ตอบว่า:</span>
+                        <p class="ex-text">
+                          "
+                          {{
+                            practiceMessages[practiceMessages.length - 1].sender === 'ai'
+                              ? practiceMessages[practiceMessages.length - 1].text
+                              : '...'
+                          }}
+                          "
+                        </p>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Central Mic Controller -->
+                  <div class="call-action-center" style="display: flex; flex-direction: column; align-items: center; gap: 0.75rem; margin-top: 1rem;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem;">
+                      <!-- Reset Conversation Button -->
+                      <button
+                        class="call-sub-btn reset-btn"
+                        [disabled]="stsPendingConfirm"
+                        (click)="resetPracticeSession()"
+                        title="เริ่มบทสนทนาใหม่ (Reset)"
+                        style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
+                        [style.opacity]="stsPendingConfirm ? '0.4' : '1'"
+                        onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.transform='scale(1.08)'"
+                        onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.transform='scale(1)'"
+                      >
+                        🔄
+                      </button>
+
+                      <!-- Main Mic Button -->
+                      <button
+                        class="call-mic-btn"
+                        [class.recording]="practiceIsRecording"
+                        [disabled]="stsPendingConfirm || whisperLoading"
+                        [style.opacity]="(stsPendingConfirm || whisperLoading) ? '0.4' : '1'"
+                        (click)="practiceToggleRecording()"
+                      >
+                        <span class="call-mic-icon">🎙️</span>
+                      </button>
+
+                      <!-- Cancel/Delete Recording Button -->
+                      <button
+                        class="call-sub-btn cancel-btn"
+                        [style.visibility]="practiceIsRecording ? 'visible' : 'hidden'"
+                        [disabled]="!practiceIsRecording"
+                        (click)="cancelCurrentRecording()"
+                        title="ยกเลิกการอัดรอบนี้ (Cancel/Delete)"
+                        style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'; this.style.borderColor='#ef4444'; this.style.transform='scale(1.08)'"
+                        onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.borderColor='rgba(255, 255, 255, 0.2)'; this.style.transform='scale(1)'"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+
+                    <p class="mic-help-txt" style="margin-bottom: 0.5rem;">
+                      {{
+                        stsPendingConfirm
+                          ? 'กรุณากด "ส่งให้ AI" หรือ "พูดใหม่" ด้านบนก่อน'
+                          : whisperLoading
+                            ? 'กำลังประมวลผลเสียง กรุณารอสักครู่...'
+                            : practiceIsRecording
+                              ? 'กดปุ่มอีกครั้งเมื่อพูดเสร็จ'
+                              : 'กดเพื่อเปิดไมค์พูดโต้ตอบ'
+                      }}
+                    </p>
+
+                    <!-- End Call / Evaluation Button -->
+                    <button
+                      class="btn-end-eval"
+                      (click)="evaluateCurrentSession()"
+                      style="padding: 10px 22px; border-radius: 20px; border: none; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(239,68,68,0.25); transition: all 0.2s;"
+                      onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(239,68,68,0.45)'"
+                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(239,68,68,0.25)'"
+                    >
+                      🛑 จบการสนทนาและวิเคราะห์คะแนน
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          }
+          }
+        </div>
+
+        <!-- ==================================================          AI CONVERSATION SUMMARY (after "จบการสนทนา")          ================================================== -->
+        @if (chatSummaryVisible) {
+          <div class="quiz-fs-overlay animate-fade">
+            <div class="qfs-header">
+              <div class="qfs-title-group">
+                <span class="qfs-unit-badge" style="background: var(--pastel-purple); color: var(--pastel-purple-dark)">🎯</span>
+                <div>
+                  <h2 class="qfs-title">ผลสรุปการฝึกพูด</h2>
+                  <p class="qfs-subtitle">
+                    Conversation Summary
+                    @if (currentChatTopic) {
+                      · {{ currentChatTopic.titleTh }}
+                    }
+                  </p>
+                </div>
+              </div>
+              <button type="button" class="qfs-close-btn" (click)="closeChatSummary(false)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+                ปิด
+              </button>
+            </div>
+            <div class="qfs-body">
+              @if (chatSummaryLoading) {
+                <div class="pdf-loading-spinner" style="padding: 4rem 0;">
+                  <div class="spinner"></div>
+                  <p>AI กำลังวิเคราะห์บทสนทนาของคุณ...</p>
+                </div>
+              } @else if (chatSummaryReport) {
+                <div class="chat-summary-content" style="padding: 1.5rem; max-width: 640px; margin: 0 auto;">
+                  <div class="summary-overall-card" style="background: linear-gradient(135deg, #EEF2FF, #F5F3FF); border-radius: 16px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                    <p style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--slate-800); line-height: 1.6;">{{ chatSummaryReport.overall }}</p>
+                  </div>
+
+                  @if (chatSummaryReport.scores) {
+                    <!-- 100-Point Weighted Score Breakdown Grid -->
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+                      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.65rem;">
+                        <!-- 1. Grammar (50 pts) -->
+                        <div style="background: white; border: 1.5px solid #EEF2FF; border-radius: 14px; padding: 0.85rem 0.5rem; text-align: center; box-shadow: 0 2px 6px rgba(99,102,241,0.04);">
+                          <span style="font-size: 0.68rem; font-weight: 800; color: #475569; display: block; margin-bottom: 0.35rem;">📝 ความถูกต้องไวยากรณ์</span>
+                          <span style="font-size: 1.25rem; font-weight: 900; color: #6366F1;">{{ chatSummaryReport.scores.grammar }} <span style="font-size: 0.72rem; font-weight: 700; color: #94A3B8;">/ 50</span></span>
+                        </div>
+                        <!-- 2. Pronunciation (30 pts) -->
+                        <div style="background: white; border: 1.5px solid #ECFDF5; border-radius: 14px; padding: 0.85rem 0.5rem; text-align: center; box-shadow: 0 2px 6px rgba(16,185,129,0.04);">
+                          <span style="font-size: 0.68rem; font-weight: 800; color: #475569; display: block; margin-bottom: 0.35rem;">🗣️ ออกเสียง/ถอดคำ</span>
+                          <span style="font-size: 1.25rem; font-weight: 900; color: #10B981;">{{ chatSummaryReport.scores.pronunciation }} <span style="font-size: 0.72rem; font-weight: 700; color: #94A3B8;">/ 30</span></span>
+                        </div>
+                        <!-- 3. Speed (20 pts) -->
+                        <div style="background: white; border: 1.5px solid #FFFBEB; border-radius: 14px; padding: 0.85rem 0.5rem; text-align: center; box-shadow: 0 2px 6px rgba(245,158,11,0.04);">
+                          <span style="font-size: 0.68rem; font-weight: 800; color: #475569; display: block; margin-bottom: 0.35rem;">⏱️ ความเร็วโต้ตอบ</span>
+                          <span style="font-size: 1.25rem; font-weight: 900; color: #F59E0B;">{{ chatSummaryReport.scores.speed }} <span style="font-size: 0.72rem; font-weight: 700; color: #94A3B8;">/ 20</span></span>
+                        </div>
+                      </div>
+
+                      <!-- Total Score Banner -->
+                      <div style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: white; border-radius: 14px; padding: 0.75rem 1.25rem; box-shadow: 0 4px 12px rgba(124,58,237,0.2);">
+                        <span style="font-size: 0.85rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">🏆 คะแนนรวมทั้งหมด (Total Score):</span>
+                        <span style="font-size: 1.3rem; font-weight: 900;">{{ chatSummaryReport.scores.total }} <span style="font-size: 0.8rem; font-weight: 700; opacity: 0.85;">/ 100</span></span>
+                      </div>
+                    </div>
+                  }
+
+                  @if (chatSummaryReport.corrections.length > 0) {
+                    <h3 style="font-size: 0.95rem; font-weight: 800; color: var(--slate-800); margin: 0 0 0.75rem 0;">📝 จุดที่ควรแก้ไข ({{ chatSummaryReport.corrections.length }})</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+                      @for (c of chatSummaryReport.corrections; track $index) {
+                        <div style="background: white; border: 1.5px solid var(--slate-100); border-radius: 14px; padding: 0.9rem 1rem;">
+                          <p style="margin: 0 0 0.35rem 0; font-size: 0.8rem; color: #B91C1C; text-decoration: line-through; opacity: 0.85;">{{ c.original }}</p>
+                          @if (c.suggestion) {
+                            <p style="margin: 0 0 0.45rem 0; font-size: 0.83rem; color: #15803D; font-weight: 700;">✓ {{ c.suggestion }}</p>
+                          }
+                          <p style="margin: 0; font-size: 0.75rem; color: var(--slate-500);">{{ c.issue }}</p>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div style="text-align: center; padding: 1.5rem 0; color: var(--slate-500); font-size: 0.85rem;">🎉 ไม่พบข้อผิดพลาดที่ต้องแก้ไขในบทสนทนานี้เลย เก่งมาก!</div>
+                  }
+
+                  @if (chatSummaryReport.tips.length > 0) {
+                    <h3 style="font-size: 0.95rem; font-weight: 800; color: var(--slate-800); margin: 0 0 0.75rem 0;">💡 คำแนะนำเพิ่มเติม</h3>
+                    <ul style="margin: 0 0 1.5rem 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                      @for (t of chatSummaryReport.tips; track $index) {
+                        <li style="font-size: 0.8rem; color: var(--slate-600); line-height: 1.5;">{{ t }}</li>
+                      }
+                    </ul>
+                  }
+
+                  <!-- Conversation Transcript (collapsible) -->
+                  <button
+                    type="button"
+                    (click)="showSummaryTranscript = !showSummaryTranscript"
+                    style="width: 100%; display: flex; align-items: center; justify-content: space-between; background: var(--slate-50); border: 1.5px solid var(--slate-100); border-radius: 12px; padding: 0.75rem 1rem; margin-bottom: 1rem; cursor: pointer; font-size: 0.83rem; font-weight: 800; color: var(--slate-700);"
+                  >
+                    📜 ประวัติบทสนทนา ({{ practiceMessages.length }} ข้อความ)
+                    <span>{{ showSummaryTranscript ? '▲ ซ่อน' : '▼ ดูทั้งหมด' }}</span>
+                  </button>
+                  @if (showSummaryTranscript) {
+                    <div class="summary-transcript animate-fade" style="display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem; max-height: 320px; overflow-y: auto; padding: 0.25rem;">
+                      @for (msg of practiceMessages; track $index) {
+                        <div style="display: flex; flex-direction: column;" [style.align-items]="msg.sender === 'user' ? 'flex-end' : 'flex-start'">
+                          <span style="font-size: 0.65rem; font-weight: 700; color: var(--slate-400); margin-bottom: 0.15rem;">{{ msg.sender === 'user' ? 'คุณ' : 'AI' }}</span>
+                          <div
+                            style="max-width: 85%; padding: 0.5rem 0.8rem; border-radius: 12px; font-size: 0.78rem; line-height: 1.4;"
+                            [style.background]="msg.sender === 'user' ? 'var(--pastel-blue-dark)' : 'white'"
+                            [style.color]="msg.sender === 'user' ? 'white' : 'var(--slate-700)'"
+                            [style.border]="msg.sender === 'user' ? 'none' : '1.5px solid var(--slate-100)'"
+                          >
+                            {{ gameFx.stripMarkdown(msg.text) }}
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                    <button type="button" class="btn-finish-quiz" style="flex: 1;" (click)="closeChatSummary(true)">🔀 สุ่มหัวข้อใหม่</button>
+                    <button type="button" class="btn-clear-sc" style="flex: 1;" (click)="closeChatSummary(false)">กลับเมนู</button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </section>
+  <!-- ====================================================
+       MODAL: AI VIDEO CALL (สนทนาสดกับ AI)
+       ==================================================== -->
+  @if (sharedUi.showVideoCallModal) {
+    <div class="duo-modal-overlay">
+      <div class="duo-modal-fullscreen animate-fade">
+        
+        @if (videoCallStep === 'intro') {
+          <div class="vcall-intro animate-scale">
+            <h2 class="vcall-main-title">📞 สนทนาวิดีโอสดกับครู AI (AI Video Call)</h2>
+            <p class="vcall-subtitle">ฝึกทักษะการฟังพูดภาษาอังกฤษแบบเรียลไทม์ผ่านสายสนทนาสด</p>
+            
+            <div class="vcall-teacher-select">
+              <h3>เลือกคู่สนทนาของคุณ:</h3>
+              <div class="avatar-choices" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; width: 100%;">
+                @for (key of ['jane', 'david', 'alex', 'maria']; track key) {
+                  <button class="avatar-choice-btn animate-scale" 
+                          [class.active]="getAvatarKeyByLabel(selectedTeacherAvatar) === key" 
+                          (click)="selectedTeacherAvatar = avatarDetails[key].icon + ' ' + avatarDetails[key].label"
+                          style="display: flex; flex-direction: column; align-items: center; padding: 0.75rem; border-radius: 12px; border: 2px solid var(--slate-200); background: white; cursor: pointer; transition: all 0.2s;"
+                          [style.borderColor]="getAvatarKeyByLabel(selectedTeacherAvatar) === key ? '#6366f1' : 'var(--slate-200)'">
+                    <div class="avatar-visual" style="font-size: 2.2rem; line-height: 1;">{{ avatarDetails[key].icon }}</div>
+                    <h4 style="margin: 0.25rem 0 0 0; font-weight: 700; color: var(--slate-800); font-size: 0.88rem;">{{ avatarDetails[key].name }}</h4>
+                    <p style="margin: 0.15rem 0 0 0; font-size: 0.7rem; color: var(--slate-500); line-height: 1.2;">{{ avatarDetails[key].desc }}</p>
+                  </button>
+                }
+              </div>
+            </div>
+            
+            <div class="vcall-action-btns">
+              <button class="vcall-btn-cancel animate-scale" (click)="closeVideoCall()">ยกเลิก</button>
+              <button class="vcall-btn-start animate-scale" (click)="startVideoCall()">เริ่มต่อสายสนทนา</button>
+            </div>
+          </div>
+        }
+        
+        @if (videoCallStep === 'calling') {
+          <div class="vcall-calling animate-fade">
+            <div class="calling-avatar">
+              {{ avatarDetails[getAvatarKeyByLabel(selectedTeacherAvatar)]?.icon }}
+            </div>
+            <h3>กำลังต่อสายไปหา {{ avatarDetails[getAvatarKeyByLabel(selectedTeacherAvatar)]?.name }}...</h3>
+            <p>กรุณาเตรียมความพร้อมของไมโครโฟน</p>
+            <button class="vcall-btn-decline animate-scale" (click)="closeVideoCall()">วางสาย</button>
+          </div>
+        }
+        
+        @if (videoCallStep === 'active') {
+          <div class="vcall-active-screen animate-fade">
+            <div class="vcall-video-grid">
+              <div class="teacher-video-box">
+                <span class="v-live-badge">REC · LIVE</span>
+                <div class="teacher-avatar-big" [class.speaking]="aiWriting">
+                  {{ avatarDetails[getAvatarKeyByLabel(selectedTeacherAvatar)]?.icon }}
+                </div>
+                <div class="video-overlay-name">{{ avatarDetails[getAvatarKeyByLabel(selectedTeacherAvatar)]?.name }} (AI Partner)</div>
+              </div>
+              
+              <div class="student-video-box">
+                <div class="student-avatar-big" [class.speaking]="practiceIsRecording">
+                  👤
+                </div>
+                <div class="video-overlay-name">คุณ (You)</div>
+              </div>
+            </div>
+            
+            <div class="vcall-panel-details">
+              <div class="vcall-timer">ระยะเวลาสนทนา: {{ videoCallDuration }} วินาที</div>
+              
+              <div class="vcall-logs-scroll">
+                @for (m of videoCallMessages; track m.time) {
+                  <div class="vcall-log-row" [class.user-row]="m.sender === 'user'" [class.ai-row]="m.sender === 'ai'">
+                    <span class="log-sender">{{ m.sender === 'user' ? 'คุณ:' : 'ครู AI:' }}</span>
+                    <p class="log-text">" {{ gameFx.stripMarkdown(m.text) }} "</p>
+                  </div>
+                }
+              </div>
+
+              @if (videoCallRoleHint && videoCallMessages.length <= 2) {
+                <div class="video-role-hint" style="background: rgba(123, 108, 246, 0.15); border: 1px solid rgba(123, 108, 246, 0.4); padding: 10px 12px; border-radius: 12px; font-size: 0.82rem; margin-bottom: 0.75rem; text-align: center; color: #a5b4fc; line-height: 1.45; font-weight: 500;">
+                  💡 <strong>บทบาทของคุณ:</strong> {{ videoCallRoleHint }}
+                </div>
+              }
+
+              <div class="vcall-actions-area">
+                <button class="btn-push-to-talk animate-scale" [class.recording]="practiceIsRecording" (click)="triggerVideoCallSpeech()">
+                  {{ practiceIsRecording ? '🔴 กำลังฟัง... กดเพื่อหยุดส่ง' : '🎙️ กดแล้วพูดอังกฤษ (Push-to-Talk)' }}
+                </button>
+                
+                <button class="btn-finish-call animate-scale" (click)="endVideoCall()">🔴 จบสายสนทนา</button>
+              </div>
+            </div>
+          </div>
+        }
+        
+        @if (videoCallStep === 'feedback') {
+          <div class="vcall-feedback-screen animate-scale">
+            @if (videoCallFeedback) {
+              <h2>📊 รายงานผลการฝึกพูดสนทนา</h2>
+              <p class="feedback-subtitle">วิเคราะห์และให้คะแนนการสนทนาโดยผู้ช่วยสอนปัญญาประดิษฐ์</p>
+
+              <div class="feedback-stats-grid">
+                <div class="fstat-card">
+                  <span class="fstat-icon">🗣️</span>
+                  <h3>การออกเสียง</h3>
+                  <div class="fstat-score">{{ videoCallFeedback.pronunciation }}%</div>
+                </div>
+                <div class="fstat-card">
+                  <span class="fstat-icon">⚡</span>
+                  <h3>ความคล่องแคล่ว</h3>
+                  <div class="fstat-score">{{ videoCallFeedback.fluency }}%</div>
+                </div>
+                <div class="fstat-card">
+                  <span class="fstat-icon">✍️</span>
+                  <h3>ไวยากรณ์</h3>
+                  <div class="fstat-score">{{ videoCallFeedback.grammar }}%</div>
+                </div>
+                <div class="fstat-card">
+                  <span class="fstat-icon">📚</span>
+                  <h3>คำศัพท์อังกฤษ</h3>
+                  <div class="fstat-score">{{ videoCallFeedback.vocabulary }}%</div>
+                </div>
+              </div>
+
+              <div class="feedback-text-box">
+                <h4>คำแนะนำเฉพาะบุคคล:</h4>
+                <p>" {{ videoCallFeedback.suggestions }} "</p>
+                <div class="feedback-xp-reward">🏆 รางวัลบทเรียนสำเร็จ: +{{ videoCallFeedback.xp }} XP!</div>
+              </div>
+
+              <button class="btn-close-feedback animate-scale" (click)="closeVideoCall()">กลับสู่หน้าหลัก</button>
+            } @else {
+              <div class="vcall-analyzing">
+                <span class="loading-dots-sm"><span> </span><span> </span><span> </span></span>
+                <p>🤖 กำลังวิเคราะห์บทสนทนาของคุณ...</p>
+              </div>
+            }
+          </div>
+        }
+        
+      </div>
+    </div>
+  }
+
+  <!-- EVALUATING LOADING SPINNER OVERLAY -->
+  @if (isEvaluating) {
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+      <div style="width: 70px; height: 70px; border: 6px solid rgba(255,255,255,0.1); border-top-color: #a855f7; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1.5rem;"></div>
+      <h3 style="font-weight: 800; font-size: 1.5rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #c084fc, #818cf8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">AI กำลังวิเคราะห์ผลลัพธ์การฝึกสนทนา...</h3>
+      <p style="color: #94a3b8; font-size: 0.95rem;">กรุณารอสักครู่ ระบบกำลังวิเคราะห์การออกเสียงและหลักไวยากรณ์ของคุณ</p>
+    </div>
+  }
+
+  <!-- SPEAKING EVALUATION REPORT MODAL -->
+  @if (showSpeakingReportModal && speakingEvaluationResult) {
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(6px); z-index: 99998; display: flex; align-items: center; justify-content: center; padding: 1.5rem; box-sizing: border-box;">
+      <div class="animate-scale" style="background: white; border-radius: 28px; width: 100%; max-width: 850px; box-shadow: 0 30px 60px -15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 92vh; overflow: hidden; border: 1px solid var(--slate-200);">
+        
+        <!-- Modal Header -->
+        <div style="background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <span style="font-size: 2.2rem;">📊</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.45rem; font-weight: 850; letter-spacing: 0.5px; color: white; line-height: 1.2;">รายงานการประเมินผลทักษะการพูด</h3>
+              <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #c7d2fe;">วิเคราะห์ระดับพรีเมียมสดโดย AI สำหรับเซสชันการพูดคุยนี้</p>
+            </div>
+          </div>
+          <button (click)="closeSpeakingReportModal()" style="background: none; border: none; color: white; font-size: 2rem; cursor: pointer; line-height: 1; opacity: 0.85; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.85'">×</button>
+        </div>
+
+        <!-- Modal Body -->
+        <div style="padding: 2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.75rem; flex: 1;">
+          
+          <!-- Score Circular & Progress Area -->
+          <div style="display: flex; gap: 2rem; align-items: center; background: #f8fafc; padding: 1.75rem; border-radius: 22px; border: 1px solid #e2e8f0; flex-wrap: wrap;">
+            <!-- Total Score Circular Circle -->
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-width: 150px; text-align: center;">
+              <div style="position: relative; width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 15px rgba(0,0,0,0.07);">
+                <!-- Conical Gradient Background -->
+                <div [style.background]="'conic-gradient(#a855f7 0% ' + speakingEvaluationResult.total_score + '%, #e2e8f0 ' + speakingEvaluationResult.total_score + '% 100%)'" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%;"></div>
+                <div style="position: absolute; width: 102px; height: 102px; border-radius: 50%; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2;">
+                  <span style="font-size: 2.3rem; font-weight: 900; color: #7c3aed; line-height: 1;">{{ speakingEvaluationResult.total_score }}</span>
+                  <span style="font-size: 0.72rem; color: #64748b; font-weight: 800; margin-top: 4px; letter-spacing: 0.5px;">เต็ม 100</span>
+                </div>
+              </div>
+              <h4 style="margin: 0.75rem 0 0 0; font-size: 1rem; font-weight: 800; color: #334155;">คะแนนภาพรวม</h4>
+            </div>
+
+            <!-- Component Scores (Grammar, Pron, Speed) -->
+            <div style="flex: 2; display: flex; flex-direction: column; gap: 1rem; min-width: 280px; width: 100%;">
+              
+              <!-- Grammar Score (Max 50) -->
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.88rem; font-weight: 800; color: #1e293b; margin-bottom: 5px;">
+                  <span>📝 ความถูกต้องของไวยากรณ์ (Grammar)</span>
+                  <span style="color: #7c3aed; font-size: 0.92rem;">{{ speakingEvaluationResult.grammar_score }} / 50</span>
+                </div>
+                <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
+                  <div [style.width.%]="(speakingEvaluationResult.grammar_score / 50) * 100" style="height: 100%; background: linear-gradient(90deg, #818cf8, #4f46e5); border-radius: 10px;"></div>
+                </div>
+              </div>
+
+              <!-- Pronunciation Score (Max 30) -->
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.88rem; font-weight: 800; color: #1e293b; margin-bottom: 5px;">
+                  <span>🗣️ การออกเสียงและการถอดคำ (Pronunciation)</span>
+                  <span style="color: #7c3aed; font-size: 0.92rem;">{{ speakingEvaluationResult.pronunciation_score }} / 30</span>
+                </div>
+                <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
+                  <div [style.width.%]="(speakingEvaluationResult.pronunciation_score / 30) * 100" style="height: 100%; background: linear-gradient(90deg, #c084fc, #a855f7); border-radius: 10px;"></div>
+                </div>
+              </div>
+
+              <!-- Response Speed Score (Max 20) -->
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.88rem; font-weight: 800; color: #1e293b; margin-bottom: 5px;">
+                  <span>⚡ ความรวดเร็วในการโต้ตอบ (Response Speed)</span>
+                  <span style="color: #7c3aed; font-size: 0.92rem;">{{ speakingEvaluationResult.speed_score }} / 20</span>
+                </div>
+                <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
+                  <div [style.width.%]="(speakingEvaluationResult.speed_score / 20) * 100" style="height: 100%; background: linear-gradient(90deg, #34d399, #10b981); border-radius: 10px;"></div>
+                </div>
+              </div>
+
+            </div>
+                    </div>
+
+          <!-- Custom Status Cards for Interview / Presentation -->
+          @if (selectedCategory === 'interview') {
+            <div style="background: rgba(124, 58, 237, 0.05); border: 1.5px solid rgba(124, 58, 237, 0.2); border-radius: 20px; padding: 1.25rem 1.5rem; display: flex; gap: 1rem; align-items: center;">
+              <span style="font-size: 2.2rem;">💼</span>
+              <div>
+                <strong style="display: block; font-size: 0.95rem; font-weight: 850; color: #7c3aed; margin-bottom: 4px;">สรุปผลการประเมินการจ้างงาน (Employment Assessment)</strong>
+                @if (speakingEvaluationResult.total_score >= 80) {
+                  <span style="display: inline-block; font-size: 0.8rem; background: #dcfce7; color: #166534; padding: 3px 10px; border-radius: 12px; font-weight: 800; margin-bottom: 6px;">🥇 แนะนำให้จ้างงานทันที (Highly Recommended for Hire)</span>
+                  <p style="margin: 0; font-size: 0.82rem; color: #475569; line-height: 1.4; font-weight: 600;">คุณทำผลงานการสัมภาษณ์งานครูได้โดดเด่นมาก ไวยากรณ์ถูกต้อง และการตอบคำถามมีไหวพริบและตรงประเด็นเป็นมืออาชีพ</p>
+                } @else if (speakingEvaluationResult.total_score >= 65) {
+                  <span style="display: inline-block; font-size: 0.8rem; background: #fef9c3; color: #854d0e; padding: 3px 10px; border-radius: 12px; font-weight: 800; margin-bottom: 6px;">🥈 ผ่านเกณฑ์การรับเข้าทำงาน (Hireable / Recommended)</span>
+                  <p style="margin: 0; font-size: 0.82rem; color: #475569; line-height: 1.4; font-weight: 600;">คุณสื่อสารได้ดีและตอบเรื่องการสอนได้ชัดเจน แอยู่อาจปรับปรุงด้านการออกเสียงและความคล่องแคล่วเพื่อลดการติดขัดเล็กน้อย</p>
+                } @else {
+                  <span style="display: inline-block; font-size: 0.8rem; background: #fee2e2; color: #991b1b; padding: 3px 10px; border-radius: 12px; font-weight: 800; margin-bottom: 6px;">🥉 ควรพัฒนาการตอบสัมภาษณ์เพิ่ม (Requires Training)</span>
+                  <p style="margin: 0; font-size: 0.82rem; color: #475569; line-height: 1.4; font-weight: 600;">การตอบคำถามยังมีความตื่นเต้นและตะกุกตะกักค่อนข้างมาก แนะนำให้กดเริ่มสัมภาษณ์ใหม่อีกรอบและอ่านเคล็ดลับคำแนะนำด้านล่างอย่างสม่ำเสมอค่ะ</p>
+                }
+              </div>
+            </div>
+          } @else if (selectedCategory === 'presentation') {
+            <div style="background: rgba(59, 130, 246, 0.05); border: 1.5px solid rgba(59, 130, 246, 0.2); border-radius: 20px; padding: 1.25rem 1.5rem; display: flex; gap: 1rem; align-items: center;">
+              <span style="font-size: 2.2rem;">📊</span>
+              <div>
+                <strong style="display: block; font-size: 0.95rem; font-weight: 850; color: #2563eb; margin-bottom: 4px;">สรุปผลการนำเสนอผลงาน (Presentation Evaluation)</strong>
+                @if (speakingEvaluationResult.total_score >= 80) {
+                  <span style="display: inline-block; font-size: 0.8rem; background: #dcfce7; color: #166534; padding: 3px 10px; border-radius: 12px; font-weight: 800; margin-bottom: 6px;">🏆 นักนำเสนอยอดเยี่ยม (Outstanding Presenter)</span>
+                  <p style="margin: 0; font-size: 0.82rem; color: #475569; line-height: 1.4; font-weight: 600;">การเรียบเรียงและอธิบายสไลด์ทำได้ลื่นไหล มีโครงสร้างที่ชัดเจน และการตอบคำถาม Q&A คณะกรรมการกระชับและตรงจุด</p>
+                } @else if (speakingEvaluationResult.total_score >= 65) {
+                  <span style="display: inline-block; font-size: 0.8rem; background: #e0f2fe; color: #075985; padding: 3px 10px; border-radius: 12px; font-weight: 800; margin-bottom: 6px;">📈 ระดับมาตรฐานการนำเสนอ (Competent Presenter)</span>
+                  <p style="margin: 0; font-size: 0.82rem; color: #475569; line-height: 1.4; font-weight: 600;">คุณอธิบายสไลด์ได้ครบหัวข้อ แต่อาจติดขัดระหว่างการเปลี่ยนสไลด์หรือความเร็วการพูดเร็ว/ช้าเกินไปในบางช่วง</p>
+                } @else {
+                  <span style="display: inline-block; font-size: 0.8rem; background: #fee2e2; color: #991b1b; padding: 3px 10px; border-radius: 12px; font-weight: 800; margin-bottom: 6px;">💡 ต้องปรับปรุงการฝึกซ้อมหน้าสไลด์ (Needs Slide Practice)</span>
+                  <p style="margin: 0; font-size: 0.82rem; color: #475569; line-height: 1.4; font-weight: 600;">การอธิบายสไลด์ยังสับสนและไม่ปะติดปะต่อ แนะนำให้โฟกัสจุดหลักบนหน้าจอ (Bullet Points) ในการพูดแต่ละสไลด์ให้กระชับขึ้นค่ะ</p>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- AI Feedback Text Box -->
+          <div>
+            <h4 style="margin: 0 0 0.65rem 0; font-size: 1.05rem; font-weight: 850; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
+              <span>💡</span> คำแนะนำและการประเมินผลจาก {{ avatarDetails[selectedAvatar]?.name || 'Teacher Jane' }}
+            </h4>
+            <div style="background: rgba(124, 58, 237, 0.04); border: 1px solid rgba(124, 58, 237, 0.15); padding: 1.25rem 1.5rem; border-radius: 20px; font-size: 0.96rem; color: #334155; line-height: 1.6; white-space: pre-line; max-height: 250px; overflow-y: auto; box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);">
+              {{ speakingEvaluationResult.feedback }}
+            </div>
+          </div>
+
+          <!-- Chat History Box -->
+          <div>
+            <h4 style="margin: 0 0 0.65rem 0; font-size: 1.05rem; font-weight: 850; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
+              <span>💬</span> ประวัติบทสนทนาจำลองในเซสชันนี้
+            </h4>
+            <div style="border: 1px solid #e2e8f0; border-radius: 20px; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; background: #fafafa;">
+              @for (m of practiceMessages; track $index) {
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span [style.color]="m.sender === 'user' ? '#4f46e5' : '#7c3aed'" style="font-size: 0.76rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.6px;">
+                    {{ m.sender === 'user' ? 'คุณ (Student)' : 'AI Tutor' }}
+                  </span>
+                  <p style="margin: 0; font-size: 0.88rem; color: #1e293b; line-height: 1.5; background: #ffffff; padding: 8px 14px; border-radius: 12px; border: 1px solid #f1f5f9; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    {{ gameFx.stripMarkdown(m.text) }}
+                  </p>
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div style="padding: 1.5rem 2rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; background: #f8fafc; border-bottom-left-radius: 28px; border-bottom-right-radius: 28px;">
+          <button
+            (click)="closeSpeakingReportModal()"
+            style="padding: 12px 36px; border-radius: 16px; border: none; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; font-weight: 850; font-size: 0.98rem; cursor: pointer; box-shadow: 0 4px 15px rgba(124,58,237,0.3); transition: all 0.2s;"
+            onmouseover="this.style.transform='translateY(-1.5px)'; this.style.boxShadow='0 8px 20px rgba(124,58,237,0.45)'"
+            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(124,58,237,0.3)'"
+          >
+            ตกลงและยอมรับผล
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }

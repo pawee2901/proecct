@@ -1,0 +1,426 @@
+<section class="tab-section animate-fade">
+  @if (!aiResultData && !aiVocabLoading) {
+    <div class="tab-header-row">
+      <h1 class="tab-title">คำศัพท์</h1>
+      <p class="tab-subtitle">ทบทวนและสร้างคำศัพท์ใหม่ด้วย AI</p>
+    </div>
+    <!-- Sub-tab switcher -->
+    <div class="vocab-sub-nav">
+      <button
+        class="sub-nav-btn"
+        [class.active]="vocabSubTab === 'lesson'"
+        (click)="vocabSubTab = 'lesson'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+        คำศัพท์จากบทเรียน
+      </button>
+      <button
+        class="sub-nav-btn"
+        [class.active]="vocabSubTab === 'ai'"
+        (click)="vocabSubTab = 'ai'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+        สร้างคำศัพท์ AI
+      </button>
+    </div>
+  }
+
+  <!-- Sub-tab: คำศัพท์จากบทเรียน -->
+  @if (vocabSubTab === 'lesson') {
+    <div class="vocab-lesson-panel">
+      <div class="selected-unit-header">
+        <h3>คำศัพท์ทั้งหมดจากบทเรียน</h3>
+        <p>{{ getAllVocabularies().length }} คำศัพท์ · กดที่การ์ดเพื่อดูความหมาย</p>
+      </div>
+      <!-- Vocabulary list -->
+      <div class="vocab-list">
+        @for (v of getAllVocabularies(); track v.word; let i = $index) {
+          <div class="vocab-item" [class.is-open]="!!flippedCards[i]" (click)="toggleFlip(i)">
+            <div class="vi-main-row">
+              <span class="vi-unit-badge">{{ v.unitNumber }}</span>
+              <button
+                type="button"
+                class="btn-avr-audio"
+                [class.speaking]="gameFx.speakingWord === v.word"
+                (click)="gameFx.speakText(v.word); $event.stopPropagation()"
+                title="ออกเสียง"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                </svg>
+              </button>
+              <div class="vi-word-block">
+                <span class="vi-word">{{ v.word }}</span>
+                @if (v.reading) {
+                  <span class="vi-reading">[{{ v.reading }}]</span>
+                }
+              </div>
+              @if (!flippedCards[i]) {
+                <span class="vi-hint">แตะเพื่อดูความหมาย</span>
+              }
+              <svg class="vi-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            @if (flippedCards[i]) {
+              <div class="vi-meaning-row animate-fade">
+                @if (v.pos) {
+                  <span class="vi-pos-badge">{{ v.pos }}</span>
+                }
+                <span class="vi-meaning">{{ v.meaning }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+  <!-- Sub-tab: AI Vocabulary -->
+  @if (vocabSubTab === 'ai') {
+    <div class="ai-vocab-panel">
+      @if (!aiResultData && !aiVocabLoading) {
+        <div class="ai-gen-card">
+          <div class="ai-gen-header">
+            <div class="ai-gen-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="ai-gen-title">สร้างคำศัพท์ด้วย AI</h3>
+              <p class="ai-gen-sub">เลือกระดับและกรอกหัวข้อที่ต้องการ</p>
+            </div>
+          </div>
+          <div class="ai-gen-form">
+            <div class="form-field">
+              <label class="field-lbl">ระดับความยาก</label>
+              <select class="styled-select" [(ngModel)]="aiVocabLevel">
+                <option value="beginner">ระดับเริ่มต้น</option>
+                <option value="intermediate">ระดับกลาง</option>
+                <option value="advanced">ระดับสูง</option>
+              </select>
+            </div>
+            <div class="form-field topic-field">
+              <label class="field-lbl">หัวข้อ</label>
+              <div class="topic-input-wrap">
+                <input
+                  class="topic-input"
+                  type="text"
+                  placeholder="เช่น ไปโรงเรียน, ร้านอาหาร, สนามบิน..."
+                  [(ngModel)]="aiVocabTopic"
+                  (keyup.enter)="generateAiVocab()"
+                />
+                <button
+                  class="btn-generate"
+                  (click)="generateAiVocab()"
+                  [disabled]="aiVocabLoading || !aiVocabTopic.trim()"
+                >
+                  @if (!aiVocabLoading) {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    สร้าง
+                  } @else {
+                    <span class="loading-dots-sm">
+                      <span> </span>
+                      <span> </span>
+                      <span> </span>
+                    </span>
+                  }
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ประวัติการสร้างคำศัพท์ ── -->
+        @if (vocabHistory.length > 0) {
+          <div class="vocab-history-section">
+            <h4 class="history-title">
+              <svg class="history-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              ประวัติการสร้าง
+            </h4>
+            <div class="history-list">
+              @for (item of vocabHistory; track item.createdAt; let i = $index) {
+                <div class="history-card" (click)="viewHistoryItem(item)">
+                  <div class="hc-left">
+                    <span class="hc-level-badge">ระดับ{{ item.levelLabel }}</span>
+                    <p class="hc-topic">{{ item.topic }}</p>
+                    <p class="hc-meta">
+                      {{ item.data.vocab.length }} คำ · {{ item.data.sentences.length }} ประโยค
+                      · {{ item.createdAt }}
+                    </p>
+                  </div>
+                  <div class="hc-actions">
+                    <button
+                      type="button"
+                      class="btn-hc-view"
+                      (click)="viewHistoryItem(item); $event.stopPropagation()"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      ดูอีกครั้ง
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-hc-del"
+                      (click)="removeHistoryItem(i); $event.stopPropagation()"
+                      title="ลบ"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14H6L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                        <path d="M9 6V4h6v2" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+
+      <!-- ── AI Loading Experience ── -->
+      @if (aiVocabLoading) {
+        <div class="ai-loading-card animate-fade">
+          <div class="ai-loading-orbit">
+            <div class="ai-loading-ring"></div>
+            <div class="ai-loading-core">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+          </div>
+          <div class="ai-loading-info">
+            <span class="ai-loading-badge">ระดับ{{ getLevelLabel() }}</span>
+            <h3 class="ai-loading-topic">"{{ aiVocabTopic }}"</h3>
+            @for (msg of [loadingMessages[currentLoadingMsgIndex]]; track currentLoadingMsgIndex) {
+              <p class="ai-loading-msg animate-fade">{{ msg }}</p>
+            }
+          </div>
+          <div class="ai-loading-progress">
+            <div class="ai-loading-progress-bar"></div>
+          </div>
+        </div>
+
+        <div class="vocab-skeleton-wrap animate-fade">
+          <div class="skeleton-header">
+            <div class="sk-badge"></div>
+            <div class="sk-title"></div>
+          </div>
+          @for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) {
+            <div class="vocab-skeleton-row" [style.animation-delay.ms]="i * 70">
+              <div class="sk-line sk-word"></div>
+              <div class="sk-line sk-meaning"></div>
+              <div class="sk-line sk-example"></div>
+            </div>
+          }
+        </div>
+      }
+
+      @if (aiResultData) {
+        <div class="ai-result-panel animate-fade">
+          <!-- Back Button Bar -->
+          <div class="arp-back-bar">
+            <button type="button" class="btn-arp-back" (click)="clearAiVocab()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; flex-shrink: 0">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              ย้อนกลับ
+            </button>
+            <span class="arp-back-topic">{{ aiVocabTopic }}</span>
+          </div>
+          <!-- Result Header -->
+          <div class="arp-header">
+            <div class="arp-header-left">
+              <span class="arp-level-badge">ระดับ{{ getLevelLabel() }}</span>
+              <h2 class="arp-topic-title">{{ aiVocabTopic }}</h2>
+            </div>
+            <div class="arp-mascot">
+              <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="40" cy="40" r="36" fill="#e0f2fe" />
+                <g transform="translate(12, 3) scale(0.28)">
+                  <path d="M 78,218 Q 68,228 56,225 Q 58,215 70,215 Z" fill="#FF9E1B"/>
+                  <path d="M 122,218 Q 132,228 144,225 Q 142,215 130,215 Z" fill="#FF9E1B"/>
+                  <ellipse cx="100" cy="178" rx="46" ry="40" fill="#FFFFFF"/>
+                  <ellipse cx="100" cy="183" rx="33" ry="28" fill="#F8F8FF"/>
+                  <path d="M 54,178 C 36,168 23,152 27,139 C 31,127 44,132 51,144 C 57,155 57,169 54,178 Z" fill="#E8E4FF"/>
+                  <g class="duck-wing-wave">
+                    <path d="M 148,170 C 166,157 180,140 175,127 C 170,114 157,120 152,133 C 147,145 145,160 148,170 Z" fill="#E8E4FF"/>
+                    <path d="M 175,127 Q 184,117 189,124" fill="none" stroke="#D8D4F8" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M 172,122 Q 179,111 185,116" fill="none" stroke="#D8D4F8" stroke-width="4" stroke-linecap="round"/>
+                  </g>
+                  <circle cx="100" cy="98" r="52" fill="#FFFFFF"/>
+                  <path d="M 94,47 Q 90,35 98,32 Q 96,41 100,47 Q 107,34 114,36 Q 111,44 106,49" fill="#E8E4FF" stroke="#D8D4F8" stroke-width="1"/>
+                  <path d="M 50,94 Q 54,46 100,44 Q 146,46 150,94" fill="none" stroke="#7B6CF6" stroke-width="6" stroke-linecap="round"/>
+                  <ellipse cx="50" cy="97" rx="14" ry="16" fill="#9B8DF8"/>
+                  <ellipse cx="50" cy="97" rx="9" ry="11" fill="#7B6CF6"/>
+                  <ellipse cx="50" cy="97" rx="5" ry="6" fill="#5448CC"/>
+                  <ellipse cx="150" cy="97" rx="14" ry="16" fill="#9B8DF8"/>
+                  <ellipse cx="150" cy="97" rx="9" ry="11" fill="#7B6CF6"/>
+                  <ellipse cx="150" cy="97" rx="5" ry="6" fill="#5448CC"/>
+                  <path d="M 138,118 Q 148,127 144,140" fill="none" stroke="#7B6CF6" stroke-width="3.5" stroke-linecap="round"/>
+                  <circle cx="144" cy="143" r="6" fill="#9B8DF8"/>
+                  <circle cx="144" cy="143" r="3.5" fill="#7B6CF6"/>
+                  <circle cx="82" cy="95" r="14" fill="#3D2005"/>
+                  <path d="M 69,98 A 14,14 0 0,0 95,98 A 14,14 0 0,1 69,98 Z" fill="#C68936"/>
+                  <circle cx="88" cy="89" r="5.5" fill="white"/>
+                  <circle cx="78" cy="98" r="2.2" fill="white"/>
+                  <circle cx="118" cy="95" r="14" fill="#3D2005"/>
+                  <path d="M 105,98 A 14,14 0 0,0 131,98 A 14,14 0 0,1 105,98 Z" fill="#C68936"/>
+                  <circle cx="124" cy="89" r="5.5" fill="white"/>
+                  <circle cx="114" cy="98" r="2.2" fill="white"/>
+                  <ellipse cx="64" cy="110" rx="11" ry="8" fill="#FF8FA3" opacity="0.45"/>
+                  <ellipse cx="136" cy="110" rx="11" ry="8" fill="#FF8FA3" opacity="0.45"/>
+                  <path d="M 82,118 Q 100,110 118,118 Q 100,125 82,118 Z" fill="#FF9800"/>
+                  <path d="M 84,119 Q 100,123 116,119 Q 100,134 84,119 Z" fill="#D84315"/>
+                  <path d="M 88,122 Q 100,128 112,122" fill="#FF8FA3"/>
+                </g>
+              </svg>
+            </div>
+          </div>
+          <!-- Result Tabs -->
+          <div class="arp-tabs">
+            <button class="arp-tab" [class.active]="aiResultSubTab === 'vocab'" (click)="aiResultSubTab = 'vocab'">คำศัพท์</button>
+            <button class="arp-tab" [class.active]="aiResultSubTab === 'sentences'" (click)="aiResultSubTab = 'sentences'">ประโยค</button>
+            <button class="arp-tab" [class.active]="aiResultSubTab === 'tips'" (click)="aiResultSubTab = 'tips'">เคล็ดลับ</button>
+            <button class="arp-tab" [class.active]="aiResultSubTab === 'conversation'" (click)="aiResultSubTab = 'conversation'">การสนทนา</button>
+          </div>
+          <!-- Tab: คำศัพท์ -->
+          @if (aiResultSubTab === 'vocab') {
+            <div class="arp-vocab-list">
+              @for (v of aiResultData.vocab.slice(0, streamingVocabCount); track v.word; let i = $index) {
+                <div class="arp-vocab-row stream-item">
+                  <div class="avr-left">
+                    <span class="avr-word">{{ v.word }}</span>
+                    @if (v.pos) {
+                      <span class="avr-pos-badge">{{ v.pos }}</span>
+                    }
+                    <span class="avr-meaning">{{ v.meaning }}</span>
+                    @if (v.reading) {
+                      <span class="avr-reading">[{{ v.reading }}]</span>
+                    }
+                  </div>
+                  <div class="avr-right">
+                    <button
+                      type="button"
+                      class="btn-avr-audio"
+                      [class.speaking]="gameFx.speakingWord === v.word"
+                      (click)="gameFx.speakText(v.word)"
+                      title="ออกเสียง"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                @if (v.example) {
+                  <div class="avr-example">{{ v.example }}</div>
+                }
+              }
+              <!-- Streaming cursor -->
+              @if (streamingVocabCount < aiResultData.vocab.length) {
+                <div class="stream-cursor-row">
+                  <span class="stream-cursor-dot"> </span>
+                  <span class="stream-cursor-dot"> </span>
+                  <span class="stream-cursor-dot"> </span>
+                  <span class="stream-counter">{{ streamingVocabCount }} / {{ aiResultData.vocab.length }} คำ</span>
+                </div>
+              }
+            </div>
+          }
+          <!-- Tab: ประโยค -->
+          @if (aiResultSubTab === 'sentences') {
+            <div class="arp-sentences-list">
+              @for (s of aiResultData.sentences; track s.en; let i = $index) {
+                <div class="arp-sentence-row">
+                  <div class="asr-content">
+                    <p class="asr-en">{{ s.en }}</p>
+                    <p class="asr-th">{{ s.th }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-avr-audio"
+                    [class.speaking]="gameFx.speakingWord === s.en"
+                    (click)="gameFx.speakText(s.en)"
+                    title="ออกเสียง"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+          <!-- Tab: เคล็ดลับ -->
+          @if (aiResultSubTab === 'tips') {
+            <div class="arp-tips-list">
+              @for (tip of aiResultData.tips; track tip; let i = $index) {
+                <div class="arp-tip-item">
+                  <div class="tip-num">{{ i + 1 }}</div>
+                  <p class="tip-text">{{ tip }}</p>
+                </div>
+              }
+            </div>
+          }
+          <!-- Tab: การสนทนา -->
+          @if (aiResultSubTab === 'conversation') {
+            <div class="arp-conv-list">
+              @for (line of aiResultData.conversations; track line; let i = $index) {
+                <div class="arp-conv-row" [class.conv-b]="line.speaker === 'B'">
+                  <div class="conv-speaker-badge" [class.badge-b]="line.speaker === 'B'">
+                    {{ line.speaker }}
+                  </div>
+                  <div class="conv-content">
+                    <p class="conv-en">{{ line.en }}</p>
+                    <p class="conv-th">{{ line.th }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-avr-audio"
+                    [class.speaking]="gameFx.speakingWord === line.en"
+                    (click)="gameFx.speakText(line.en)"
+                    title="ออกเสียง"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+          <div class="arp-footer">
+            <button type="button" class="btn-arp-back" (click)="clearAiVocab()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; flex-shrink: 0">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              ย้อนกลับ / สร้างใหม่
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>

@@ -1,0 +1,490 @@
+// Videos tab styles — extracted from student.component.scss "Video Hub Tab"
+// sub-section (original lines 9047-9516, nested inside the "🦉 Duolingo Extra
+// Features" block). animate-fade/animate-scale keyframes and the
+// --slate-*/--pastel-* CSS custom properties live on StudentShellComponent's
+// :host and are still visible here via normal CSS inheritance.
+
+// Video Hub Tab
+.videos-hub-container {
+  max-width: 840px;
+  margin: 0 auto;
+  padding-bottom: 2rem;
+}
+
+.videos-header {
+  margin-bottom: 2rem;
+  .videos-main-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--slate-800);
+  }
+  .videos-subtitle {
+    font-size: 0.85rem;
+    color: var(--slate-500);
+    margin-top: 0.25rem;
+  }
+  @media (max-width: 480px) {
+    margin-bottom: 1.25rem;
+    .videos-main-title {
+      font-size: 1.15rem;
+    }
+  }
+}
+
+.video-lessons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 1.5rem;
+}
+
+.video-lesson-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  border: 2px solid var(--slate-100);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: var(--pastel-blue-dark);
+    box-shadow: 0 15px 30px rgba(123, 108, 246, 0.15);
+  }
+
+  .video-thumbnail-placeholder {
+    height: 140px;
+    background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: white;
+
+    .video-play-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      border: 2px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      transition: all 0.15s;
+    }
+    .video-duration {
+      position: absolute;
+      bottom: 0.5rem;
+      right: 0.5rem;
+      background: rgba(0, 0, 0, 0.6);
+      font-size: 0.68rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+  }
+
+  &:hover .video-play-icon {
+    transform: scale(1.1);
+    background: white;
+    color: #4f46e5;
+  }
+
+  .video-info-box {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    flex: 1;
+
+    .video-level-badge {
+      align-self: flex-start;
+      background: var(--pastel-green-medium);
+      color: var(--pastel-green-dark);
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+
+      &.medium {
+        background: var(--pastel-blue-medium);
+        color: var(--pastel-blue-dark);
+      }
+      &.hard {
+        background: #ffe4e6;
+        color: #e11d48;
+      }
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--slate-800);
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .video-meta-tags {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .keyword-pill {
+      font-size: 0.68rem;
+      color: var(--slate-400);
+      font-weight: 600;
+    }
+
+    .video-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      border-top: 1px solid var(--slate-50);
+      padding-top: 0.75rem;
+
+      .video-xp-reward {
+        font-size: 0.83rem;
+        font-weight: 900;
+        color: var(--pastel-blue-dark);
+      }
+      .video-statuscompleted {
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: var(--pastel-green-dark);
+      }
+      .video-statuspending {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--slate-400);
+      }
+    }
+  }
+}
+
+// Back button and Player workspace
+.btn-back-hub {
+  border: none;
+  background: var(--slate-100);
+  color: var(--slate-600);
+  font-weight: 800;
+  font-size: 0.83rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  transition: all 0.15s;
+  &:hover {
+    background: var(--slate-200);
+    color: var(--slate-800);
+  }
+}
+
+.video-player-workspace {
+  background: white;
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+  border: 1px solid var(--slate-150);
+  @media (max-width: 480px) {
+    padding: 1rem;
+    border-radius: 18px;
+  }
+}
+
+.video-player-layout {
+  display: flex;
+  gap: 1.5rem;
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+.video-screen-mock {
+  flex: 1.4;
+  background: #0f172a;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+
+  .video-playback-visualizer {
+    height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+    color: white;
+
+    &.playing {
+      background: #090d16;
+    }
+
+    @media (max-width: 480px) {
+      height: 200px;
+    }
+  }
+
+  .video-large-play-btn {
+    background: #7b6cf6;
+    border: none;
+    color: white;
+    font-weight: 800;
+    padding: 0.9rem 2.2rem;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(123, 108, 246, 0.4);
+    &:hover {
+      transform: scale(1.03);
+    }
+  }
+
+  .video-playing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: callMicPulse 1s infinite alternate;
+    }
+  }
+
+  .video-end-overlay {
+    text-align: center;
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #10b981;
+      margin-bottom: 0.3rem;
+    }
+    p {
+      font-size: 0.83rem;
+      color: rgba(255,255,255,0.6);
+    }
+  }
+
+  .video-controls-bar {
+    background: rgba(15, 23, 42, 0.9);
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .video-play-pause-control {
+    border: none;
+    background: none;
+    color: white;
+    font-weight: 800;
+    font-size: 0.78rem;
+    cursor: pointer;
+    &:hover {
+      color: #a78bfa;
+    }
+  }
+
+  .video-progress-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .video-progress-fill {
+    height: 100%;
+    background: #7b6cf6;
+    border-radius: 99px;
+    transition: width 0.3s;
+  }
+
+  .video-time-display {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.5);
+    font-weight: 700;
+  }
+}
+
+.video-sidebar-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  .v-details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--slate-800);
+      margin: 0;
+      line-height: 1.35;
+    }
+    .xp-badge-large {
+      background: var(--pastel-blue-medium);
+      color: var(--pastel-blue-dark);
+      font-size: 0.78rem;
+      font-weight: 900;
+      padding: 0.25rem 0.6rem;
+      border-radius: 8px;
+    }
+  }
+
+  .subtitles-container {
+    background: var(--slate-50);
+    border: 1.5px solid var(--slate-100);
+    border-radius: 18px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    h3 {
+      font-size: 0.83rem;
+      font-weight: 800;
+      color: var(--slate-500);
+      margin: 0;
+    }
+
+    .sub-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+
+      .sub-lang {
+        font-size: 0.68rem;
+        font-weight: 800;
+        color: var(--slate-400);
+      }
+      .sub-text {
+        font-size: 0.83rem;
+        color: var(--slate-700);
+        margin: 0;
+        line-height: 1.45;
+        font-weight: 500;
+      }
+    }
+
+    .thai-sub {
+      border-top: 1px dashed var(--slate-200);
+      padding-top: 0.6rem;
+      .sub-text {
+        color: var(--slate-600);
+      }
+    }
+  }
+
+  .btn-save-vocab {
+    background: none;
+    border: 2px solid var(--slate-200);
+    color: var(--slate-700);
+    font-weight: 800;
+    padding: 0.75rem;
+    border-radius: 16px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 0.83rem;
+    transition: all 0.15s;
+    &:hover {
+      background: var(--slate-50);
+      border-color: var(--slate-300);
+    }
+  }
+
+  // Quiz container inside player details
+  .video-quiz-box {
+    background: rgba(245, 158, 11, 0.05);
+    border: 1.5px solid rgba(245, 158, 11, 0.2);
+    border-radius: 18px;
+    padding: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    h3 {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #b45309;
+      margin: 0;
+    }
+    .quiz-question {
+      font-size: 0.83rem;
+      color: var(--slate-700);
+      margin: 0;
+      line-height: 1.45;
+      font-weight: 600;
+    }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .quiz-option {
+      background: white;
+      border: 1.5px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 0.65rem 0.95rem;
+      text-align: left;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--slate-700);
+      cursor: pointer;
+      transition: all 0.15s;
+
+      &:hover {
+        border-color: var(--pastel-blue-dark);
+        background: rgba(123, 108, 246, 0.03);
+      }
+    }
+  }
+
+  .video-quiz-success {
+    background: rgba(16, 185, 129, 0.06);
+    border: 1.5px solid rgba(16, 185, 129, 0.2);
+    border-radius: 18px;
+    padding: 1.25rem;
+    text-align: center;
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #047857;
+      margin-bottom: 0.25rem;
+    }
+    p {
+      font-size: 0.78rem;
+      color: var(--slate-600);
+      margin-bottom: 1rem;
+    }
+
+    .btn-close-quiz {
+      background: #10b981;
+      border: none;
+      color: white;
+      font-weight: 800;
+      padding: 0.6rem 1.5rem;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+  }
+}
+

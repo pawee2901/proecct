@@ -1,0 +1,127 @@
+<section class="tab-section animate-fade">
+  <div class="videos-hub-container">
+    <div class="videos-header text-center">
+      <h2 class="videos-main-title">🎬 คลังเรียนรู้วิดีโอ (Video Learning Vault)</h2>
+      <p class="videos-subtitle">เรียนรู้บทเรียนภาษาอังกฤษผ่านคลิปวิดีโอสถานการณ์จำลองระดับวิชาชีพครู</p>
+    </div>
+
+    @if (!selectedVideoLesson) {
+      <!-- GRID OF VIDEOS -->
+      <div class="video-lessons-grid">
+        @for (v of videoLessons; track v.id) {
+          <div class="video-lesson-card animate-scale" (click)="selectVideoLesson(v)">
+            <div class="video-thumbnail-placeholder">
+              <span class="video-play-icon">▶</span>
+              <span class="video-duration">Unit {{ v.id }}</span>
+            </div>
+            <div class="video-info-box">
+              <span class="video-level-badge" [class.hard]="v.level === 'Hard'" [class.medium]="v.level === 'Medium'">{{ v.level }}</span>
+              <h3>{{ v.title }}</h3>
+              <div class="video-meta-tags">
+                @for (kw of v.keyWords; track kw) {
+                  <span class="keyword-pill">#{{ kw }}</span>
+                }
+              </div>
+              <div class="video-card-footer">
+                <span class="video-xp-reward">+{{ v.xpReward }} XP</span>
+                @if (v.completed) {
+                  <span class="video-statuscompleted">✅ เรียนจบแล้ว</span>
+                } @else {
+                  <span class="video-statuspending">🕒 ยังไม่ได้เรียน</span>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <!-- INDIVIDUAL VIDEO PLAYER VIEW -->
+      <div class="video-player-workspace animate-fade">
+        <button class="btn-back-hub" (click)="selectedVideoLesson = null">⬅ กลับไปที่คลังวิดีโอ</button>
+
+        <div class="video-player-layout">
+          <!-- Video screen mock -->
+          <div class="video-screen-mock">
+            <div class="video-playback-visualizer" [class.playing]="videoPlaying">
+              @if (!videoPlaying && !videoCompleted) {
+                <button class="video-large-play-btn animate-scale" (click)="togglePlayVideo()">▶ เล่นวิดีโอ</button>
+              }
+              @if (videoPlaying) {
+                <div class="video-playing-indicator">
+                  <span class="pulse-dot"></span> กำลังเล่นคลิปจำลอง...
+                </div>
+              }
+              @if (videoCompleted) {
+                <div class="video-end-overlay">
+                  <h3>🎉 ดูคลิปวิดีโอจบแล้ว!</h3>
+                  <p>ได้รับคำศัพท์และประโยคตัวอย่างครบถ้วนแล้ว</p>
+                </div>
+              }
+            </div>
+
+            <!-- Timeline and controls -->
+            <div class="video-controls-bar">
+              <button class="video-play-pause-control" (click)="togglePlayVideo()">
+                {{ videoPlaying ? '⏸ หยุด' : '▶ เล่น' }}
+              </button>
+              <div class="video-progress-track">
+                <div class="video-progress-fill" [style.width.%]="videoProgress"></div>
+              </div>
+              <span class="video-time-display">{{ videoProgress }}%</span>
+            </div>
+          </div>
+
+          <!-- Tabs/Syllabus of the Video -->
+          <div class="video-sidebar-details">
+            <div class="v-details-header">
+              <h2>{{ selectedVideoLesson.title }}</h2>
+              <span class="xp-badge-large">+{{ selectedVideoLesson.xpReward }} XP</span>
+            </div>
+
+            <!-- Subtitles container -->
+            <div class="subtitles-container">
+              <h3>คำบรรยาย & คำแปล (Subtitles)</h3>
+              <div class="sub-item">
+                <span class="sub-lang">English:</span>
+                <p class="sub-text">" {{ selectedVideoLesson.subEn }} "</p>
+              </div>
+              @if (sharedUi.thaiTranslationsEnabled) {
+                <div class="sub-item thai-sub">
+                  <span class="sub-lang">ภาษาไทย:</span>
+                  <p class="sub-text">" {{ selectedVideoLesson.subTh }} "</p>
+                </div>
+              }
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="video-action-buttons">
+              <button class="btn-save-vocab" (click)="gameFx.playSoundEffect('success')">💾 บันทึกคำศัพท์หลัก</button>
+            </div>
+
+            <!-- Quick Quiz Section -->
+            @if (videoQuizStep === 'question') {
+              <div class="video-quiz-box animate-scale">
+                <h3>📝 แบบฝึกหัดทบทวนความเข้าใจ</h3>
+                <p class="quiz-question">ในสถานการณ์จำลองนี้ ผู้พูดต้องการเน้นประโยคใดเป็นสำคัญ?</p>
+
+                <div class="quiz-options">
+                  <button class="quiz-option animate-scale" (click)="submitVideoQuiz('A')">A. การทักทายนักเรียนอย่างสุภาพ</button>
+                  <button class="quiz-option animate-scale" (click)="submitVideoQuiz('B')">B. การสั่งให้นักเรียนเงียบเสียง</button>
+                  <button class="quiz-option animate-scale" (click)="submitVideoQuiz('C')">C. การประเมินผลการเรียนนอกเวลา</button>
+                </div>
+              </div>
+            }
+
+            @if (videoQuizStep === 'success') {
+              <div class="video-quiz-success animate-scale">
+                <h3>🎉 ตอบถูกสำเร็จ! (+{{ selectedVideoLesson.xpReward }} XP)</h3>
+                <p>คุณเข้าใจวัตถุประสงค์ของวิดีโอนี้อย่างถูกต้องแล้ว</p>
+                <button class="btn-close-quiz animate-scale" (click)="videoQuizStep = 'none'; selectedVideoLesson = null">เรียนบทเรียนอื่นต่อ</button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</section>

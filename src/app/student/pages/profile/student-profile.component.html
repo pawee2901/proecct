@@ -1,0 +1,328 @@
+<section class="tab-section animate-fade">
+
+  @if (profileSubView === 'main') {
+    <!-- Profile Hero Card -->
+    <div class="profile-hero">
+      <div class="profile-big-avatar">{{ getInitial() }}</div>
+      <div class="profile-hero-info">
+        <h2 class="profile-fullname">
+          {{ session.currentUser?.firstName }} {{ session.currentUser?.lastName }}
+        </h2>
+        <p class="profile-meta">
+          {{ session.currentUser?.username }} · รหัส {{ session.currentUser?.studentId || 'N/A' }}
+        </p>
+        <div class="profile-tag-row">
+          @if (session.currentUser?.faculty) {
+            <span class="profile-tag">{{ session.currentUser?.faculty }}</span>
+          }
+          @if (session.currentUser?.department) {
+            <span class="profile-tag">{{ session.currentUser?.department }}</span>
+          }
+          @if (session.currentUser?.yearOfStudy) {
+            <span class="profile-tag">ปี {{ session.currentUser?.yearOfStudy }}</span>
+          }
+        </div>
+      </div>
+    </div>
+    <!-- Stats Grid -->
+    <div class="profile-stats-grid">
+      <div class="pstat-card">
+        <div class="pstat-num" style="color: var(--pastel-green-dark)">
+          {{ progress.getCompletedCount() }}
+        </div>
+        <div class="pstat-lbl">บทเรียนที่จบ</div>
+      </div>
+      <div class="pstat-card">
+        <div class="pstat-num" style="color: var(--pastel-blue-dark)">{{ progress.practiceCount }}</div>
+        <div class="pstat-lbl">ครั้งที่ฝึก</div>
+      </div>
+      <div class="pstat-card pstat-ring-card">
+        <div class="pstat-ring" [style.background]="'conic-gradient(var(--pastel-purple-dark) ' + (progress.averageScore * 3.6) + 'deg, var(--slate-100) 0deg)'">
+          <div class="pstat-ring-inner">
+            <div class="pstat-num" style="color: var(--pastel-purple-dark)">{{ progress.averageScore }}%</div>
+          </div>
+        </div>
+        <div class="pstat-lbl">คะแนนเฉลี่ย</div>
+      </div>
+      <div class="pstat-card">
+        <div class="pstat-num" style="color: #f59e0b">{{ progress.dailyStreak }}</div>
+        <div class="pstat-lbl">วันติดต่อกัน</div>
+      </div>
+    </div>
+    <!-- Progress per lesson -->
+    <div class="profile-progress-section">
+      <h3 class="section-label">ความก้าวหน้าของแต่ละบทเรียน</h3>
+      <div class="progress-cards-list">
+        @for (prog of progress.progressReport; track prog.number) {
+          <div class="prog-card">
+            <div class="prog-card-top">
+              <h4>{{ prog.number }}: {{ prog.title }}</h4>
+              @if (prog.postScore !== null) {
+                <span class="badge-done">เรียนจบ ✓</span>
+              } @else if (prog.preScore !== null) {
+                <span class="badge-wip">กำลังเรียน</span>
+              } @else {
+                <span class="badge-idle">ยังไม่เริ่ม</span>
+              }
+            </div>
+            <div class="prog-score-rows">
+              <div class="prog-score-row">
+                <span class="prog-score-lbl">Pre-Test</span>
+                <div class="prog-bar">
+                  <div class="prog-fill pb-blue" [style.width.%]="prog.preScore || 0"></div>
+                </div>
+                <span class="prog-score-val">{{
+                  prog.preScore !== null ? prog.preScore + '%' : '-'
+                }}</span>
+              </div>
+              <div class="prog-score-row">
+                <span class="prog-score-lbl">Post-Test</span>
+                <div class="prog-bar">
+                  <div class="prog-fill pb-green" [style.width.%]="prog.postScore || 0"></div>
+                </div>
+                <span class="prog-score-val">{{
+                  prog.postScore !== null ? prog.postScore + '%' : '-'
+                }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- History Categories Section -->
+    <div style="margin-top: 2rem; border-top: 1.5px solid var(--slate-200); padding-top: 1.5rem;">
+      <h3 class="section-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+        📜 ประวัติการเรียนรู้แบ่งตามหมวดหมู่
+      </h3>
+      <p style="font-size: 0.78rem; color: var(--slate-500); margin: 0 0 1.25rem 0; font-weight: 600; text-align: left;">
+        เลือกหมวดหมู่เพื่อดูประวัติการเข้าเรียน คะแนน บทสนทนา และคำแนะนำจากติวเตอร์ AI
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 1rem;">
+
+        <!-- Category 1: Practice -->
+        <div
+          (click)="openProfileHistoryCategory('practice')"
+          style="background: white; border: 1.5px solid var(--slate-200); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem; cursor: pointer; transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px rgba(0,0,0,0.015); text-align: left;"
+          onmouseover="this.style.borderColor='#4f46e5'; this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='translateY(0)'"
+        >
+          <div style="font-size: 2.2rem; line-height: 1;">💬</div>
+          <div>
+            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">ประวัติสนทนา & ซ้อมพูด</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">ซ้อมพูดโต้ตอบและพิมพ์แชทจำลองสถานการณ์</p>
+          </div>
+        </div>
+
+        <!-- Category 2: Test -->
+        <div
+          (click)="openProfileHistoryCategory('test')"
+          style="background: white; border: 1.5px solid var(--slate-200); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem; cursor: pointer; transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px rgba(0,0,0,0.015); text-align: left;"
+          onmouseover="this.style.borderColor='#4f46e5'; this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='translateY(0)'"
+        >
+          <div style="font-size: 2.2rem; line-height: 1;">📝</div>
+          <div>
+            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">แบบทดสอบ Pre/Post-Test</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">คะแนนสอบวัดระดับความรู้ของแต่ละบทเรียน</p>
+          </div>
+        </div>
+
+        <!-- Category 3: Game -->
+        <div
+          (click)="openProfileHistoryCategory('game')"
+          style="background: white; border: 1.5px solid var(--slate-200); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem; cursor: pointer; transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px rgba(0,0,0,0.015); text-align: left;"
+          onmouseover="this.style.borderColor='#4f46e5'; this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='translateY(0)'"
+        >
+          <div style="font-size: 2.2rem; line-height: 1;">🎮</div>
+          <div>
+            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">เกมฝึกทักษะคำศัพท์</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">ประวัติการเล่นเกมจับคู่และเกมคำศัพท์ต่าง ๆ</p>
+          </div>
+        </div>
+
+        <!-- Category 4: Speaking -->
+        <div
+          (click)="openProfileHistoryCategory('speaking')"
+          style="background: white; border: 1.5px solid var(--slate-200); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem; cursor: pointer; transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px rgba(0,0,0,0.015); text-align: left;"
+          onmouseover="this.style.borderColor='#4f46e5'; this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='translateY(0)'"
+        >
+          <div style="font-size: 2.2rem; line-height: 1;">🎙️</div>
+          <div>
+            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">ประวัติการฝึกออกเสียง</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">คะแนนความถูกต้องจากการซ้อมอ่านประโยค</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Logout -->
+    <div class="profile-logout-area" style="margin-top: 2rem;">
+      <button class="btn-logout-profile" (click)="logout()">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  }
+
+  @if (profileSubView === 'category-detail') {
+    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+      <!-- Header with Back button -->
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid var(--slate-150); padding-bottom: 0.75rem;">
+        <button
+          (click)="profileSubView = 'main'"
+          style="background: none; border: 1.5px solid var(--slate-300); border-radius: 10px; padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 800; color: var(--slate-600); cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.15s;"
+          onmouseover="this.style.background='#f1f5f9'"
+          onmouseout="this.style.background='none'"
+        >
+          ⬅ กลับสู่ข้อมูลโปรไฟล์
+        </button>
+        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 850; color: var(--slate-800);">
+          {{ selectedHistoryCategory === 'practice' ? '💬 ประวัติฝึกสนทนา & ซ้อมพูด' :
+             selectedHistoryCategory === 'test' ? '📝 ประวัติทำแบบทดสอบ Pre/Post-Test' :
+             selectedHistoryCategory === 'game' ? '🎮 ประวัติเกมฝึกภาษาอังกฤษ' : '🎙️ ประวัติการฝึกออกเสียง' }}
+        </h2>
+      </div>
+
+      <!-- List of actual logs in this category -->
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        @if (getFilteredProfileLogs(selectedHistoryCategory).length === 0) {
+          <div style="text-align: center; padding: 3rem; background: var(--slate-50); border-radius: 16px; border: 1.5px dashed var(--slate-200);">
+            <span style="font-size: 2.5rem; display: block; margin-bottom: 0.75rem;">📭</span>
+            <p style="margin: 0; font-size: 0.82rem; color: var(--slate-400); font-weight: 600;">ยังไม่มีประวัติการทำกิจกรรมในหมวดหมู่นี้</p>
+          </div>
+        } @else {
+          @for (log of getFilteredProfileLogs(selectedHistoryCategory); track log.date; let idx = $index) {
+            <div style="border: 1.5px solid var(--slate-200); border-radius: 16px; background: white; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.01);">
+
+              <!-- Main Row Summary -->
+              <div
+                (click)="expandedProfileLogIndex = expandedProfileLogIndex === idx ? null : idx"
+                style="padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.15s;"
+                onmouseover="this.style.background='#f8fafc'"
+                onmouseout="this.style.background='white'"
+              >
+                <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+                  <span style="font-size: 1.6rem;">
+                    {{ selectedHistoryCategory === 'practice' ? '💬' :
+                       selectedHistoryCategory === 'test' ? '📝' :
+                       selectedHistoryCategory === 'game' ? '🎮' : '🎙️' }}
+                  </span>
+                  <div style="min-width: 0; text-align: left;">
+                    <h4 style="margin: 0; font-size: 0.9rem; font-weight: 850; color: var(--slate-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ log.title }}</h4>
+                    <span style="font-size: 0.7rem; color: var(--slate-400);">{{ log.date | date:'medium' }}</span>
+                  </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <div style="text-align: right; display: flex; flex-direction: column; gap: 2px;">
+                    @if (log.score !== undefined) {
+                      <span style="font-size: 0.8rem; font-weight: 850; color: #4F46E5;">คะแนน: {{ log.score }}%</span>
+                    }
+                    <span style="font-size: 0.72rem; font-weight: 800; color: #10b981;">+{{ log.xp }} XP</span>
+                  </div>
+                  <span style="font-size: 0.8rem; color: var(--slate-400);">{{ expandedProfileLogIndex === idx ? '▲' : '▼' }}</span>
+                </div>
+              </div>
+
+              <!-- Expanded recommendations and transcript detail -->
+              @if (expandedProfileLogIndex === idx) {
+                <div style="padding: 1.25rem; background: var(--slate-50); border-top: 1.5px solid var(--slate-150); display: flex; flex-direction: column; gap: 1rem;">
+
+                  <!-- AI Video Call Detailed Feedback -->
+                  @if (log.feedback) {
+                    <div style="background: white; border: 1.5px solid var(--slate-200); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; text-align: left;">
+                      <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: var(--slate-800);">📊 ผลคะแนนการประเมินประโยคและพูดจริง:</h5>
+                      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-top: 0.25rem;">
+                        <div style="font-size: 0.76rem; color: var(--slate-600);"><strong style="color: var(--slate-800);">การออกเสียง (Pronunciation):</strong> {{ log.feedback.pronunciation }}%</div>
+                        <div style="font-size: 0.76rem; color: var(--slate-600);"><strong style="color: var(--slate-800);">ความคล่องแคล่ว (Fluency):</strong> {{ log.feedback.fluency }}%</div>
+                        <div style="font-size: 0.76rem; color: var(--slate-600);"><strong style="color: var(--slate-800);">หลักไวยากรณ์ (Grammar):</strong> {{ log.feedback.grammar }}%</div>
+                        <div style="font-size: 0.76rem; color: var(--slate-600);"><strong style="color: var(--slate-800);">การใช้คำศัพท์ (Vocabulary):</strong> {{ log.feedback.vocabulary }}%</div>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Suggestions / Recommendations Text -->
+                  @if (log.suggestions) {
+                    <div style="background: #fffbeb; border: 1.5px solid #fef3c7; border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 0.4rem; text-align: left;">
+                      <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: #b45309; display: flex; align-items: center; gap: 4px;">
+                        💡 คำแนะนำสำหรับการพูดและการพัฒนา:
+                      </h5>
+                      <p style="margin: 0; font-size: 0.78rem; color: #78350f; line-height: 1.45; white-space: pre-line; font-weight: 600;">
+                        {{ log.suggestions }}
+                      </p>
+                    </div>
+                  }
+
+                  <!-- Transcript bubbles for practice sessions -->
+                  @if (log.transcript && log.transcript.length > 0) {
+                    <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                      <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: var(--slate-800); text-align: left;">💬 บันทึกข้อความการสนทนา:</h5>
+                      <div style="display: flex; flex-direction: column; gap: 0.75rem; background: white; border: 1px solid var(--slate-200); border-radius: 14px; padding: 1rem; max-height: 350px; overflow-y: auto;">
+                        @for (msg of log.transcript; track $index) {
+                          <div style="display: flex; flex-direction: column; gap: 2px;" [style.align-items]="msg.sender === 'user' ? 'flex-end' : 'flex-start'">
+                            <span style="font-size: 0.65rem; font-weight: 800; color: var(--slate-400);">{{ msg.sender === 'user' ? 'คุณ' : 'AI' }}</span>
+                            <div
+                              style="max-width: 85%; padding: 0.5rem 0.8rem; border-radius: 12px; font-size: 0.76rem; line-height: 1.4; word-break: break-word; font-weight: 600; text-align: left;"
+                              [style.background]="msg.sender === 'user' ? 'var(--pastel-blue-dark)' : 'var(--slate-100)'"
+                              [style.color]="msg.sender === 'user' ? 'white' : 'var(--slate-800)'"
+                              [style.border]="msg.sender === 'user' ? 'none' : '1px solid var(--slate-200)'"
+                            >
+                              {{ stripMarkdown(msg.text) }}
+                            </div>
+
+                            <!-- Grammar feedback suggestion inline -->
+                            @if (msg.grammarSuggestion) {
+                              <div style="align-self: flex-end; background: #fff1f2; border: 1px solid #ffe4e6; color: #be123c; border-radius: 10px; padding: 0.4rem 0.75rem; font-size: 0.7rem; max-width: 85%; margin-top: 2px; line-height: 1.4; font-weight: 700; text-align: left;">
+                                🔍 ข้อเสนอแนะเรื่องภาษา: {{ msg.grammarSuggestion }}
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+
+                      <!-- Button to load chat to continue practicing -->
+                      <button
+                        (click)="loadPastChatSession(log)"
+                        style="align-self: flex-start; background: #4f46e5; color: white; border: none; padding: 0.5rem 1rem; border-radius: 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: transform 0.15s;"
+                        onmouseover="this.style.transform='scale(1.02)'"
+                        onmouseout="this.style.transform='scale(1)'"
+                      >
+                        💬 โหลดและสนทนาต่อที่หน้าแชทหลัก
+                      </button>
+                    </div>
+                  }
+
+                  <!-- Default description for non-transcript actions -->
+                  @if (!log.transcript && !log.feedback && !log.suggestions) {
+                    <div style="font-size: 0.76rem; color: var(--slate-500); font-weight: 600; text-align: left;">
+                      ℹ️ กิจกรรมนี้ทำเสร็จสมบูรณ์เรียบร้อยแล้ว ได้รับคะแนนสำเร็จและ XP ครบถ้วนตามมาตรฐานรายวิชา
+                    </div>
+                  }
+
+                </div>
+              }
+
+            </div>
+          }
+        }
+      </div>
+
+    </div>
+  }
+</section>
