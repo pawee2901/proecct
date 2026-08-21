@@ -182,6 +182,16 @@ export class LoginRegisterComponent implements OnInit {
             firstName: user.first_name || user.firstName,
             lastName: user.last_name || user.lastName,
             email: user.email,
+            // เดิม login_user() (backend) ไม่ได้ SELECT คอลัมน์พวกนี้เลย และตรงนี้ก็ไม่เคย
+            // ส่งต่อมาด้วย ทำให้หน้าโปรไฟล์แสดงคณะ/ภาควิชา/ชั้นปี/รหัสนักศึกษาไม่ได้เลย —
+            // แก้ backend ให้ SELECT มาแล้ว แค่ map เพิ่มตรงนี้ให้ตรงกับที่หน้าโปรไฟล์ใช้จริง
+            // (yearOfStudy เป็น camelCase คู่กับ year_of_study/year_level ด้านบนที่เป็น
+            // snake_case สำหรับ logic ล็อกชั้นปีอื่นๆ — คนละ key กัน เก็บไว้ทั้งคู่)
+            studentId: user.student_code || '',
+            faculty: user.faculty_name || '',
+            department: user.department_name || '',
+            yearOfStudy: Number(yearOfStudy),
+            avatarUrl: user.avatar_url || '',
           };
           localStorage.setItem('currentUser', JSON.stringify(sessionUser));
           this.showSuccess(`เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับ ${user.first_name || user.username}`);

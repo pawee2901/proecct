@@ -38,7 +38,6 @@ import { SharedUiStateService } from '../services/shared-ui-state.service';
 })
 export class StudentShellComponent implements OnInit {
   showProfileDropdown = false;
-  showMobileProfile = false;
 
   constructor(
     public session: StudentSessionService,
@@ -60,6 +59,7 @@ export class StudentShellComponent implements OnInit {
     this.progress.loadProgressHistory(); // original step 2
     this.learningLog.loadLearningLogs(); // original step 5
     this.gameEngine.buildGameVocabPool(); // original step 7
+    this.gameEngine.loadCustomGameContent(); // teacher-edited game content overrides (game_contents)
     this.mistakes.loadFrequentlyWrongItems(); // original step 8
     this.sharedUi.loadVoiceSettings(); // original step 9
   }
@@ -72,10 +72,6 @@ export class StudentShellComponent implements OnInit {
     this.showProfileDropdown = !this.showProfileDropdown;
   }
 
-  toggleMobileProfile(): void {
-    this.showMobileProfile = !this.showMobileProfile;
-  }
-
   onWrapperClick(): void {
     this.showProfileDropdown = false;
   }
@@ -84,8 +80,10 @@ export class StudentShellComponent implements OnInit {
     this.learningLog.loadLearningLogs();
     this.gameFx.playSoundEffect('click');
     // Relative navigation (not an absolute '/student/profile' path), so this
-    // still works if the Shell's mount point ever changes.
-    this.router.navigate(['profile'], { relativeTo: this.route });
+    // still works if the Shell's mount point ever changes. ?view=history
+    // makes StudentProfileComponent open straight to the history-categories
+    // sub-view instead of its 4-button hub menu.
+    this.router.navigate(['profile'], { relativeTo: this.route, queryParams: { view: 'history' } });
   }
 
   logout(): void {

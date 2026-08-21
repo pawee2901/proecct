@@ -19,7 +19,11 @@
           <div class="lessons-grid">
             @for (u of lessonsData.units; track u.id; let i = $index) {
               <div class="lesson-card" [ngClass]="'lc-' + ((i % 5) + 1)">
-                <div class="lc-blob"></div>
+                @if (u.coverImage) {
+                  <img [src]="u.coverImage" alt="" style="width: calc(100% + 3rem); height: 130px; object-fit: cover; border-radius: 20px 20px 0 0; margin: -1.5rem -1.5rem 0.25rem;" />
+                } @else {
+                  <div class="lc-blob"></div>
+                }
                 <div class="lc-top">
                   <span class="lc-unit-badge">{{ u.number }}</span>
                   <span class="lc-status-badge" [ngClass]="progress.getLessonStatusClass(u.id)">
@@ -78,6 +82,9 @@
                 </svg>
                 กลับ
               </button>
+              @if (lessonDetailUnit.coverImage) {
+                <img [src]="lessonDetailUnit.coverImage" alt="" style="width: 88px; height: 60px; object-fit: cover; border-radius: 12px; flex-shrink: 0;" />
+              }
               <div class="detail-title-block">
                 <span class="detail-unit-tag">{{ lessonDetailUnit.number }}</span>
                 <h2 class="detail-title">{{ lessonDetailUnit.title }}</h2>
@@ -561,7 +568,7 @@
                         stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        style="width: 14px; height: 14px; flex-shrink: 0; color: #a855f7"
+                        style="width: 14px; height: 14px; flex-shrink: 0; color: #0d9488"
                       >
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
                         <path d="M19 10v2a7 7 0 0 1-14 0v-2" />

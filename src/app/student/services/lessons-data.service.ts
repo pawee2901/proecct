@@ -2,6 +2,13 @@ import { Injectable } from '@angular/core';
 import { ApiService } from '../../services/api.service';
 import { StudentSessionService } from './student-session.service';
 import { Unit } from '../models/unit.model';
+import {
+  LESSON_1_DIALOGUES,
+  LESSON_2_DIALOGUES,
+  LESSON_3_DIALOGUES,
+  LESSON_4_DIALOGUES,
+  LESSON_5_DIALOGUES,
+} from '../../shared/lesson-dialogue-defaults';
 
 // Extracted verbatim from student.component.ts:
 //  - `units` default seed value (original lines 654-2269)
@@ -1673,6 +1680,21 @@ export class LessonsDataService {
                 }
               }
 
+              // เนื้อหาเกมเฉพาะบทเรียนนี้ที่อาจารย์ตั้งเองจาก "Dedicated Game Creator
+              // Studio" (custom_games) — ถ้ามีให้ใช้แทนคำศัพท์ที่ derive มาอัตโนมัติ/
+              // ข้อมูล fallback ที่ตายตัวในโค้ด เฉพาะเกมที่มีข้อมูลจริงเท่านั้น
+              let customGames: any = null;
+              if (les.contents && Array.isArray(les.contents)) {
+                const customGamesItem = les.contents.find((c: any) => c.content_type === 'custom_games');
+                if (customGamesItem && customGamesItem.content_body) {
+                  try {
+                    customGames = JSON.parse(customGamesItem.content_body);
+                  } catch {
+                    customGames = null;
+                  }
+                }
+              }
+
               let sentences: string[] = [];
               if (Array.isArray(les.speakingQuestions)) {
                 sentences = les.speakingQuestions;
@@ -1703,6 +1725,38 @@ export class LessonsDataService {
               const objectives = Array.isArray(les.objectives) ? les.objectives : (typeof les.objectives === 'string' ? JSON.parse(les.objectives) : []);
               const assessments = Array.isArray(les.assessments) ? les.assessments : (typeof les.assessments === 'string' ? JSON.parse(les.assessments) : []);
 
+              // Word Scramble: ใช้คำที่อาจารย์กำหนดเองถ้ามี ไม่งั้น derive จากคำศัพท์เหมือนเดิม
+              const customScrambleWords: string[] = (customGames?.scrambleWords || []).filter((w: string) => (w || '').trim());
+              const scrambleWords = customScrambleWords.length > 0 ? customScrambleWords : finalVocabs.map((v: any) => v.word);
+              const scrambleHints = customScrambleWords.length > 0
+                ? customScrambleWords.map(() => '')
+                : finalVocabs.map((v: any) => v.meaning);
+
+              // Dialogue Sequencer: แปลงคู่บทสนทนาที่อาจารย์กำหนดเองเป็น 2 บรรทัดเรียงต่อกัน
+              const customDialoguePairs = (customGames?.dialoguePairs || []).filter((p: any) => (p.speakerA || '').trim() && (p.speakerB || '').trim());
+              let unscrambleDialogue = fallbackUnit?.unscrambleDialogue || [];
+              if (customDialoguePairs.length > 0) {
+                unscrambleDialogue = [];
+                customDialoguePairs.forEach((pair: any, pIdx: number) => {
+                  unscrambleDialogue.push({ id: pIdx * 2 + 1, text: pair.speakerA, order: pIdx * 2 });
+                  unscrambleDialogue.push({ id: pIdx * 2 + 2, text: pair.speakerB, order: pIdx * 2 + 1 });
+                });
+              }
+
+              // Picture → Word: โจทย์ที่อาจารย์กำหนดเอง (คำใบ้/คำตอบ/รูปที่อัปโหลด)
+              const customPictureWords = (customGames?.pictureWords || [])
+                .filter((p: any) => (p.correctWord || '').trim())
+                .map((p: any) => ({ word: p.correctWord, meaning: p.hintText || '', clue: p.hintText || '', image: p.image || '' }));
+
+              // Fill in the Blank: โจทย์ที่อาจารย์กำหนดเอง (ประโยคมี ___ อยู่แล้ว + คำตอบ)
+              const customFillBlanks = (customGames?.fillBlanks || [])
+                .filter((f: any) => (f.sentence || '').trim() && (f.missingWord || '').trim())
+                .map((f: any) => ({
+                  blanked: f.sentence,
+                  answer: f.missingWord,
+                  full: f.sentence.replace(/_{2,}/, f.missingWord),
+                }));
+
               return {
                 id: les.id,
                 number: `Unit ${index + 1}`,
@@ -1713,15 +1767,18 @@ export class LessonsDataService {
                 dialogues: fallbackUnit?.dialogues || [{ role1: 'Teacher', text1: 'Welcome to the lesson.', role2: 'Student', text2: 'Hello teacher!' }],
                 preQuiz: les.preQuiz || fallbackUnit?.preQuiz || [],
                 postQuiz: les.postQuiz || fallbackUnit?.postQuiz || [],
-                scrambleWords: finalVocabs.map((v: any) => v.word),
-                scrambleHints: finalVocabs.map((v: any) => v.meaning),
-                unscrambleDialogue: fallbackUnit?.unscrambleDialogue || [],
+                scrambleWords,
+                scrambleHints,
+                unscrambleDialogue,
+                pictureWords: customPictureWords.length > 0 ? customPictureWords : undefined,
+                fillBlankItems: customFillBlanks.length > 0 ? customFillBlanks : undefined,
                 fullQuiz: fallbackUnit?.fullQuiz,
                 allowedGames: allowed,
                 speakingQuestions: sentences,
                 classHours: les.classHours || '⏱ 4 คาบเรียน',
                 weekRange: les.weekRange || '📅 สัปดาห์ที่ 1',
                 slidePath: les.slidePath || les.slide_path || '',
+                coverImage: les.coverImage || les.cover_image || fallbackUnit?.coverImage || '',
                 topics: topics,
                 keywords: keywords,
                 objectives: objectives,
@@ -1905,9 +1962,7 @@ export class LessonsDataService {
           { word: 'Welcoming', pos: 'adj.', reading: 'เวล-คัม-มิง', meaning: 'การต้อนรับ / อบอุ่น', example: 'Thank you for the welcoming speech.' },
           { word: 'Icebreaker', pos: 'n.', reading: 'ไอซ์-เบรก-เกอร์', meaning: 'กิจกรรมละลายพฤติกรรม', example: 'Let us start with an icebreaker game.' }
         ],
-        dialogues: [
-          { role1: 'Teacher', text1: "Good morning, class! Welcome to our English course.", role2: 'Student', text2: "Good morning, teacher! Excited to learn." }
-        ],
+        dialogues: LESSON_1_DIALOGUES,
         cultureTips: ['Greetings in different countries'],
         lessonSections: [],
         preQuiz: [{ question: 'What is a welcoming greeting?', options: ['Good morning', 'Bye', 'No', 'Wait'], answer: 0 }],
@@ -1929,9 +1984,7 @@ export class LessonsDataService {
         vocabularies: [
           { word: 'Telephoning', pos: 'n.', reading: 'เท-เล-โฟ-นิง', meaning: 'การติดต่อทางโทรศัพท์', example: 'She is experienced in office telephoning.' }
         ],
-        dialogues: [
-          { role1: 'Receptionist', text1: 'Good morning, Ms. Parker speaking. How can I help you?', role2: 'Caller', text2: 'Hello, I would like to speak to Mr. Davis.' }
-        ],
+        dialogues: LESSON_2_DIALOGUES,
         cultureTips: ['Always state your name clearly on phone calls.'],
         lessonSections: [],
         preQuiz: [{ question: 'What to say when answering an office phone?', options: ['Good morning, Ms. Parker speaking', 'Who are you?', 'Stop calling', 'Nothing'], answer: 0 }],
@@ -1953,9 +2006,7 @@ export class LessonsDataService {
         vocabularies: [
           { word: 'Presentation', pos: 'n.', reading: 'เพร-เซน-เท-ชัน', meaning: 'การนำเสนอ', example: 'Her presentation was clear and professional.' }
         ],
-        dialogues: [
-          { role1: 'Presenter', text1: 'Today I will present our research findings.', role2: 'Audience', text2: 'Thank you. That was a great presentation.' }
-        ],
+        dialogues: LESSON_3_DIALOGUES,
         cultureTips: ['Structure your presentation clearly into 3 parts.'],
         lessonSections: [],
         preQuiz: [{ question: 'What phrase starts a presentation?', options: ['Today I will present...', 'Good night', 'Stop', 'Bye'], answer: 0 }],
@@ -1977,9 +2028,7 @@ export class LessonsDataService {
         vocabularies: [
           { word: 'Consultation', pos: 'n.', reading: 'คอน-ซัล-เท-ชัน', meaning: 'การปรึกษาหารือ', example: 'I scheduled a consultation with my advisor.' }
         ],
-        dialogues: [
-          { role1: 'Student', text1: 'Excuse me, Ms. Parker, do you have a moment to discuss my paper?', role2: 'Teacher', text2: 'Sure, please come in and take a seat.' }
-        ],
+        dialogues: LESSON_4_DIALOGUES,
         cultureTips: ['Be polite and respectful when consulting teachers.'],
         lessonSections: [],
         preQuiz: [{ question: 'How to ask for a consultation?', options: ['Excuse me, do you have a moment?', 'Hey give me score', 'What', 'No'], answer: 0 }],
@@ -2001,9 +2050,7 @@ export class LessonsDataService {
         vocabularies: [
           { word: 'Instruction', pos: 'n.', reading: 'อิน-สตรัก-ชัน', meaning: 'คำสั่ง / คำแนะนำขั้นตอน', example: 'Follow the instructions carefully.' }
         ],
-        dialogues: [
-          { role1: 'Teacher', text1: 'First, read the instructions on page 5.', role2: 'Student', text2: 'Got it, thank you!' }
-        ],
+        dialogues: LESSON_5_DIALOGUES,
         cultureTips: ['Use step-by-step numbers to give clear instructions.'],
         lessonSections: [],
         preQuiz: [{ question: 'Which word indicates the first step?', options: ['First', 'Finally', 'Last', 'End'], answer: 0 }],

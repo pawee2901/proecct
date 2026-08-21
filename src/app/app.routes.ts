@@ -1,7 +1,15 @@
 import { Routes } from '@angular/router';
 import { LoginRegisterComponent } from './login-register/login-register.component';
-import { TeacherComponent } from './teacher/teacher.component';
-import { AdminComponent } from './admin/admin.component';
+import { TeacherShellComponent } from './teacher/shell/teacher-shell.component';
+import { TeacherStudentsComponent } from './teacher/pages/students/teacher-students.component';
+import { TeacherLessonsComponent } from './teacher/pages/lessons/teacher-lessons.component';
+import { TeacherGameCoversComponent } from './teacher/pages/game-covers/teacher-game-covers.component';
+import { AdminShellComponent } from './admin/shell/admin-shell.component';
+import { AdminOverviewComponent } from './admin/pages/overview/admin-overview.component';
+import { AdminUsersComponent } from './admin/pages/users/admin-users.component';
+import { AdminApisComponent } from './admin/pages/apis/admin-apis.component';
+import { AdminCoursesComponent } from './admin/pages/courses/admin-courses.component';
+import { AdminSystemComponent } from './admin/pages/system/admin-system.component';
 import { StudentShellComponent } from './student/shell/student-shell.component';
 import { StudentLessonsComponent } from './student/pages/lessons/student-lessons.component';
 import { StudentVocabularyComponent } from './student/pages/vocabulary/student-vocabulary.component';
@@ -28,7 +36,27 @@ export const routes: Routes = [
       { path: 'review', component: StudentReviewComponent },
     ],
   },
-  { path: 'teacher', component: TeacherComponent },
-  { path: 'admin', component: AdminComponent },
+  {
+    path: 'teacher',
+    component: TeacherShellComponent,
+    children: [
+      { path: '', redirectTo: 'students', pathMatch: 'full' },
+      { path: 'students', component: TeacherStudentsComponent },
+      { path: 'lessons', component: TeacherLessonsComponent },
+      { path: 'game-covers', component: TeacherGameCoversComponent },
+    ],
+  },
+  {
+    path: 'admin',
+    component: AdminShellComponent,
+    children: [
+      { path: '', redirectTo: 'overview', pathMatch: 'full' },
+      { path: 'overview', component: AdminOverviewComponent },
+      { path: 'users', component: AdminUsersComponent },
+      { path: 'apis', component: AdminApisComponent },
+      { path: 'courses', component: AdminCoursesComponent },
+      { path: 'system', component: AdminSystemComponent },
+    ],
+  },
   { path: '**', redirectTo: 'login' }
 ];

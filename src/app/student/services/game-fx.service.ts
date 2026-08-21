@@ -94,10 +94,20 @@ export class GameFxService {
     }
   }
 
-  awardGameXp(amount: number, gameTitle?: string, score?: number): void {
+  /** `quizType` lets the caller say whether this came from a Lessons roadmap
+   *  step ('pre_game'/'post_game') — standalone Games-tab play (no roadmap
+   *  step active) omits it and falls back to 'post_game' here, so every
+   *  finished game reaches the backend (POST /student/quiz-result) instead
+   *  of only updating localStorage/XP. Previously only 2 of ~20 games ever
+   *  submitted a result, and only when launched from the roadmap — see
+   *  GameEngineService.roadmapQuizType. */
+  awardGameXp(amount: number, gameTitle?: string, score?: number, quizType?: 'pre_game' | 'post_game'): void {
     this.progress.currentXp = Math.min(this.progress.currentXp + amount, this.progress.dailyXpGoal);
     if (gameTitle) {
       this.learningLog.log({ type: 'Game', title: gameTitle, score, xp: amount });
+    }
+    if (score !== undefined && score !== null) {
+      this.progress.submitQuizResultToBackend(quizType || 'post_game', score);
     }
     if (score && score >= 70) {
       this.triggerConfetti();

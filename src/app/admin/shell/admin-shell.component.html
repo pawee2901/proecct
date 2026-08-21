@@ -1,0 +1,104 @@
+<div class="wrapper">
+
+  <!-- ── TOP NAVIGATION BAR ── -->
+  <header class="top-nav">
+    <div class="nav-brand">
+      <div class="brand-icon-wrapper">
+        <img src="assets/mascot-icon.png" alt="AI Speaking Assistant">
+      </div>
+      <div class="brand-text">
+        <h2 class="app-name">AI Speaking Assistant</h2>
+        <div class="sub-brand-row">
+          <span class="app-subtitle">Admin Operations & API Management Hub</span>
+          @if (adminMonitor.systemStatsIsLive) {
+            <span class="pulse-status-badge live">
+              <span class="pulse-dot"></span> System Live
+            </span>
+          } @else {
+            <span class="pulse-status-badge mock">
+              <span class="pulse-dot yellow"></span> Local Mode
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- User Profile & Actions -->
+    <div class="user-profile">
+      <div class="profile-info">
+        <div class="avatar-circle">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <div class="user-details">
+          <p class="user-name">ผู้ดูแลระบบ {{ session.currentUser?.username }}</p>
+          <span class="user-role-badge">Super Administrator</span>
+        </div>
+      </div>
+      <button class="logout-btn" (click)="logout()" title="ออกจากระบบ">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </header>
+
+  <!-- ── MAIN CONTAINER ── -->
+  <div class="body-flat">
+
+    <!-- ── NAVIGATION SUB-TAB BAR ── -->
+    <nav class="secondary-tabs" aria-label="Admin Sections">
+      <button class="sub-tab-btn" routerLink="overview" routerLinkActive="active">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        ภาพรวมระบบ (Overview)
+      </button>
+      <button class="sub-tab-btn" routerLink="users" routerLinkActive="active">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        จัดการผู้ใช้งาน (Users)
+        @if (adminUsers.pendingTeachersCount > 0) {
+          <span class="tab-badge warning">{{ adminUsers.pendingTeachersCount }}</span>
+        }
+      </button>
+      <button class="sub-tab-btn" routerLink="apis" routerLinkActive="active">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        จัดการ & เพิ่ม API (API Hub)
+        <span class="tab-badge active">{{ adminApiHub.activeApiCount }}</span>
+      </button>
+      <button class="sub-tab-btn" routerLink="courses" routerLinkActive="active">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        คอร์ส & บทเรียน (Courses)
+      </button>
+      <button class="sub-tab-btn" routerLink="system" routerLinkActive="active">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+        สุขภาพระบบ & Logs
+      </button>
+    </nav>
+
+    <!-- ── ROUTED TAB CONTENT ── -->
+    <div class="main-content-flat">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

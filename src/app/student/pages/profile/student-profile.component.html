@@ -1,7 +1,8 @@
 <section class="tab-section animate-fade">
 
   @if (profileSubView === 'main') {
-    <!-- Profile Hero Card -->
+    <!-- Compact identity strip — just enough to feel like "your" hub, full
+         details live in the "ข้อมูลโปรไฟล์" button below -->
     <div class="profile-hero">
       <div class="profile-big-avatar">{{ getInitial() }}</div>
       <div class="profile-hero-info">
@@ -11,151 +12,78 @@
         <p class="profile-meta">
           {{ session.currentUser?.username }} · รหัส {{ session.currentUser?.studentId || 'N/A' }}
         </p>
-        <div class="profile-tag-row">
-          @if (session.currentUser?.faculty) {
-            <span class="profile-tag">{{ session.currentUser?.faculty }}</span>
-          }
-          @if (session.currentUser?.department) {
-            <span class="profile-tag">{{ session.currentUser?.department }}</span>
-          }
-          @if (session.currentUser?.yearOfStudy) {
-            <span class="profile-tag">ปี {{ session.currentUser?.yearOfStudy }}</span>
-          }
-        </div>
-      </div>
-    </div>
-    <!-- Stats Grid -->
-    <div class="profile-stats-grid">
-      <div class="pstat-card">
-        <div class="pstat-num" style="color: var(--pastel-green-dark)">
-          {{ progress.getCompletedCount() }}
-        </div>
-        <div class="pstat-lbl">บทเรียนที่จบ</div>
-      </div>
-      <div class="pstat-card">
-        <div class="pstat-num" style="color: var(--pastel-blue-dark)">{{ progress.practiceCount }}</div>
-        <div class="pstat-lbl">ครั้งที่ฝึก</div>
-      </div>
-      <div class="pstat-card pstat-ring-card">
-        <div class="pstat-ring" [style.background]="'conic-gradient(var(--pastel-purple-dark) ' + (progress.averageScore * 3.6) + 'deg, var(--slate-100) 0deg)'">
-          <div class="pstat-ring-inner">
-            <div class="pstat-num" style="color: var(--pastel-purple-dark)">{{ progress.averageScore }}%</div>
-          </div>
-        </div>
-        <div class="pstat-lbl">คะแนนเฉลี่ย</div>
-      </div>
-      <div class="pstat-card">
-        <div class="pstat-num" style="color: #f59e0b">{{ progress.dailyStreak }}</div>
-        <div class="pstat-lbl">วันติดต่อกัน</div>
-      </div>
-    </div>
-    <!-- Progress per lesson -->
-    <div class="profile-progress-section">
-      <h3 class="section-label">ความก้าวหน้าของแต่ละบทเรียน</h3>
-      <div class="progress-cards-list">
-        @for (prog of progress.progressReport; track prog.number) {
-          <div class="prog-card">
-            <div class="prog-card-top">
-              <h4>{{ prog.number }}: {{ prog.title }}</h4>
-              @if (prog.postScore !== null) {
-                <span class="badge-done">เรียนจบ ✓</span>
-              } @else if (prog.preScore !== null) {
-                <span class="badge-wip">กำลังเรียน</span>
-              } @else {
-                <span class="badge-idle">ยังไม่เริ่ม</span>
-              }
-            </div>
-            <div class="prog-score-rows">
-              <div class="prog-score-row">
-                <span class="prog-score-lbl">Pre-Test</span>
-                <div class="prog-bar">
-                  <div class="prog-fill pb-blue" [style.width.%]="prog.preScore || 0"></div>
-                </div>
-                <span class="prog-score-val">{{
-                  prog.preScore !== null ? prog.preScore + '%' : '-'
-                }}</span>
-              </div>
-              <div class="prog-score-row">
-                <span class="prog-score-lbl">Post-Test</span>
-                <div class="prog-bar">
-                  <div class="prog-fill pb-green" [style.width.%]="prog.postScore || 0"></div>
-                </div>
-                <span class="prog-score-val">{{
-                  prog.postScore !== null ? prog.postScore + '%' : '-'
-                }}</span>
-              </div>
-            </div>
-          </div>
-        }
       </div>
     </div>
 
-    <!-- History Categories Section -->
-    <div style="margin-top: 2rem; border-top: 1.5px solid var(--slate-200); padding-top: 1.5rem;">
-      <h3 class="section-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-        📜 ประวัติการเรียนรู้แบ่งตามหมวดหมู่
-      </h3>
-      <p style="font-size: 0.78rem; color: var(--slate-500); margin: 0 0 1.25rem 0; font-weight: 600; text-align: left;">
-        เลือกหมวดหมู่เพื่อดูประวัติการเข้าเรียน คะแนน บทสนทนา และคำแนะนำจากติวเตอร์ AI
-      </p>
+    <!-- Hub menu: 4 button-cards, matching the shell's profile dropdown items
+         1:1 (ข้อมูลโปรไฟล์/ประวัติการทำแบบฝึกหัด/ผลการเรียน ความก้าวหน้า/ทบทวนคำที่
+         เคยผิด) — เดิมทุกอันจากเมนู dropdown พาเข้ามาหน้านี้เหมือนกันหมด ไม่แยก
+         sub-view เลย ทำให้เจอทุกอย่าง (สถิติ+ความก้าวหน้า+ประวัติ) ปนกันในหน้าเดียว -->
+    <div style="margin-top: 1.5rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 1rem;">
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 1rem;">
-
-        <!-- Category 1: Practice -->
-        <div
-          (click)="openProfileHistoryCategory('practice')"
-          style="background: white; border: 1.5px solid var(--slate-200); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem; cursor: pointer; transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px rgba(0,0,0,0.015); text-align: left;"
-          onmouseover="this.style.borderColor='#4f46e5'; this.style.transform='translateY(-2px)'"
-          onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='translateY(0)'"
+        <button
+          type="button"
+          (click)="goToSection('info')"
+          class="profile-hub-card"
         >
-          <div style="font-size: 2.2rem; line-height: 1;">💬</div>
+          <svg class="profile-hub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
           <div>
-            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">ประวัติสนทนา & ซ้อมพูด</h4>
-            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">ซ้อมพูดโต้ตอบและพิมพ์แชทจำลองสถานการณ์</p>
+            <h4 style="margin: 0; font-size: 0.92rem; font-weight: 850; color: var(--slate-800);">ข้อมูลโปรไฟล์</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.74rem; color: var(--slate-500); line-height: 1.4;">ชื่อ คณะ ภาควิชา และชั้นปีของคุณ</p>
           </div>
-        </div>
+        </button>
 
-        <!-- Category 2: Test -->
-        <div
-          (click)="openProfileHistoryCategory('test')"
-          style="background: white; border: 1.5px solid var(--slate-200); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem; cursor: pointer; transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px rgba(0,0,0,0.015); text-align: left;"
-          onmouseover="this.style.borderColor='#4f46e5'; this.style.transform='translateY(-2px)'"
-          onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='translateY(0)'"
+        <button
+          type="button"
+          (click)="goToSection('history-categories')"
+          class="profile-hub-card"
         >
-          <div style="font-size: 2.2rem; line-height: 1;">📝</div>
+          <svg class="profile-hub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
           <div>
-            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">แบบทดสอบ Pre/Post-Test</h4>
-            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">คะแนนสอบวัดระดับความรู้ของแต่ละบทเรียน</p>
+            <h4 style="margin: 0; font-size: 0.92rem; font-weight: 850; color: var(--slate-800);">ประวัติการทำแบบฝึกหัด</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.74rem; color: var(--slate-500); line-height: 1.4;">ประวัติฝึกพูด แบบทดสอบ เกม และการออกเสียง</p>
           </div>
-        </div>
+        </button>
 
-        <!-- Category 3: Game -->
-        <div
-          (click)="openProfileHistoryCategory('game')"
-          style="background: white; border: 1.5px solid var(--slate-200); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem; cursor: pointer; transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px rgba(0,0,0,0.015); text-align: left;"
-          onmouseover="this.style.borderColor='#4f46e5'; this.style.transform='translateY(-2px)'"
-          onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='translateY(0)'"
+        <button
+          type="button"
+          (click)="goToSection('progress')"
+          class="profile-hub-card"
         >
-          <div style="font-size: 2.2rem; line-height: 1;">🎮</div>
+          <svg class="profile-hub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
           <div>
-            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">เกมฝึกทักษะคำศัพท์</h4>
-            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">ประวัติการเล่นเกมจับคู่และเกมคำศัพท์ต่าง ๆ</p>
+            <h4 style="margin: 0; font-size: 0.92rem; font-weight: 850; color: var(--slate-800);">ผลการเรียน / ความก้าวหน้า</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.74rem; color: var(--slate-500); line-height: 1.4;">คะแนนเฉลี่ย จำนวนครั้งที่ฝึก และความคืบหน้าแต่ละบท</p>
           </div>
-        </div>
+        </button>
 
-        <!-- Category 4: Speaking -->
-        <div
-          (click)="openProfileHistoryCategory('speaking')"
-          style="background: white; border: 1.5px solid var(--slate-200); border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem; cursor: pointer; transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px rgba(0,0,0,0.015); text-align: left;"
-          onmouseover="this.style.borderColor='#4f46e5'; this.style.transform='translateY(-2px)'"
-          onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='translateY(0)'"
+        <button
+          type="button"
+          (click)="goToReview()"
+          class="profile-hub-card"
         >
-          <div style="font-size: 2.2rem; line-height: 1;">🎙️</div>
+          <svg class="profile-hub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
           <div>
-            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">ประวัติการฝึกออกเสียง</h4>
-            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">คะแนนความถูกต้องจากการซ้อมอ่านประโยค</p>
+            <h4 style="margin: 0; font-size: 0.92rem; font-weight: 850; color: var(--slate-800);">ทบทวนคำที่เคยผิด</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.74rem; color: var(--slate-500); line-height: 1.4;">ฝึกคำศัพท์และประโยคที่เคยตอบผิดซ้ำอีกครั้ง</p>
           </div>
-        </div>
+        </button>
 
       </div>
     </div>
@@ -180,22 +108,324 @@
     </div>
   }
 
+  @if (profileSubView === 'info') {
+    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid var(--slate-150); padding-bottom: 0.75rem;">
+        <button
+          (click)="backToMain()"
+          style="background: none; border: 1.5px solid var(--slate-300); border-radius: 10px; padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 800; color: var(--slate-600); cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.15s;"
+          onmouseover="this.style.background='#f1f5f9'"
+          onmouseout="this.style.background='none'"
+        >
+          ⬅ กลับ
+        </button>
+        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 850; color: var(--slate-800);">ข้อมูลโปรไฟล์</h2>
+      </div>
+
+      <!-- Avatar + upload — profileDetail.avatar_url is loaded fresh from
+           /student/profile/<id> (loadProfileDetail()), not from the login-time
+           localStorage snapshot, so this reflects a photo uploaded on another
+           device too, not just what this browser remembers -->
+      <div class="profile-hero">
+        @if (profileDetail?.avatar_url) {
+          <img class="profile-avatar-img" [src]="profileDetail.avatar_url" alt="" />
+        } @else {
+          <div class="profile-big-avatar">{{ getInitial() }}</div>
+        }
+        <div class="profile-hero-info">
+          <h2 class="profile-fullname">
+            {{ session.currentUser?.firstName }} {{ session.currentUser?.lastName }}
+          </h2>
+          <p class="profile-meta">
+            {{ session.currentUser?.username }}
+          </p>
+          <label style="margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; background: white; border: 1.5px solid var(--slate-200); border-radius: 10px; padding: 0.4rem 0.85rem; font-size: 0.76rem; font-weight: 800; color: var(--slate-700); width: fit-content;">
+            {{ uploadingAvatar ? 'กำลังอัปโหลด...' : 'เปลี่ยนรูปโปรไฟล์' }}
+            <input type="file" accept="image/*" (change)="onAvatarUpload($event)" [disabled]="uploadingAvatar" style="display: none;" />
+          </label>
+        </div>
+      </div>
+
+      <!-- Read-only account info — real data from the DB (loadProfileDetail()),
+           shows every field explicitly (with a placeholder instead of hiding
+           the row) rather than the old silent @if that just skipped anything
+           empty — was also reading the wrong field names entirely before this
+           (session.currentUser.faculty/.department/.yearOfStudy never existed
+           in the login response, so this whole block always rendered blank) -->
+      <div class="section-container" style="text-align: left;">
+        <h3 style="margin: 0 0 1rem; font-size: 0.9rem; font-weight: 850; color: var(--slate-800);">ข้อมูลบัญชี</h3>
+        @if (loadingProfileDetail && !profileDetail) {
+          <p style="font-size: 0.8rem; color: var(--slate-400); font-weight: 600;">กำลังโหลดข้อมูล...</p>
+        } @else {
+          <div class="profile-info-grid">
+            <div class="profile-info-row">
+              <span class="profile-info-lbl">ชื่อ-นามสกุล</span>
+              <span class="profile-info-val">{{ (profileDetail?.first_name || profileDetail?.last_name) ? ((profileDetail?.first_name || '') + ' ' + (profileDetail?.last_name || '')) : 'ไม่ระบุ' }}</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-lbl">รหัสนักศึกษา</span>
+              <span class="profile-info-val">{{ profileDetail?.student_code || 'ไม่ระบุ' }}</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-lbl">คณะ</span>
+              <span class="profile-info-val">{{ profileDetail?.faculty_name || 'ไม่ระบุ' }}</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-lbl">ภาควิชา</span>
+              <span class="profile-info-val">{{ profileDetail?.department_name || 'ไม่ระบุ' }}</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-lbl">ชั้นปี</span>
+              <span class="profile-info-val">{{ profileDetail?.year_of_study ? ('ปี ' + profileDetail.year_of_study) : 'ไม่ระบุ' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Editable: email -->
+      <div class="section-container" style="text-align: left;">
+        <h3 style="margin: 0 0 0.75rem; font-size: 0.9rem; font-weight: 850; color: var(--slate-800);">แก้ไขอีเมล</h3>
+        <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+          <input
+            type="email"
+            [(ngModel)]="editEmail"
+            placeholder="อีเมลของคุณ"
+            style="flex: 1; min-width: 220px; border: 1.5px solid var(--slate-200); border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.84rem; box-sizing: border-box;"
+          />
+          <button
+            type="button"
+            (click)="saveEmail()"
+            [disabled]="savingEmail || !editEmail"
+            style="background: var(--pastel-blue-dark); color: white; border: none; border-radius: 12px; padding: 0.6rem 1.25rem; font-size: 0.82rem; font-weight: 800; cursor: pointer;"
+          >
+            {{ savingEmail ? 'กำลังบันทึก...' : 'บันทึกอีเมล' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Editable: password -->
+      <div class="section-container" style="text-align: left;">
+        <h3 style="margin: 0 0 0.75rem; font-size: 0.9rem; font-weight: 850; color: var(--slate-800);">เปลี่ยนรหัสผ่าน</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.65rem; max-width: 420px;">
+          <input
+            type="password"
+            [(ngModel)]="currentPassword"
+            placeholder="รหัสผ่านเดิม"
+            style="border: 1.5px solid var(--slate-200); border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.84rem; box-sizing: border-box;"
+          />
+          <input
+            type="password"
+            [(ngModel)]="newPassword"
+            placeholder="รหัสผ่านใหม่ (อย่างน้อย 4 ตัวอักษร)"
+            style="border: 1.5px solid var(--slate-200); border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.84rem; box-sizing: border-box;"
+          />
+          <input
+            type="password"
+            [(ngModel)]="confirmPassword"
+            placeholder="ยืนยันรหัสผ่านใหม่"
+            style="border: 1.5px solid var(--slate-200); border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.84rem; box-sizing: border-box;"
+          />
+          <button
+            type="button"
+            (click)="submitPasswordChange()"
+            [disabled]="changingPassword"
+            style="align-self: flex-start; background: var(--pastel-blue-dark); color: white; border: none; border-radius: 12px; padding: 0.6rem 1.25rem; font-size: 0.82rem; font-weight: 800; cursor: pointer;"
+          >
+            {{ changingPassword ? 'กำลังบันทึก...' : 'เปลี่ยนรหัสผ่าน' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (profileSubView === 'progress') {
+    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid var(--slate-150); padding-bottom: 0.75rem;">
+        <button
+          (click)="backToMain()"
+          style="background: none; border: 1.5px solid var(--slate-300); border-radius: 10px; padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 800; color: var(--slate-600); cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.15s;"
+          onmouseover="this.style.background='#f1f5f9'"
+          onmouseout="this.style.background='none'"
+        >
+          ⬅ กลับ
+        </button>
+        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 850; color: var(--slate-800);">ผลการเรียน / ความก้าวหน้า</h2>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="profile-stats-grid">
+        <div class="pstat-card">
+          <div class="pstat-num" style="color: var(--pastel-green-dark)">
+            {{ progress.getCompletedCount() }}
+          </div>
+          <div class="pstat-lbl">บทเรียนที่จบ</div>
+        </div>
+        <div class="pstat-card">
+          <div class="pstat-num" style="color: var(--pastel-blue-dark)">{{ progress.practiceCount }}</div>
+          <div class="pstat-lbl">ครั้งที่ฝึก</div>
+        </div>
+        <div class="pstat-card pstat-ring-card">
+          <div class="pstat-ring" [style.background]="'conic-gradient(var(--pastel-purple-dark) ' + (progress.averageScore * 3.6) + 'deg, var(--slate-100) 0deg)'">
+            <div class="pstat-ring-inner">
+              <div class="pstat-num" style="color: var(--pastel-purple-dark)">{{ progress.averageScore }}%</div>
+            </div>
+          </div>
+          <div class="pstat-lbl">คะแนนเฉลี่ย</div>
+        </div>
+        <div class="pstat-card">
+          <div class="pstat-num" style="color: #f59e0b">{{ progress.dailyStreak }}</div>
+          <div class="pstat-lbl">วันติดต่อกัน</div>
+        </div>
+      </div>
+      <!-- Progress per lesson -->
+      <div class="profile-progress-section">
+        <h3 class="section-label">ความก้าวหน้าของแต่ละบทเรียน</h3>
+        <div class="progress-cards-list">
+          @for (prog of progress.progressReport; track prog.number) {
+            <div class="prog-card">
+              <div class="prog-card-top">
+                <h4>{{ prog.number }}: {{ prog.title }}</h4>
+                @if (prog.postScore !== null) {
+                  <span class="badge-done">เรียนจบ ✓</span>
+                } @else if (prog.preScore !== null) {
+                  <span class="badge-wip">กำลังเรียน</span>
+                } @else {
+                  <span class="badge-idle">ยังไม่เริ่ม</span>
+                }
+              </div>
+              <div class="prog-score-rows">
+                <div class="prog-score-row">
+                  <span class="prog-score-lbl">Pre-Test</span>
+                  <div class="prog-bar">
+                    <div class="prog-fill pb-blue" [style.width.%]="prog.preScore || 0"></div>
+                  </div>
+                  <span class="prog-score-val">{{
+                    prog.preScore !== null ? prog.preScore + '%' : '-'
+                  }}</span>
+                </div>
+                <div class="prog-score-row">
+                  <span class="prog-score-lbl">Post-Test</span>
+                  <div class="prog-bar">
+                    <div class="prog-fill pb-green" [style.width.%]="prog.postScore || 0"></div>
+                  </div>
+                  <span class="prog-score-val">{{
+                    prog.postScore !== null ? prog.postScore + '%' : '-'
+                  }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (profileSubView === 'history-categories') {
+    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid var(--slate-150); padding-bottom: 0.75rem;">
+        <button
+          (click)="backToMain()"
+          style="background: none; border: 1.5px solid var(--slate-300); border-radius: 10px; padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 800; color: var(--slate-600); cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.15s;"
+          onmouseover="this.style.background='#f1f5f9'"
+          onmouseout="this.style.background='none'"
+        >
+          ⬅ กลับ
+        </button>
+        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 850; color: var(--slate-800);">ประวัติการทำแบบฝึกหัด</h2>
+      </div>
+
+      <p style="font-size: 0.78rem; color: var(--slate-500); margin: 0; font-weight: 600; text-align: left;">
+        เลือกหมวดหมู่เพื่อดูประวัติการเข้าเรียน คะแนน บทสนทนา และคำแนะนำจากติวเตอร์ AI
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 1rem;">
+
+        <!-- Category 1: Practice -->
+        <div
+          (click)="openProfileHistoryCategory('practice')"
+          class="profile-hub-card"
+        >
+          <svg class="profile-hub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+          </svg>
+          <div>
+            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">ประวัติสนทนา & ซ้อมพูด</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">ซ้อมพูดโต้ตอบและพิมพ์แชทจำลองสถานการณ์</p>
+          </div>
+        </div>
+
+        <!-- Category 2: Test -->
+        <div
+          (click)="openProfileHistoryCategory('test')"
+          class="profile-hub-card"
+        >
+          <svg class="profile-hub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            <path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3" />
+            <path d="M9 12h6" />
+            <path d="M9 16h6" />
+          </svg>
+          <div>
+            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">แบบทดสอบ Pre/Post-Test</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">คะแนนสอบวัดระดับความรู้ของแต่ละบทเรียน</p>
+          </div>
+        </div>
+
+        <!-- Category 3: Game -->
+        <div
+          (click)="openProfileHistoryCategory('game')"
+          class="profile-hub-card"
+        >
+          <svg class="profile-hub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="6" y1="12" x2="10" y2="12" />
+            <line x1="8" y1="10" x2="8" y2="14" />
+            <line x1="15" y1="13" x2="15.01" y2="13" />
+            <line x1="18" y1="11" x2="18.01" y2="11" />
+            <rect x="2" y="6" width="20" height="12" rx="2" />
+          </svg>
+          <div>
+            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">เกมฝึกทักษะคำศัพท์</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">ประวัติการเล่นเกมจับคู่และเกมคำศัพท์ต่าง ๆ</p>
+          </div>
+        </div>
+
+        <!-- Category 4: Speaking -->
+        <div
+          (click)="openProfileHistoryCategory('speaking')"
+          class="profile-hub-card"
+        >
+          <svg class="profile-hub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+          <div>
+            <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">ประวัติการฝึกออกเสียง</h4>
+            <p style="margin: 4px 0 0 0; font-size: 0.72rem; color: var(--slate-500); line-height: 1.35;">คะแนนความถูกต้องจากการซ้อมอ่านประโยค</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+
   @if (profileSubView === 'category-detail') {
     <div style="display: flex; flex-direction: column; gap: 1.25rem;">
       <!-- Header with Back button -->
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid var(--slate-150); padding-bottom: 0.75rem;">
         <button
-          (click)="profileSubView = 'main'"
+          (click)="profileSubView = 'history-categories'"
           style="background: none; border: 1.5px solid var(--slate-300); border-radius: 10px; padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 800; color: var(--slate-600); cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.15s;"
           onmouseover="this.style.background='#f1f5f9'"
           onmouseout="this.style.background='none'"
         >
-          ⬅ กลับสู่ข้อมูลโปรไฟล์
+          ⬅ กลับ
         </button>
         <h2 style="margin: 0; font-size: 1.15rem; font-weight: 850; color: var(--slate-800);">
-          {{ selectedHistoryCategory === 'practice' ? '💬 ประวัติฝึกสนทนา & ซ้อมพูด' :
-             selectedHistoryCategory === 'test' ? '📝 ประวัติทำแบบทดสอบ Pre/Post-Test' :
-             selectedHistoryCategory === 'game' ? '🎮 ประวัติเกมฝึกภาษาอังกฤษ' : '🎙️ ประวัติการฝึกออกเสียง' }}
+          {{ selectedHistoryCategory === 'practice' ? 'ประวัติฝึกสนทนา & ซ้อมพูด' :
+             selectedHistoryCategory === 'test' ? 'ประวัติทำแบบทดสอบ Pre/Post-Test' :
+             selectedHistoryCategory === 'game' ? 'ประวัติเกมฝึกภาษาอังกฤษ' : 'ประวัติการฝึกออกเสียง' }}
         </h2>
       </div>
 
@@ -203,7 +433,6 @@
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
         @if (getFilteredProfileLogs(selectedHistoryCategory).length === 0) {
           <div style="text-align: center; padding: 3rem; background: var(--slate-50); border-radius: 16px; border: 1.5px dashed var(--slate-200);">
-            <span style="font-size: 2.5rem; display: block; margin-bottom: 0.75rem;">📭</span>
             <p style="margin: 0; font-size: 0.82rem; color: var(--slate-400); font-weight: 600;">ยังไม่มีประวัติการทำกิจกรรมในหมวดหมู่นี้</p>
           </div>
         } @else {
@@ -218,11 +447,6 @@
                 onmouseout="this.style.background='white'"
               >
                 <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
-                  <span style="font-size: 1.6rem;">
-                    {{ selectedHistoryCategory === 'practice' ? '💬' :
-                       selectedHistoryCategory === 'test' ? '📝' :
-                       selectedHistoryCategory === 'game' ? '🎮' : '🎙️' }}
-                  </span>
                   <div style="min-width: 0; text-align: left;">
                     <h4 style="margin: 0; font-size: 0.9rem; font-weight: 850; color: var(--slate-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ log.title }}</h4>
                     <span style="font-size: 0.7rem; color: var(--slate-400);">{{ log.date | date:'medium' }}</span>
@@ -232,7 +456,7 @@
                 <div style="display: flex; align-items: center; gap: 1rem;">
                   <div style="text-align: right; display: flex; flex-direction: column; gap: 2px;">
                     @if (log.score !== undefined) {
-                      <span style="font-size: 0.8rem; font-weight: 850; color: #4F46E5;">คะแนน: {{ log.score }}%</span>
+                      <span style="font-size: 0.8rem; font-weight: 850; color: #0f766e;">คะแนน: {{ log.score }}%</span>
                     }
                     <span style="font-size: 0.72rem; font-weight: 800; color: #10b981;">+{{ log.xp }} XP</span>
                   </div>
@@ -244,11 +468,74 @@
               @if (expandedProfileLogIndex === idx) {
                 <div style="padding: 1.25rem; background: var(--slate-50); border-top: 1.5px solid var(--slate-150); display: flex; flex-direction: column; gap: 1rem;">
 
-                  <!-- AI Video Call Detailed Feedback -->
-                  @if (log.feedback) {
+                  <!-- Report card: same shape/visual language as the "ผลสรุปการฝึกพูด"
+                       modal shown live right when a chat/speaking/dictation session
+                       finishes (chatSummaryReport in student-practice.component.ts) — so
+                       opening a past session in History looks the same as it did live,
+                       instead of the old flat "feedback"/"suggestions" boxes below (kept
+                       only as legacy fallback for very old localStorage entries saved
+                       before this existed) -->
+                  @if (log.report) {
+                    <div style="background: linear-gradient(135deg, #f0fdfa, #F0FDF4); border-radius: 16px; padding: 1.1rem 1.25rem; text-align: left;">
+                      <p style="margin: 0; font-size: 0.85rem; font-weight: 700; color: var(--slate-800); line-height: 1.6;">{{ log.report.overall }}</p>
+                    </div>
+
+                    @if (log.report.scoreItems && log.report.scoreItems.length > 0) {
+                      <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.6rem;">
+                          @for (s of log.report.scoreItems; track s.label) {
+                            <div style="background: white; border: 1.5px solid var(--slate-150); border-radius: 14px; padding: 0.75rem 0.5rem; text-align: center;">
+                              <span style="font-size: 0.66rem; font-weight: 800; color: #475569; display: block; margin-bottom: 0.3rem;">{{ s.icon }} {{ s.label }}</span>
+                              <span style="font-size: 1.1rem; font-weight: 900; color: #0f766e;">{{ s.value }} <span style="font-size: 0.68rem; font-weight: 700; color: #94A3B8;">/ {{ s.max }}</span></span>
+                            </div>
+                          }
+                        </div>
+
+                        @if (log.report.total) {
+                          <div style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #0d9488, #0f766e); color: white; border-radius: 14px; padding: 0.65rem 1.1rem;">
+                            <span style="font-size: 0.78rem; font-weight: 800;">คะแนนรวมทั้งหมด (Total Score)</span>
+                            <span style="font-size: 1.1rem; font-weight: 900;">{{ log.report.total.value }} <span style="font-size: 0.72rem; font-weight: 700; opacity: 0.85;">/ {{ log.report.total.max }}</span></span>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    @if (log.report.corrections.length > 0) {
+                      <div style="display: flex; flex-direction: column; gap: 0.5rem; text-align: left;">
+                        <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: var(--slate-800);">จุดที่ควรแก้ไข ({{ log.report.corrections.length }})</h5>
+                        @for (c of log.report.corrections; track $index) {
+                          <div style="background: white; border: 1.5px solid var(--slate-150); border-radius: 12px; padding: 0.7rem 0.85rem;">
+                            <p style="margin: 0 0 0.3rem 0; font-size: 0.76rem; color: #B91C1C; text-decoration: line-through; opacity: 0.85;">{{ c.original }}</p>
+                            @if (c.suggestion) {
+                              <p style="margin: 0 0 0.35rem 0; font-size: 0.78rem; color: #15803D; font-weight: 700;">✓ {{ c.suggestion }}</p>
+                            }
+                            <p style="margin: 0; font-size: 0.72rem; color: var(--slate-500);">{{ c.issue }}</p>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <div style="text-align: center; padding: 0.75rem 0; color: var(--slate-500); font-size: 0.8rem;">ไม่พบข้อผิดพลาดที่ต้องแก้ไขในรอบนี้เลย เก่งมาก!</div>
+                    }
+
+                    @if (log.report.tips.length > 0) {
+                      <div style="text-align: left;">
+                        <h5 style="margin: 0 0 0.5rem; font-size: 0.8rem; font-weight: 850; color: var(--slate-800);">คำแนะนำเพิ่มเติม</h5>
+                        <ul style="margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.3rem;">
+                          @for (t of log.report.tips; track $index) {
+                            <li style="font-size: 0.76rem; color: var(--slate-600); line-height: 1.5;">{{ t }}</li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                  }
+
+                  <!-- Legacy AI Video Call Detailed Feedback — nothing writes log.feedback
+                       anymore (superseded by log.report above), kept only so any very old
+                       localStorage entry with this shape still renders something -->
+                  @if (!log.report && log.feedback) {
                     <div style="background: white; border: 1.5px solid var(--slate-200); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; text-align: left;">
-                      <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: var(--slate-800);">📊 ผลคะแนนการประเมินประโยคและพูดจริง:</h5>
-                      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-top: 0.25rem;">
+                      <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: var(--slate-800);">ผลคะแนนการประเมินประโยคและพูดจริง:</h5>
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 0.5rem; margin-top: 0.25rem;">
                         <div style="font-size: 0.76rem; color: var(--slate-600);"><strong style="color: var(--slate-800);">การออกเสียง (Pronunciation):</strong> {{ log.feedback.pronunciation }}%</div>
                         <div style="font-size: 0.76rem; color: var(--slate-600);"><strong style="color: var(--slate-800);">ความคล่องแคล่ว (Fluency):</strong> {{ log.feedback.fluency }}%</div>
                         <div style="font-size: 0.76rem; color: var(--slate-600);"><strong style="color: var(--slate-800);">หลักไวยากรณ์ (Grammar):</strong> {{ log.feedback.grammar }}%</div>
@@ -257,11 +544,12 @@
                     </div>
                   }
 
-                  <!-- Suggestions / Recommendations Text -->
-                  @if (log.suggestions) {
+                  <!-- Legacy suggestions text — nothing writes log.suggestions anymore
+                       (superseded by log.report.overall/.tips above) -->
+                  @if (!log.report && log.suggestions) {
                     <div style="background: #fffbeb; border: 1.5px solid #fef3c7; border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 0.4rem; text-align: left;">
                       <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: #b45309; display: flex; align-items: center; gap: 4px;">
-                        💡 คำแนะนำสำหรับการพูดและการพัฒนา:
+                        คำแนะนำสำหรับการพูดและการพัฒนา:
                       </h5>
                       <p style="margin: 0; font-size: 0.78rem; color: #78350f; line-height: 1.45; white-space: pre-line; font-weight: 600;">
                         {{ log.suggestions }}
@@ -269,10 +557,39 @@
                     </div>
                   }
 
+                  <!-- Word-by-word breakdown for dictation-style practice (e.g. Text-to-
+                       Speech Dictation) — these have no real back-and-forth conversation,
+                       so they get a plain result list here instead of being forced into
+                       the chat-bubble transcript UI below (see student-practice.component.ts
+                       finishTtsDictationSession() for where this replaced the old fake
+                       "target -> answer (score%)" chat bubbles) -->
+                  @if (log.wordResults && log.wordResults.length > 0) {
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                      <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: var(--slate-800); text-align: left;">รายละเอียดคำที่ฝึก:</h5>
+                      <div style="display: flex; flex-direction: column; background: white; border: 1px solid var(--slate-200); border-radius: 14px; padding: 0.4rem 1rem; max-height: 300px; overflow-y: auto;">
+                        @for (w of log.wordResults; track $index) {
+                          <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.55rem 0;" [style.border-top]="$index > 0 ? '1px solid var(--slate-100)' : 'none'">
+                            <div style="min-width: 0; text-align: left;">
+                              <div style="font-size: 0.78rem; font-weight: 800; color: var(--slate-800); word-break: break-word;">{{ w.text }}</div>
+                              <div style="font-size: 0.72rem; color: var(--slate-500); word-break: break-word;">คำตอบของคุณ: "{{ w.userAnswer }}"</div>
+                            </div>
+                            <span
+                              style="flex-shrink: 0; font-size: 0.74rem; font-weight: 850; padding: 3px 10px; border-radius: 10px;"
+                              [style.background]="w.score >= 80 ? '#ecfdf5' : (w.score >= 50 ? '#fffbeb' : '#fff1f2')"
+                              [style.color]="w.score >= 80 ? '#059669' : (w.score >= 50 ? '#b45309' : '#be123c')"
+                            >
+                              {{ w.score }}%
+                            </span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
                   <!-- Transcript bubbles for practice sessions -->
                   @if (log.transcript && log.transcript.length > 0) {
                     <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-                      <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: var(--slate-800); text-align: left;">💬 บันทึกข้อความการสนทนา:</h5>
+                      <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: var(--slate-800); text-align: left;">บันทึกข้อความการสนทนา:</h5>
                       <div style="display: flex; flex-direction: column; gap: 0.75rem; background: white; border: 1px solid var(--slate-200); border-radius: 14px; padding: 1rem; max-height: 350px; overflow-y: auto;">
                         @for (msg of log.transcript; track $index) {
                           <div style="display: flex; flex-direction: column; gap: 2px;" [style.align-items]="msg.sender === 'user' ? 'flex-end' : 'flex-start'">
@@ -289,7 +606,7 @@
                             <!-- Grammar feedback suggestion inline -->
                             @if (msg.grammarSuggestion) {
                               <div style="align-self: flex-end; background: #fff1f2; border: 1px solid #ffe4e6; color: #be123c; border-radius: 10px; padding: 0.4rem 0.75rem; font-size: 0.7rem; max-width: 85%; margin-top: 2px; line-height: 1.4; font-weight: 700; text-align: left;">
-                                🔍 ข้อเสนอแนะเรื่องภาษา: {{ msg.grammarSuggestion }}
+                                ข้อเสนอแนะเรื่องภาษา: {{ msg.grammarSuggestion }}
                               </div>
                             }
                           </div>
@@ -299,19 +616,19 @@
                       <!-- Button to load chat to continue practicing -->
                       <button
                         (click)="loadPastChatSession(log)"
-                        style="align-self: flex-start; background: #4f46e5; color: white; border: none; padding: 0.5rem 1rem; border-radius: 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: transform 0.15s;"
+                        style="align-self: flex-start; background: rgba(13, 148, 136,0.82); -webkit-backdrop-filter: blur(12px) saturate(160%); backdrop-filter: blur(12px) saturate(160%); border: 1px solid rgba(255,255,255,0.35); box-shadow: inset 0 1px 0 rgba(255,255,255,0.4); color: white; padding: 0.5rem 1rem; border-radius: 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: transform 0.15s;"
                         onmouseover="this.style.transform='scale(1.02)'"
                         onmouseout="this.style.transform='scale(1)'"
                       >
-                        💬 โหลดและสนทนาต่อที่หน้าแชทหลัก
+                        โหลดและสนทนาต่อที่หน้าแชทหลัก
                       </button>
                     </div>
                   }
 
                   <!-- Default description for non-transcript actions -->
-                  @if (!log.transcript && !log.feedback && !log.suggestions) {
+                  @if (!log.transcript && !log.feedback && !log.suggestions && !log.wordResults && !log.report) {
                     <div style="font-size: 0.76rem; color: var(--slate-500); font-weight: 600; text-align: left;">
-                      ℹ️ กิจกรรมนี้ทำเสร็จสมบูรณ์เรียบร้อยแล้ว ได้รับคะแนนสำเร็จและ XP ครบถ้วนตามมาตรฐานรายวิชา
+                      กิจกรรมนี้ทำเสร็จสมบูรณ์เรียบร้อยแล้ว ได้รับคะแนนสำเร็จและ XP ครบถ้วนตามมาตรฐานรายวิชา
                     </div>
                   }
 

@@ -51,12 +51,12 @@
   &:hover {
     transform: translateY(-4px);
     border-color: var(--pastel-blue-dark);
-    box-shadow: 0 15px 30px rgba(123, 108, 246, 0.15);
+    box-shadow: 0 15px 30px rgba(13, 148, 136, 0.15);
   }
 
   .video-thumbnail-placeholder {
     height: 140px;
-    background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+    background: var(--pastel-blue-dark);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -90,7 +90,7 @@
   &:hover .video-play-icon {
     transform: scale(1.1);
     background: white;
-    color: #4f46e5;
+    color: var(--pastel-blue-dark);
   }
 
   .video-info-box {
@@ -218,7 +218,7 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     color: white;
 
     &.playing {
@@ -231,15 +231,17 @@
   }
 
   .video-large-play-btn {
-    background: #7b6cf6;
-    border: none;
+    background: rgba(var(--pastel-blue-dark-rgb), 0.75);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     color: white;
     font-weight: 800;
     padding: 0.9rem 2.2rem;
     border-radius: 50px;
     font-size: 0.95rem;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(123, 108, 246, 0.4);
+    box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.45);
     &:hover {
       transform: scale(1.03);
     }
@@ -292,7 +294,7 @@
     font-size: 0.78rem;
     cursor: pointer;
     &:hover {
-      color: #a78bfa;
+      color: var(--pastel-blue-medium);
     }
   }
 
@@ -306,7 +308,7 @@
 
   .video-progress-fill {
     height: 100%;
-    background: #7b6cf6;
+    background: var(--pastel-blue-dark);
     border-radius: 99px;
     transition: width 0.3s;
   }
@@ -450,7 +452,7 @@
 
       &:hover {
         border-color: var(--pastel-blue-dark);
-        background: rgba(123, 108, 246, 0.03);
+        background: rgba(13, 148, 136, 0.03);
       }
     }
   }

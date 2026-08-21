@@ -1,0 +1,91 @@
+<div class="section-header-row">
+  <div>
+    <h3 class="section-title">จัดการเนื้อหา — {{ game.title }}</h3>
+    <p class="section-desc">เพิ่ม/แก้ไข/ลบคำถาม คำตอบ รูปภาพ คะแนน และคำอธิบายเฉลย ไม่จำกัดจำนวนคำถาม บันทึกแล้วมีผลกับเกมนี้ทันที</p>
+  </div>
+  <button type="button" class="btn-primary-action outline" (click)="close()">← กลับไปที่รายการเกม</button>
+</div>
+
+<div>
+    @if (loading) {
+      <p class="section-desc">กำลังโหลดคำถาม...</p>
+    } @else {
+      <div style="display: flex; flex-direction: column; gap: 0.9rem;">
+        @for (q of questions; track $index; let qi = $index) {
+          <div class="key-card" style="margin-bottom: 0;">
+            <div class="key-card-header">
+              <span class="key-provider">คำถามที่ {{ qi + 1 }}{{ q.question_id ? '' : ' (ยังไม่บันทึก)' }}</span>
+              <button type="button" class="btn-reject" (click)="removeQuestion(qi)">ลบคำถาม / Delete</button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem;">
+              <div class="form-field">
+                <label>คำถาม *</label>
+                <textarea [(ngModel)]="q.question_text" name="q_text_{{qi}}" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; min-height: 50px; box-sizing: border-box; background: #ffffff;"></textarea>
+              </div>
+
+              <div class="form-field">
+                <label>รูปประกอบคำถาม (ถ้ามี)</label>
+                <div style="display: flex; gap: 0.6rem; align-items: center;">
+                  @if (q.question_image) {
+                    <img [src]="q.question_image" alt="" style="width: 56px; height: 56px; object-fit: cover; border-radius: 10px; border: 1px solid #e2e8f0; flex-shrink: 0;" />
+                  } @else {
+                    <div style="width: 56px; height: 56px; border-radius: 10px; border: 1.5px dashed #e2e8f0; background: #f8fafc; flex-shrink: 0;"></div>
+                  }
+                  <label class="btn-primary-action purple" style="cursor: pointer; font-size: 0.72rem; padding: 0.35rem 0.7rem;">
+                    เลือกรูปภาพ / Upload
+                    <input type="file" accept="image/*" (change)="onQuestionImageUpload(q, $event)" style="display: none;" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>ตัวเลือกคำตอบ (เลือกวงกลมหน้าคำตอบที่ถูกต้อง)</label>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  @for (a of q.answers; track $index; let ai = $index) {
+                    <div style="display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.65rem;">
+                      <input type="radio" [name]="'q_correct_' + qi" [checked]="a.is_correct" (change)="markCorrect(q, ai)" title="คำตอบที่ถูกต้อง" />
+                      <input type="text" [(ngModel)]="a.answer_text" name="a_text_{{qi}}_{{ai}}" placeholder="ข้อความคำตอบ" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.4rem 0.6rem; box-sizing: border-box; background: #ffffff;" />
+                      @if (a.answer_image) {
+                        <img [src]="a.answer_image" alt="" style="width: 36px; height: 36px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0; flex-shrink: 0;" />
+                      }
+                      <label class="btn-test-action" style="cursor: pointer; padding: 0.3rem 0.55rem; font-size: 0.68rem;">
+                        รูป
+                        <input type="file" accept="image/*" (change)="onAnswerImageUpload(a, $event)" style="display: none;" />
+                      </label>
+                      <button type="button" class="btn-reject" style="padding: 0.3rem 0.55rem; font-size: 0.68rem;" (click)="removeAnswer(q, ai)">ลบ</button>
+                    </div>
+                  }
+                </div>
+                <button type="button" class="btn-primary-action outline" style="margin-top: 0.4rem; align-self: flex-start;" (click)="addAnswer(q)">+ เพิ่มตัวเลือกคำตอบ</button>
+              </div>
+
+              <div class="form-field-row">
+                <div class="form-field">
+                  <label>คะแนนของข้อนี้</label>
+                  <input type="number" min="0" [(ngModel)]="q.points" name="q_points_{{qi}}" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; box-sizing: border-box; background: #ffffff;" />
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>คำอธิบายเฉลย (Explanation, ถ้ามี)</label>
+                <textarea [(ngModel)]="q.explanation" name="q_explain_{{qi}}" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; min-height: 45px; box-sizing: border-box; background: #ffffff;"></textarea>
+              </div>
+            </div>
+
+            <div class="key-card-footer" style="margin-top: 0.6rem;">
+              <button type="button" class="btn-primary-action purple" [disabled]="q._saving" (click)="saveQuestion(q)">
+                {{ q._saving ? 'กำลังบันทึก...' : 'บันทึกคำถามนี้' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        <button type="button" class="btn-primary-action outline" (click)="addQuestion()">+ เพิ่มคำถาม / Add Question</button>
+      </div>
+    }
+
+    <div class="modal-footer-row">
+      <button type="button" class="btn-primary-action" (click)="close()">เสร็จสิ้น / กลับไปที่รายการเกม</button>
+    </div>
+</div>

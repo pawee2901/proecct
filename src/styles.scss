@@ -2,16 +2,51 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Mitr:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Premium Soft Sky Blue & Mint Green Palette */
-  --pastel-blue-light:   #f0f9ff; /* Very soft sky blue */
-  --pastel-blue:         #e0f2fe; /* Light sky blue */
-  --pastel-blue-medium:   #bae6fd; /* Sky blue */
-  --pastel-blue-dark:    #0284c7; /* Sky blue accent */
-  
+  /* ── Brand palette (canonical) — Turquoise / Mint / Amber ──
+     Single source of truth for the app's 3 portals (Student/Teacher/Admin)
+     plus Login/Register. Area-local tokens (student-shell's --pastel-*,
+     teacher's --tchr-*, admin's --adm-*, login's --pri/--mint/--sun) point
+     back to these via var() wherever that area already has a token layer;
+     spots with no token layer at all (Admin's literal hexes, .ts strings
+     passed to SweetAlert, inline SVG fills) use these exact hex values
+     directly instead. */
+  --brand-teal-50:  #f0fdfa;
+  --brand-teal-100: #ccfbf1;
+  --brand-teal-200: #99f6e4;
+  --brand-teal-300: #5eead4;
+  --brand-teal-500: #14b8a6;
+  --brand-teal-600: #0d9488; /* base accent: buttons, active states, icons */
+  --brand-teal-700: #0f766e; /* hover/darker */
+  --brand-teal-600-rgb: 13, 148, 136;
+
+  --brand-mint-50:  #f0fdf4;
+  --brand-mint-100: #dcfce7;
+  --brand-mint-200: #bbf7d0;
+  --brand-mint-600: #059669;
+  --brand-mint-700: #047857;
+  --brand-mint-600-rgb: 5, 150, 105;
+
+  --brand-amber-50:  #fffbeb;
+  --brand-amber-100: #fef3c7;
+  --brand-amber-200: #fde68a;
+  --brand-amber-500: #f59e0b;
+  --brand-amber-600: #d97706;
+  --brand-amber-600-rgb: 217, 119, 6;
+
+  /* Shared page-canvas wash — soft mint-to-cream gradient used as the
+     background behind every portal's shell (see .premium-gradient-bg). */
+  --brand-page-gradient: linear-gradient(135deg, #eafaf6 0%, #f3fbf8 45%, #fdf6ea 100%);
+
+  /* Premium Soft Turquoise & Mint Green Palette */
+  --pastel-blue-light:   #f0fdfa; /* Very soft turquoise */
+  --pastel-blue:         #ccfbf1; /* Light turquoise */
+  --pastel-blue-medium:   #5eead4; /* Turquoise */
+  --pastel-blue-dark:    #0d9488; /* Turquoise accent */
+
   --pastel-green-light:  #f0fdf4; /* Very soft mint green */
   --pastel-green:        #dcfce7; /* Light mint/sage green */
   --pastel-green-medium:  #bbf7d0; /* Mint green */
-  --pastel-green-dark:   #16a34a; /* Green accent */
+  --pastel-green-dark:   #059669; /* Mint accent */
 
   --pastel-purple-light: #faf5ff;
   --pastel-purple:       #f3e8ff;
@@ -46,11 +81,11 @@
   --radius-sm:           8px;
   
   /* Shadows & Depth */
-  --shadow-sm:           0 2px 8px rgba(2, 132, 199, 0.03);
-  --shadow-md:           0 8px 24px rgba(2, 132, 199, 0.05);
-  --shadow-lg:           0 16px 40px rgba(2, 132, 199, 0.08);
-  --shadow-glow-blue:    0 0 15px rgba(2, 132, 199, 0.2);
-  --shadow-glow-green:   0 0 15px rgba(22, 163, 74, 0.15);
+  --shadow-sm:           0 2px 8px rgba(13, 148, 136, 0.03);
+  --shadow-md:           0 8px 24px rgba(13, 148, 136, 0.05);
+  --shadow-lg:           0 16px 40px rgba(13, 148, 136, 0.08);
+  --shadow-glow-blue:    0 0 15px rgba(13, 148, 136, 0.2);
+  --shadow-glow-green:   0 0 15px rgba(5, 150, 105, 0.15);
   
   /* Fonts & Animations */
   --font-main:           'Outfit', 'Sarabun', sans-serif;
@@ -113,7 +148,7 @@ button, input, select, textarea {
 }
 
 .premium-gradient-bg {
-  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 50%, #fafcff 100%);
+  background: var(--brand-page-gradient);
 }
 
 .floating-orb {

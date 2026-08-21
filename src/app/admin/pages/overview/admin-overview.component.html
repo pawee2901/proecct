@@ -1,0 +1,133 @@
+<div class="tab-panel animate-fade">
+
+  <!-- Metric Cards Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-header">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+        </div>
+        <span class="kpi-tag">Accounts</span>
+      </div>
+      <div class="kpi-body">
+        <span class="kpi-val">{{ adminUsers.totalUsers }}</span>
+        <span class="kpi-lbl">ผู้ใช้งานทั้งหมดในระบบ</span>
+      </div>
+    </div>
+
+    <div class="kpi-card orange">
+      <div class="kpi-header">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        </div>
+        <span class="kpi-tag warning">Action Required</span>
+      </div>
+      <div class="kpi-body">
+        <span class="kpi-val">{{ adminUsers.pendingTeachersCount }}</span>
+        <span class="kpi-lbl">อาจารย์ที่รอการอนุมัติสิทธิ์</span>
+      </div>
+    </div>
+
+    <div class="kpi-card green">
+      <div class="kpi-header">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </div>
+        <span class="kpi-tag success">Online</span>
+      </div>
+      <div class="kpi-body">
+        <span class="kpi-val">{{ adminApiHub.activeApiCount }} / {{ adminApiHub.apiEndpointsList.length }}</span>
+        <span class="kpi-lbl">API Endpoints ที่พร้อมทำงาน</span>
+      </div>
+    </div>
+
+    <div class="kpi-card purple">
+      <div class="kpi-header">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="15" x2="23" y2="15"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="15" x2="4" y2="15"></line></svg>
+        </div>
+        <span class="kpi-tag">AI Tokens</span>
+      </div>
+      <div class="kpi-body">
+        <span class="kpi-val">{{ adminMonitor.apiTokensUsed | number }}</span>
+        <span class="kpi-lbl">ปริมาณ API Tokens วันนี้</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Action Bar -->
+  <div class="quick-actions-card">
+    <h3 class="card-heading">ทางลัดการทำงานของผู้ดูแลระบบ (Admin Quick Controls)</h3>
+    <div class="action-buttons-group">
+      <button type="button" class="action-btn primary" (click)="openAddUserModal()">
+        เพิ่มผู้ใช้ใหม่ (Add User)
+      </button>
+      <button type="button" class="action-btn cyan" (click)="openAddApiEndpointModal()">
+        เพิ่ม API Endpoint ใหม่ (Add API)
+      </button>
+      <button type="button" class="action-btn purple" (click)="openAddApiKeyModal()">
+        เพิ่ม API Key บริการ
+      </button>
+      <button type="button" class="action-btn outline" (click)="toggleMaintenanceMode()">
+        {{ isMaintenanceMode ? 'ปิดโหมดปรับปรุง' : 'เปิดโหมดปิดปรับปรุง' }}
+      </button>
+      <button type="button" class="action-btn dark" (click)="exportLogs()">
+        Export Audit Logs
+      </button>
+    </div>
+  </div>
+
+  <!-- Live Status Summary & Recent Logs -->
+  <div class="overview-split-row">
+    <div class="status-summary-card">
+      <h3 class="card-heading">สถานะฮาร์ดแวร์ & ประสิทธิภาพเซิร์ฟเวอร์</h3>
+      <div class="server-metric-item">
+        <div class="metric-row-header">
+          <span>Server CPU Utilization</span>
+          <strong>{{ adminMonitor.cpuLoad }}%</strong>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill green" [style.width.%]="adminMonitor.cpuLoad"></div>
+        </div>
+      </div>
+
+      <div class="server-metric-item">
+        <div class="metric-row-header">
+          <span>Gemini & STT Latency</span>
+          <strong>{{ adminMonitor.latencyMs }} ms</strong>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill blue" [style.width.%]="(adminMonitor.latencyMs / 2000) * 100"></div>
+        </div>
+      </div>
+
+      <div class="server-metric-item">
+        <div class="metric-row-header">
+          <span>โหมดบำรุงรักษาระบบ (Maintenance Status)</span>
+          <span class="status-indicator-pill" [class.active]="!isMaintenanceMode">
+            {{ isMaintenanceMode ? 'กำลังปิดปรับปรุง' : 'ปรกติ (Healthy)' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="recent-logs-card">
+      <div class="card-heading-between">
+        <h3>บันทึกกิจกรรมล่าสุด (Recent Logs)</h3>
+        <button type="button" class="text-link-btn" (click)="goToSystemLogs()">ดูทั้งหมด</button>
+      </div>
+      <div class="compact-logs-list">
+        @for (log of adminMonitor.systemLogs.slice(0, 4); track log.id) {
+          <div class="compact-log-item">
+            <span class="log-level-chip" [class.success]="log.level === 'SUCCESS'" [class.warning]="log.level === 'WARNING'" [class.error]="log.level === 'ERROR'">
+              {{ log.level }}
+            </span>
+            <span class="compact-log-msg">{{ log.message }}</span>
+            <span class="compact-log-time">{{ log.timestamp.substring(11, 19) }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+</div>

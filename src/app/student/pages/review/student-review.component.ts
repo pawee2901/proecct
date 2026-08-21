@@ -84,14 +84,7 @@ export class StudentReviewComponent implements OnInit {
       this.reviewScore++;
       this.gameFx.playSoundEffect('success');
 
-      const idx = this.mistakes.frequentlyWrongItems.findIndex((i) => i.id === item.id);
-      if (idx !== -1) {
-        this.mistakes.frequentlyWrongItems[idx].wrongCount--;
-        if (this.mistakes.frequentlyWrongItems[idx].wrongCount <= 0) {
-          this.mistakes.frequentlyWrongItems.splice(idx, 1);
-        }
-      }
-      this.mistakes.saveFrequentlyWrongItems();
+      this.mistakes.recordCorrectReview(item.id);
     } else {
       this.reviewFeedback = 'wrong';
       this.gameFx.playSoundEffect('error');

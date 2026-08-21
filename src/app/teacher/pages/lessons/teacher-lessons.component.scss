@@ -1,0 +1,6 @@
+@use '../../shared' as *;
+
+// Manage Course tab — all rules it needs (section-container, courses-grid,
+// table, form buttons, etc.) come from the shared partial above; nothing
+// unique to this page remains (form-group-flat/editor-form fields use inline
+// styles in the template, same as the original teacher.component.html).

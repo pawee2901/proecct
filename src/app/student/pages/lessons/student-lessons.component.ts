@@ -10,6 +10,7 @@ import { GameEngineService } from '../../services/game-engine.service';
 import { GameFxService } from '../../services/game-fx.service';
 import { LearningLogService } from '../../services/learning-log.service';
 import { Unit } from '../../models/unit.model';
+import { environment } from '../../../../environments/environment';
 
 declare const pdfjsLib: any;
 
@@ -266,7 +267,7 @@ export class StudentLessonsComponent implements OnDestroy {
   // ── Slide Deck (PDF) Viewer ──
   // Slides are served by the backend's /uploads folder; a bare slidePath
   // (no http/https prefix) is resolved against it, never against local assets.
-  private readonly slidesBaseUrl = 'http://localhost:5000/uploads/';
+  private readonly slidesBaseUrl = `${environment.apiBaseUrl}/uploads/`;
   private readonly fallbackPdfFiles: { [key: number]: string } = {
     1: 'บทที่ 1.pdf',
     2: 'บทที่ 2.pdf',

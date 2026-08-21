@@ -9,10 +9,13 @@ import { ProgressReportEntry } from '../models/unit.model';
 // (~2915-2916, 147-149), loadProgressHistory (~8018-8063), getLessonStatusClass/
 // Label + getCompletedCount (~5051-5069), gamification stats (~157-159).
 //
-// Known pre-existing issue (not introduced by this split, preserved as-is):
-// this data is computed purely from localStorage `score_*`/`game_*` keys and
-// never reads back the scores this same app also POSTs to the backend via
-// /student/quiz-result — so progress does not sync across devices/browsers.
+// Fixed (2026-08-17): this data used to be computed purely from localStorage
+// `score_*`/`game_*` keys and never read back the scores this same app also
+// POSTs to the backend via /student/quiz-result — so progress never synced
+// across devices/browsers. loadProgressHistory() now still paints instantly
+// from localStorage (fast, works offline) then overlays real pre/post-test
+// scores from GET /student/progress/<id> (practice_sessions) once it
+// arrives, and recomputes averageScore/practiceCount from the merged result.
 @Injectable({ providedIn: 'root' })
 export class ProgressService {
   progressReport: ProgressReportEntry[] = [];
@@ -88,6 +91,50 @@ export class ProgressService {
 
     this.averageScore = count > 0 ? Math.round(totalScoreSum / count) : 0;
     this.practiceCount = this.learningLog.learningLogs.length;
+
+    this.syncProgressFromBackend();
+  }
+
+  /** เติมค่า preScore/postScore จริงจาก practice_sessions ทับค่าที่คำนวณจาก localStorage
+   *  ด้านบน (ถ้ามีคะแนนจริงใน DB) แล้วคำนวณ averageScore ใหม่ — ทำให้หน้า Lessons/Profile
+   *  เห็น progress เดียวกันไม่ว่าจะเปิดจากเครื่อง/เบราว์เซอร์ไหน ไม่ใช่แค่เครื่องที่ทำข้อสอบ */
+  private syncProgressFromBackend(): void {
+    if (!this.session.currentUser?.id) return;
+    this.apiService.getStudentProgress(this.session.currentUser.id).subscribe({
+      next: (dbProgress: { [lessonId: string]: { pre_test: number | null; post_test: number | null } }) => {
+        if (!dbProgress || typeof dbProgress !== 'object') return;
+
+        let totalScoreSum = 0;
+        let count = 0;
+        this.progressReport.forEach((p) => {
+          const dbEntry = dbProgress[String(p.unitId)];
+          if (dbEntry) {
+            if (dbEntry.pre_test !== null && dbEntry.pre_test !== undefined) p.preScore = dbEntry.pre_test;
+            if (dbEntry.post_test !== null && dbEntry.post_test !== undefined) p.postScore = dbEntry.post_test;
+          }
+          if (p.preScore !== null) {
+            totalScoreSum += p.preScore;
+            count++;
+          }
+          if (p.postScore !== null) {
+            totalScoreSum += p.postScore;
+            count++;
+          }
+          if (p.gameScramble !== null) {
+            totalScoreSum += p.gameScramble;
+            count++;
+          }
+          if (p.gameDialogue !== null) {
+            totalScoreSum += p.gameDialogue;
+            count++;
+          }
+        });
+        this.averageScore = count > 0 ? Math.round(totalScoreSum / count) : 0;
+      },
+      error: () => {
+        // เชื่อม backend ไม่ได้ — ใช้ค่าจาก localStorage ที่คำนวณไว้แล้วต่อไป
+      },
+    });
   }
 
   getLessonStatusClass(unitId: number): string {

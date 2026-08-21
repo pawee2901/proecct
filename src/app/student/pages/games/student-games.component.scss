@@ -63,6 +63,16 @@
     height: 24px;
   }
 }
+/* Teacher-uploaded game cover image (see GameCoverService) - full-bleed
+   banner at the top of the card, in front of the gc-icon below it. */
+.gc-cover-img {
+  width: calc(100% + 3rem);
+  height: 110px;
+  object-fit: cover;
+  border-radius: 20px 20px 0 0;
+  margin: -1.5rem -1.5rem 0.25rem;
+  display: block;
+}
 .gc-green .gc-icon {
   background: var(--pastel-green);
   color: var(--pastel-green-dark);
@@ -131,12 +141,20 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.7rem;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 12px;
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   color: white;
+  /* Fallback fill for any card accent (gc-blue/cyan/emerald/indigo/...)
+     that doesn't define its own `.gc-X .btn-play` override below - keeps
+     every card's play button visible instead of an unstyled transparent
+     background, and keeps the primary accent as the default. */
+  background: rgba(var(--pastel-blue-dark-rgb), 0.82);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transition: all 0.2s ease;
   svg {
     width: 15px;
@@ -144,27 +162,27 @@
   }
 }
 .gc-green .btn-play {
-  background: linear-gradient(135deg, var(--pastel-green-dark) 0%, #2f9d90 100%);
+  background: rgba(21, 128, 61, 0.82);
   &:hover {
-    box-shadow: 0 6px 18px rgba(68, 199, 183, 0.35);
+    box-shadow: 0 6px 18px rgba(21, 128, 61, 0.35);
   }
 }
 .gc-purple .btn-play {
-  background: linear-gradient(135deg, var(--pastel-purple-dark) 0%, #8b5cf6 100%);
+  background: rgba(71, 85, 105, 0.82);
   &:hover {
-    box-shadow: 0 6px 18px rgba(139, 92, 246, 0.35);
+    box-shadow: 0 6px 18px rgba(71, 85, 105, 0.35);
   }
 }
 .gc-yellow .btn-play {
-  background: linear-gradient(135deg, var(--pastel-yellow-dark) 0%, #f59e0b 100%);
+  background: rgba(217, 119, 6, 0.82);
   &:hover {
-    box-shadow: 0 6px 18px rgba(255, 176, 133, 0.4);
+    box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35);
   }
 }
 .gc-red .btn-play {
-  background: linear-gradient(135deg, var(--pastel-red-dark) 0%, #ef4444 100%);
+  background: rgba(225, 29, 72, 0.82);
   &:hover {
-    box-shadow: 0 6px 18px rgba(255, 143, 163, 0.4);
+    box-shadow: 0 6px 18px rgba(225, 29, 72, 0.35);
   }
 }
 
@@ -205,14 +223,14 @@
    CAMPUS CORPORATE GAME OVERRIDES
    ==================================================== */
 .gc-orange {
-  border-top: 3px solid #f97316 !important;
+  border-top: 3px solid var(--pastel-yellow-dark) !important;
 }
 
 .gc-orange .btn-play {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+  background: rgba(217, 119, 6, 0.82) !important;
   color: white !important;
   &:hover {
-    box-shadow: 0 6px 18px rgba(249, 115, 22, 0.35) !important;
+    box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35) !important;
   }
 }
 
@@ -246,14 +264,14 @@
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
-      border-color: #a855f7 !important;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.1);
+      border-color: var(--pastel-blue-medium) !important;
     }
 
     &.selected {
-      border-color: #6366f1 !important;
-      background: rgba(99, 102, 241, 0.03) !important;
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15) !important;
+      border-color: var(--pastel-blue-dark) !important;
+      background: rgba(13, 148, 136, 0.03) !important;
+      box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15) !important;
     }
   }
 }
@@ -917,9 +935,9 @@
 
 /* Game 2: Sentence Converter Styles */
 .convert-instruction-badge {
-  background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(79, 70, 229, 0.1));
-  border: 1.5px solid #a855f7;
-  color: #6b21a8;
+  background: var(--pastel-blue-light);
+  border: 1.5px solid var(--pastel-blue-medium);
+  color: var(--pastel-blue-darker);
   padding: 0.75rem 1.25rem;
   border-radius: 12px;
   font-size: 1rem;
@@ -957,7 +975,7 @@
   .btn-toggle-hint {
     background: none;
     border: none;
-    color: #6366f1;
+    color: var(--pastel-blue-dark);
     font-size: 0.88rem;
     font-weight: 700;
     cursor: pointer;
@@ -995,8 +1013,8 @@
 
     &:focus {
       outline: none;
-      border-color: #6366f1;
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+      border-color: var(--pastel-blue-dark);
+      box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15);
     }
 
     &:disabled {
@@ -1061,12 +1079,12 @@
 /* ─── Word Search Puzzle Styles ─── */
 .gc-indigo {
   .gc-icon {
-    background: rgba(99, 102, 241, 0.12);
-    color: #4f46e5;
+    background: var(--pastel-blue-light);
+    color: var(--pastel-blue-darker);
   }
   .gc-tag.indigo {
-    background: rgba(99, 102, 241, 0.12);
-    color: #4f46e5;
+    background: var(--pastel-blue-light);
+    color: var(--pastel-blue-darker);
   }
 }
 
@@ -1148,15 +1166,15 @@
   transition: all 0.15s ease;
 
   &:hover {
-    background: #e0e7ff;
-    color: #4338ca;
+    background: var(--pastel-blue-light);
+    color: var(--pastel-blue-darker);
   }
 
   &.ws-selected {
-    background: #818cf8;
+    background: var(--pastel-blue-dark);
     color: white;
     transform: scale(1.06);
-    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3);
 
     &.ws-invalid {
       background: #f87171;

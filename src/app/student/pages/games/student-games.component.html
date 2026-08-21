@@ -3,10 +3,13 @@
           <h1 class="tab-title">เกม</h1>
           <p class="tab-subtitle">ฝึกทักษะภาษาอังกฤษผ่านเกมสนุกๆ</p>
         </div>
-        @if (engine.activeGameType === null) {
+        @if (engine.activeGameType === null && !playingCustomGame) {
           <div class="games-cards-grid">
             @if (engine.isGameAllowed('scramble')) {
               <div class="game-card-item gc-green">
+                @if (gameCover.getCover('scramble')) {
+                  <img [src]="gameCover.getCover('scramble')" alt="" class="gc-cover-img" />
+                }
                 <div class="gc-icon">
                   <svg
                     viewBox="0 0 24 24"
@@ -21,8 +24,8 @@
                   </svg>
                 </div>
                 <div class="gc-body">
-                  <h3>สลับตัวอักษร</h3>
-                  <p>Word Scramble · เรียงตัวอักษรให้เป็นคำศัพท์ที่ถูกต้อง ฝึกการสะกดและจำคำ</p>
+                  <h3>{{ gameCover.getTitle('scramble') || 'สลับตัวอักษร' }}</h3>
+                  <p>{{ gameCover.getDescription('scramble') || 'Word Scramble · เรียงตัวอักษรให้เป็นคำศัพท์ที่ถูกต้อง ฝึกการสะกดและจำคำ' }}</p>
                   <div class="gc-tags">
                     <span class="gc-tag green">สนุก</span> <span class="gc-tag blue">ฝึกการสะกด</span>
                   </div>
@@ -45,6 +48,9 @@
 
             @if (engine.isGameAllowed('dialogue')) {
               <div class="game-card-item gc-purple">
+                @if (gameCover.getCover('dialogue')) {
+                  <img [src]="gameCover.getCover('dialogue')" alt="" class="gc-cover-img" />
+                }
                 <div class="gc-icon">
                   <svg
                     viewBox="0 0 24 24"
@@ -58,8 +64,8 @@
                   </svg>
                 </div>
                 <div class="gc-body">
-                  <h3>เรียงบทสนทนา</h3>
-                  <p>Dialogue Sequencer · จัดเรียงประโยคสนทนาให้ถูกต้องตามลำดับ</p>
+                  <h3>{{ gameCover.getTitle('dialogue') || 'เรียงบทสนทนา' }}</h3>
+                  <p>{{ gameCover.getDescription('dialogue') || 'Dialogue Sequencer · จัดเรียงประโยคสนทนาให้ถูกต้องตามลำดับ' }}</p>
                   <div class="gc-tags">
                     <span class="gc-tag purple">ท้าทาย</span>
                     <span class="gc-tag orange">ฝึกสนทนา</span>
@@ -96,9 +102,12 @@
                   <path d="M21 15l-5-5L5 21" />
                 </svg>
               </div>
+              @if (gameCover.getCover('picture-word')) {
+                <img [src]="gameCover.getCover('picture-word')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>ดูภาพ พิมพ์คำศัพท์</h3>
-                <p>Picture to Word · ดูรูปภาพแล้วพิมพ์คำศัพท์ภาษาอังกฤษให้ถูกต้อง รวมคำจากทุกบทเรียน</p>
+                <h3>{{ gameCover.getTitle('picture-word') || 'ดูภาพ พิมพ์คำศัพท์' }}</h3>
+                <p>{{ gameCover.getDescription('picture-word') || 'Picture to Word · ดูรูปภาพแล้วพิมพ์คำศัพท์ภาษาอังกฤษให้ถูกต้อง รวมคำจากทุกบทเรียน' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag orange">ฝึกพิมพ์</span>
                   <span class="gc-tag blue">คำศัพท์รวม</span>
@@ -134,9 +143,12 @@
                   <path d="M12 4v16" />
                 </svg>
               </div>
+              @if (gameCover.getCover('thai-recall')) {
+                <img [src]="gameCover.getCover('thai-recall')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>แปลไทย พิมพ์อังกฤษ</h3>
-                <p>Thai to English Recall · ดูความหมายไทยแล้วพิมพ์คำศัพท์อังกฤษ ตอบผิดแล้วผิดเลย ห้ามแก้ตัว!</p>
+                <h3>{{ gameCover.getTitle('thai-recall') || 'แปลไทย พิมพ์อังกฤษ' }}</h3>
+                <p>{{ gameCover.getDescription('thai-recall') || 'Thai to English Recall · ดูความหมายไทยแล้วพิมพ์คำศัพท์อังกฤษ ตอบผิดแล้วผิดเลย ห้ามแก้ตัว!' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag purple">ท้าทาย</span>
                   <span class="gc-tag orange">ตอบครั้งเดียว</span>
@@ -163,9 +175,12 @@
                   <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z" />
                 </svg>
               </div>
+              @if (gameCover.getCover('fill-blank')) {
+                <img [src]="gameCover.getCover('fill-blank')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>เติมคำในประโยค</h3>
-                <p>Fill in the Blank · ดูประโยคสนทนาจริงที่เว้นคำสำคัญไว้ แล้วพิมพ์คำที่หายไป</p>
+                <h3>{{ gameCover.getTitle('fill-blank') || 'เติมคำในประโยค' }}</h3>
+                <p>{{ gameCover.getDescription('fill-blank') || 'Fill in the Blank · ดูประโยคสนทนาจริงที่เว้นคำสำคัญไว้ แล้วพิมพ์คำที่หายไป' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag green">ฝึกพิมพ์</span> <span class="gc-tag blue">บทสนทนาจริง</span>
                 </div>
@@ -185,9 +200,12 @@
                   <polyline points="12 6 12 12 16 14" />
                 </svg>
               </div>
+              @if (gameCover.getCover('sprint')) {
+                <img [src]="gameCover.getCover('sprint')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>จับเวลาพิมพ์คำศัพท์</h3>
-                <p>Typing Sprint · แข่งกับเวลา 45 วินาที พิมพ์คำศัพท์ให้ได้มากที่สุด สร้างคอมโบ!</p>
+                <h3>{{ gameCover.getTitle('sprint') || 'จับเวลาพิมพ์คำศัพท์' }}</h3>
+                <p>{{ gameCover.getDescription('sprint') || 'Typing Sprint · แข่งกับเวลา 45 วินาที พิมพ์คำศัพท์ให้ได้มากที่สุด สร้างคอมโบ!' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag purple">จับเวลา</span> <span class="gc-tag orange">คอมโบ</span>
                 </div>
@@ -206,9 +224,12 @@
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </div>
+              @if (gameCover.getCover('typo-fix')) {
+                <img [src]="gameCover.getCover('typo-fix')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>จับผิดประโยค</h3>
-                <p>Spot & Fix the Typo · หาจุดผิดในประโยคธุรกิจแล้วพิมพ์ประโยคที่แก้ไขแล้วทั้งประโยค</p>
+                <h3>{{ gameCover.getTitle('typo-fix') || 'จับผิดประโยค' }}</h3>
+                <p>{{ gameCover.getDescription('typo-fix') || 'Spot & Fix the Typo · หาจุดผิดในประโยคธุรกิจแล้วพิมพ์ประโยคที่แก้ไขแล้วทั้งประโยค' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag orange">พิสูจน์อักษร</span> <span class="gc-tag blue">ภาษาทำงาน</span>
                 </div>
@@ -228,9 +249,12 @@
                   <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
                 </svg>
               </div>
+              @if (gameCover.getCover('word-riddle')) {
+                <img [src]="gameCover.getCover('word-riddle')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>ทายคำศัพท์</h3>
-                <p>Word Riddle · ดูความหมายและตัวอักษรที่ค่อยๆ เปิด พิมพ์คำศัพท์ให้ถูกก่อนหมดโอกาส</p>
+                <h3>{{ gameCover.getTitle('word-riddle') || 'ทายคำศัพท์' }}</h3>
+                <p>{{ gameCover.getDescription('word-riddle') || 'Word Riddle · ดูความหมายและตัวอักษรที่ค่อยๆ เปิด พิมพ์คำศัพท์ให้ถูกก่อนหมดโอกาส' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag purple">ท้าทาย</span> <span class="gc-tag green">คำใบ้</span>
                 </div>
@@ -249,9 +273,12 @@
                   <path d="M3 6h18" /><path d="M3 12h18" /><path d="M3 18h18" />
                 </svg>
               </div>
+              @if (gameCover.getCover('sentence-reorder')) {
+                <img [src]="gameCover.getCover('sentence-reorder')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>เรียงประโยค พิมพ์ใหม่</h3>
-                <p>Sentence Reorder · ดูคำที่สลับกันอยู่ แล้วพิมพ์ประโยคให้เรียงลำดับถูกต้อง</p>
+                <h3>{{ gameCover.getTitle('sentence-reorder') || 'เรียงประโยค พิมพ์ใหม่' }}</h3>
+                <p>{{ gameCover.getDescription('sentence-reorder') || 'Sentence Reorder · ดูคำที่สลับกันอยู่ แล้วพิมพ์ประโยคให้เรียงลำดับถูกต้อง' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag green">ไวยากรณ์</span> <span class="gc-tag blue">บทสนทนาจริง</span>
                 </div>
@@ -270,9 +297,12 @@
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
               </div>
+              @if (gameCover.getCover('open-reply')) {
+                <img [src]="gameCover.getCover('open-reply')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>ตอบบทสนทนาเอง</h3>
-                <p>Open Dialogue Reply · อ่านสถานการณ์แล้วพิมพ์คำตอบของตัวเอง ให้คะแนนจากคำสำคัญ</p>
+                <h3>{{ gameCover.getTitle('open-reply') || 'ตอบบทสนทนาเอง' }}</h3>
+                <p>{{ gameCover.getDescription('open-reply') || 'Open Dialogue Reply · อ่านสถานการณ์แล้วพิมพ์คำตอบของตัวเอง ให้คะแนนจากคำสำคัญ' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag purple">เขียนอิสระ</span> <span class="gc-tag orange">ให้คะแนนคำสำคัญ</span>
                 </div>
@@ -292,9 +322,12 @@
                   <line x1="4" y1="22" x2="4" y2="15" />
                 </svg>
               </div>
+              @if (gameCover.getCover('scenario')) {
+                <img [src]="gameCover.getCover('scenario')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>รับมือสถานการณ์จริง</h3>
-                <p>Scenario Construction · อ่านสถานการณ์ภาษาไทย แล้วพิมพ์ประโยคภาษาอังกฤษที่เหมาะสมเอง</p>
+                <h3>{{ gameCover.getTitle('scenario') || 'รับมือสถานการณ์จริง' }}</h3>
+                <p>{{ gameCover.getDescription('scenario') || 'Scenario Construction · อ่านสถานการณ์ภาษาไทย แล้วพิมพ์ประโยคภาษาอังกฤษที่เหมาะสมเอง' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag orange">ท้าทายสุด</span> <span class="gc-tag purple">เขียนอิสระ</span>
                 </div>
@@ -314,9 +347,12 @@
                   <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                 </svg>
               </div>
+              @if (gameCover.getCover('email-capstone')) {
+                <img [src]="gameCover.getCover('email-capstone')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>ตอบอีเมลลูกค้า</h3>
-                <p>Email Reply Capstone · ด่านจบ! อ่านอีเมลแล้วพิมพ์อีเมลตอบกลับอย่างมืออาชีพ</p>
+                <h3>{{ gameCover.getTitle('email-capstone') || 'ตอบอีเมลลูกค้า' }}</h3>
+                <p>{{ gameCover.getDescription('email-capstone') || 'Email Reply Capstone · ด่านจบ! อ่านอีเมลแล้วพิมพ์อีเมลตอบกลับอย่างมืออาชีพ' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag red">ด่านจบ</span> <span class="gc-tag purple">เขียนอิสระ</span>
                 </div>
@@ -339,9 +375,12 @@
                   <rect x="14" y="14" width="7" height="7" rx="1" />
                 </svg>
               </div>
+              @if (gameCover.getCover('match-pair')) {
+                <img [src]="gameCover.getCover('match-pair')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>จับคู่การ์ดความจำ</h3>
-                <p>Memory Match · เปิดการ์ดจับคู่ภาษาอังกฤษและแปลไทย แข่งกับเวลา!</p>
+                <h3>{{ gameCover.getTitle('match-pair') || 'จับคู่การ์ดความจำ' }}</h3>
+                <p>{{ gameCover.getDescription('match-pair') || 'Memory Match · เปิดการ์ดจับคู่ภาษาอังกฤษและแปลไทย แข่งกับเวลา!' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag purple">ฝึกความจำ</span> <span class="gc-tag orange">จับคู่ความหมาย</span>
                 </div>
@@ -363,9 +402,12 @@
                   <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
                 </svg>
               </div>
+              @if (gameCover.getCover('dictation')) {
+                <img [src]="gameCover.getCover('dictation')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>สะกดตามคำบอก</h3>
-                <p>Dictation Master · ฟังเสียงออกเสียงคำศัพท์ธุรกิจจาก AI แล้วพิมพ์สะกดให้ถูกต้อง</p>
+                <h3>{{ gameCover.getTitle('dictation') || 'สะกดตามคำบอก' }}</h3>
+                <p>{{ gameCover.getDescription('dictation') || 'Dictation Master · ฟังเสียงออกเสียงคำศัพท์ธุรกิจจาก AI แล้วพิมพ์สะกดให้ถูกต้อง' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag orange">ฝึกฟัง</span> <span class="gc-tag green">สะกดคำ</span>
                 </div>
@@ -388,9 +430,12 @@
                   <line x1="16" y1="3" x2="14" y2="21" />
                 </svg>
               </div>
+              @if (gameCover.getCover('pos-sorter')) {
+                <img [src]="gameCover.getCover('pos-sorter')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>แยกแยะประเภทคำ</h3>
-                <p>POS Sorter · จัดประเภทคำศัพท์ Noun, Verb, Adjective, หรือ Adverb</p>
+                <h3>{{ gameCover.getTitle('pos-sorter') || 'แยกแยะประเภทคำ' }}</h3>
+                <p>{{ gameCover.getDescription('pos-sorter') || 'POS Sorter · จัดประเภทคำศัพท์ Noun, Verb, Adjective, หรือ Adverb' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag green">ไวยากรณ์</span> <span class="gc-tag blue">ประเภทของคำ</span>
                 </div>
@@ -414,9 +459,12 @@
                   <path d="M12 12h10" />
                 </svg>
               </div>
+              @if (gameCover.getCover('synonym-match')) {
+                <img [src]="gameCover.getCover('synonym-match')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>คำพ้องความหมาย</h3>
-                <p>Synonym Matcher · ค้นหาคำศัพท์ที่มีความหมายทดแทนกันได้ในภาษาอังกฤษธุรกิจ</p>
+                <h3>{{ gameCover.getTitle('synonym-match') || 'คำพ้องความหมาย' }}</h3>
+                <p>{{ gameCover.getDescription('synonym-match') || 'Synonym Matcher · ค้นหาคำศัพท์ที่มีความหมายทดแทนกันได้ในภาษาอังกฤษธุรกิจ' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag blue">คลังคำศัพท์</span> <span class="gc-tag purple">คำเหมือน</span>
                 </div>
@@ -437,9 +485,12 @@
                   <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                 </svg>
               </div>
+              @if (gameCover.getCover('save-mascot')) {
+                <img [src]="gameCover.getCover('save-mascot')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>ช่วยชีวิตนกฮูกมาสคอต</h3>
-                <p>Save the Mascot · ทายคำศัพท์จากคำแปลไทยทีละตัวอักษรก่อนหมดสิทธิ์!</p>
+                <h3>{{ gameCover.getTitle('save-mascot') || 'ช่วยชีวิตนกฮูกมาสคอต' }}</h3>
+                <p>{{ gameCover.getDescription('save-mascot') || 'Save the Mascot · ทายคำศัพท์จากคำแปลไทยทีละตัวอักษรก่อนหมดสิทธิ์!' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag orange">ท้าทาย</span> <span class="gc-tag red">เดาตัวอักษร</span>
                 </div>
@@ -462,9 +513,12 @@
                   <path d="M11 13h8" />
                 </svg>
               </div>
+              @if (gameCover.getCover('drag-word')) {
+                <img [src]="gameCover.getCover('drag-word')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>เกมลากคำ</h3>
-                <p>Drag & Drop Word Builder · ลากบล็อกคำศัพท์ไปวางในช่องว่างเพื่อสร้างประโยคธุรกิจที่ถูกต้อง</p>
+                <h3>{{ gameCover.getTitle('drag-word') || 'เกมลากคำ' }}</h3>
+                <p>{{ gameCover.getDescription('drag-word') || 'Drag & Drop Word Builder · ลากบล็อกคำศัพท์ไปวางในช่องว่างเพื่อสร้างประโยคธุรกิจที่ถูกต้อง' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag cyan">ลากวาง</span> <span class="gc-tag blue">โครงสร้างประโยค</span>
                 </div>
@@ -487,9 +541,12 @@
                   <path d="M21 13v2a4 4 0 0 1-4 4H3" />
                 </svg>
               </div>
+              @if (gameCover.getCover('convert-sentence')) {
+                <img [src]="gameCover.getCover('convert-sentence')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>คอนเวิด (แปลงรูปประโยค)</h3>
-                <p>Sentence Converter · แปลงรูปประโยคตามไวยากรณ์ (Tense, Active/Passive, คำถาม/ปฏิเสธ)</p>
+                <h3>{{ gameCover.getTitle('convert-sentence') || 'คอนเวิด (แปลงรูปประโยค)' }}</h3>
+                <p>{{ gameCover.getDescription('convert-sentence') || 'Sentence Converter · แปลงรูปประโยคตามไวยากรณ์ (Tense, Active/Passive, คำถาม/ปฏิเสธ)' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag purple">แปลงไวยากรณ์</span> <span class="gc-tag orange">ท้าทาย</span>
                 </div>
@@ -514,9 +571,12 @@
                   <path d="M14 18h6" />
                 </svg>
               </div>
+              @if (gameCover.getCover('eng-to-thai')) {
+                <img [src]="gameCover.getCover('eng-to-thai')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>แปลอังกฤษ พิมพ์ไทย</h3>
-                <p>English to Thai Recall · อ่านประโยคภาษาอังกฤษ ฟังเสียง AI แล้วพิมพ์ความหมายภาษาไทยให้ถูกต้อง</p>
+                <h3>{{ gameCover.getTitle('eng-to-thai') || 'แปลอังกฤษ พิมพ์ไทย' }}</h3>
+                <p>{{ gameCover.getDescription('eng-to-thai') || 'English to Thai Recall · อ่านประโยคภาษาอังกฤษ ฟังเสียง AI แล้วพิมพ์ความหมายภาษาไทยให้ถูกต้อง' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag green">แปลภาษา</span> <span class="gc-tag blue">ฟังเสียง AI</span>
                 </div>
@@ -539,9 +599,12 @@
                   <line x1="3" y1="15" x2="21" y2="15" />
                 </svg>
               </div>
+              @if (gameCover.getCover('word-search')) {
+                <img [src]="gameCover.getCover('word-search')" alt="" class="gc-cover-img" />
+              }
               <div class="gc-body">
-                <h3>ค้นหาคำศัพท์</h3>
-                <p>Word Search Puzzle · ค้นหาและลากไฮไลต์คำศัพท์ภาษาอังกฤษที่ซ่อนอยู่ในตารางตัวอักษร</p>
+                <h3>{{ gameCover.getTitle('word-search') || 'ค้นหาคำศัพท์' }}</h3>
+                <p>{{ gameCover.getDescription('word-search') || 'Word Search Puzzle · ค้นหาและลากไฮไลต์คำศัพท์ภาษาอังกฤษที่ซ่อนอยู่ในตารางตัวอักษร' }}</p>
                 <div class="gc-tags">
                   <span class="gc-tag indigo">ปริศนาตาราง</span> <span class="gc-tag orange">ลากลากสายตา</span>
                 </div>
@@ -560,7 +623,50 @@
               </div>
             }
           </div>
+
+          <!-- เกมที่ครูสร้างเองเพิ่มเติม (Dynamic Game Management) — ไม่จำกัดจำนวน
+               โหลดจาก GET /games (custom-games.service.ts), เล่นผ่าน generic quiz
+               engine (CustomQuizPlayerComponent) เพราะไม่มีกลไกเฉพาะในโค้ด -->
+          @if (customGames.games.length > 0) {
+            <div class="tab-header-row" style="margin-top: 2rem;">
+              <h2 class="tab-title" style="font-size: 1.05rem;">เกมเพิ่มเติมจากผู้สอน</h2>
+            </div>
+            <div class="games-cards-grid">
+              @for (cg of customGames.games; track cg.game_id) {
+                <div class="game-card-item gc-blue">
+                  @if (cg.cover_image) {
+                    <img [src]="cg.cover_image" alt="" class="gc-cover-img" />
+                  }
+                  <div class="gc-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M9 18h6" /><path d="M10 22h4" />
+                      <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
+                    </svg>
+                  </div>
+                  <div class="gc-body">
+                    <h3>{{ cg.title }}</h3>
+                    <p>{{ cg.description || (cg.question_count + ' คำถาม · ระดับ' + (cg.difficulty === 'easy' ? 'ง่าย' : cg.difficulty === 'hard' ? 'ยาก' : 'ปานกลาง')) }}</p>
+                    <div class="gc-tags">
+                      <span class="gc-tag blue">{{ cg.question_count }} คำถาม</span>
+                      <span class="gc-tag purple">{{ cg.difficulty === 'easy' ? 'ง่าย' : cg.difficulty === 'hard' ? 'ยาก' : 'ปานกลาง' }}</span>
+                    </div>
+                  </div>
+                  <button class="btn-play" (click)="playCustomGame(cg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    เล่นเกม
+                  </button>
+                </div>
+              }
+            </div>
+          }
         }
+
+        @if (playingCustomGame) {
+          <app-custom-quiz-player [game]="playingCustomGame" (closed)="closeCustomGame()" />
+        }
+
         <!-- Active Game: Scramble -->
         @if (engine.activeGameType === 'scramble') {
           <div class="active-game-area animate-fade">

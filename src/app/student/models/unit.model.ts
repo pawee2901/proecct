@@ -56,6 +56,12 @@ export interface Unit {
   scrambleWords: string[];
   scrambleHints: string[];
   unscrambleDialogue?: { id: number; text: string; order: number }[];
+  /** Per-lesson custom content for Picture→Word / Fill in the Blank, set by
+   *  the teacher's "Dedicated Game Creator Studio" (custom_games lesson
+   *  content) — when present, GameEngineService prefers these over the
+   *  global vocab-derived/hardcoded pools for this specific lesson. */
+  pictureWords?: { word: string; meaning: string; clue?: string; image?: string }[];
+  fillBlankItems?: { blanked: string; answer: string; full: string }[];
   fullQuiz?: FullQuiz;
   allowedGames?: string[];
   speakingQuestions?: string[];
@@ -66,6 +72,7 @@ export interface Unit {
   objectives?: string[];
   assessments?: string[];
   slidePath?: string;
+  coverImage?: string;
 }
 
 export interface LeaderboardEntry {
@@ -82,7 +89,23 @@ export interface LearningLogEntry {
   title: string;
   score?: number;
   xp: number;
-  transcript?: { sender: 'user' | 'ai'; text: string }[];
+  transcript?: { sender: 'user' | 'ai'; text: string; grammarSuggestion?: string | null }[];
+  // สรุปผลแบบเดียวกับ modal "ผลสรุปการฝึกพูด" (chatSummaryReport ใน
+  // student-practice.component.ts — เดิม AI สร้างสรุปนี้ให้ทุกครั้งที่จบแชท/ฝึกพูด แต่
+  // logChatSession()/evaluateCurrentSession() ทิ้งไปไม่เคยบันทึกลงประวัติเลย มีแต่
+  // transcript เปล่าๆ) ตอนนี้ทุกกิจกรรมที่มีคะแนนแยกองค์ประกอบใช้ shape เดียวกันนี้ ให้
+  // หน้าโปรไฟล์ ▸ ประวัติแสดงผลด้วยดีไซน์เดียวกับตอนฝึกจบสดๆ ไม่ต้องมีกล่อง "คำแนะนำ" คนละ
+  // แบบต่อกิจกรรม
+  report?: {
+    overall: string;
+    scoreItems?: { icon: string; label: string; value: number; max: number }[];
+    total?: { value: number; max: number };
+    corrections: { original: string; suggestion?: string; issue: string }[];
+    tips: string[];
+  };
+  // ผลแยกทีละคำของแบบฝึกหัด dictation (โชว์ใน "ประวัติ" แบบ collapsible เหมือน transcript
+  // แต่เป็นรายการคำแทนบทสนทนา เพราะกิจกรรมนี้ไม่มี AI ตอบโต้จริง)
+  wordResults?: { text: string; userAnswer: string; score: number }[];
 }
 
 export interface FrequentlyWrongItem {

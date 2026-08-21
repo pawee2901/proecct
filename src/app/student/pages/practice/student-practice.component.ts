@@ -14,6 +14,7 @@ import { MistakesTrackerService } from '../../services/mistakes-tracker.service'
 import { GameFxService } from '../../services/game-fx.service';
 import { SharedUiStateService } from '../../services/shared-ui-state.service';
 import { PracticeSessionService } from '../../services/practice-session.service';
+import { LearningLogEntry } from '../../models/unit.model';
 
 // Phase 6 of the migration plan — the most complex tab. Extracted from
 // student.component.ts: Practice Center setup wizard + simulation data
@@ -21,12 +22,10 @@ import { PracticeSessionService } from '../../services/practice-session.service'
 // conversation bank aiResponseDb (~565-648, both stranded between other
 // tabs' declarations in the original file), and the full method set
 // (~3346-5012 excluding bits already migrated elsewhere, ~8641-9028 for
-// history-panel replay + the AI Video Call feature). Template from
-// student.component.html: the Practice tab (@if (activeTab === 'practice'),
-// 2995-4137) plus two shell-level overlays only Practice ever triggers —
-// the Evaluating spinner + Speaking Report Modal (6202-6367) and the AI
-// Video Call Modal (6025-6167, previously living at shell level with only
-// SharedUiStateService.showVideoCallModal as the shared open/close flag).
+// history-panel replay). Template from student.component.html: the Practice
+// tab (@if (activeTab === 'practice'), 2995-4137) plus a shell-level overlay
+// only Practice ever triggers — the Evaluating spinner + Speaking Report
+// Modal (6202-6367).
 //
 // Cross-tab coupling: Profile's "resume this session" button calls
 // PracticeSessionService.requestResume(log) then navigates here; ngOnInit
@@ -35,9 +34,10 @@ import { PracticeSessionService } from '../../services/practice-session.service'
 //
 // Dropped (confirmed dead — no template/other-code reference): showHistoryModal,
 // voiceSpeedSetting, voiceAccentSetting, thaiSubtitlesEnabled, useWhisperSpeech,
-// #audioCache, practiceSuggestions, allPracticeSuggestions. Also dropped the
-// "More Sheet" cleanup line inside openVideoCall() (dead widget, removed in
-// Phase 0).
+// #audioCache, practiceSuggestions, allPracticeSuggestions. The AI Video Call
+// feature (its modal, SharedUiStateService.showVideoCallModal, and every
+// videoCall*/vcall-* symbol) was removed entirely per product decision —
+// see git history for the prior implementation if it's ever needed again.
 @Component({
   selector: 'app-student-practice',
   standalone: true,
@@ -183,9 +183,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
 
   private mediaRecorder: any = null;
   private audioChunks: any[] = [];
-  whisperLoading = false;
   isPlayingTTS = false;
-  videoCallRoleHint = '';
   isRecordingCancelled = false;
   responseTimes: number[] = [];
   userTurnStartTime = 0;
@@ -196,6 +194,17 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   sttWrongSentences: string[] = [];
   sttOriginalSentences: string[] = [];
   showSttReviewModal = false;
+  // --- Speech-to-Text: setup screen (level + accent, same pattern as the
+  // Text-to-Speech dictation quiz) plus combined scoring -- speed 40% +
+  // reading accuracy 60%. sttSentenceShownTime marks when the current
+  // target sentence became visible, so speed is "how fast did you read it
+  // and finish speaking", not just raw recording duration. ---
+  sttStep: 'setup' | 'practice' = 'setup';
+  sttLevel: 'beginner' | 'intermediate' | 'advanced' = 'beginner';
+  private sttSentencePool: string[] = [];
+  private sttSentenceShownTime = 0;
+  sttSpeedScore: number | null = null;
+  sttFinalScore: number | null = null;
 
   practiceUnitId = 1;
   practiceMode: 'menu' | 'text-to-text' | 'speech-to-text' | 'text-to-speech' | 'speech-to-speech' =
@@ -204,10 +213,6 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   isMicInitializing = false;
   activeUtterance: any = null;
   recognizedText = '';
-  // Speech-to-Speech: transcript waits here for the student to review/edit
-  // before it's actually sent to the AI (mic stop no longer auto-sends).
-  stsPendingConfirm = false;
-  stsConfirmText = '';
   speechInputText = '';
   pronunciationScore: number | null = null;
   matchedWords: { text: string; matched: boolean }[] = [];
@@ -215,13 +220,32 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   ttsVoiceType = 'US'; // 'US' or 'UK'
   recognition: any = null;
 
-  // Text-to-Speech Sub-Modes (Dictation & Minimal Pairs)
-  ttsSubMode: 'free' | 'dictation' | 'minimal-pairs' = 'free';
-  dictationIndex = 0;
-  dictationPool: string[] = [];
-  dictationInput = '';
-  dictationFeedback: 'correct' | 'wrong' | '' = '';
-  dictationScore = 0;
+  // --- Text-to-Speech Mode: listening dictation quiz. No text is shown up
+  // front -- the target word/sentence only plays as audio (auto, twice),
+  // the student types what they heard, and each answer is scored on both
+  // response speed and wording accuracy. See buildTtsDictationPool() /
+  // nextTtsDictationQuestion() / submitTtsDictationAnswer() below. ---
+  ttsDictationStep: 'setup' | 'question' | 'summary' = 'setup';
+  ttsDictationLevel: 'beginner' | 'intermediate' | 'advanced' = 'beginner';
+  ttsDictationContentType: 'word' | 'sentence' | 'both' = 'both';
+  private ttsDictationWordPool: { text: string; type: 'word' }[] = [];
+  private ttsDictationSentencePool: { text: string; type: 'sentence' }[] = [];
+  private ttsDictationWordQueue: { text: string; type: 'word' }[] = [];
+  private ttsDictationSentenceQueue: { text: string; type: 'sentence' }[] = [];
+  private ttsDictationNextIsWord = true; // alternation toggle, only used when contentType === 'both'
+  ttsDictationCurrent: { text: string; type: 'word' | 'sentence' } | null = null;
+  ttsDictationInput = '';
+  ttsDictationIsPlaying = false;
+  private ttsDictationQuestionStartTime = 0;
+  ttsDictationResults: {
+    text: string;
+    type: 'word' | 'sentence';
+    userAnswer: string;
+    accuracyScore: number;
+    speedScore: number;
+    finalScore: number;
+    elapsedSeconds: number;
+  }[] = [];
 
   minimalPairsPool = [
     { word1: 'ship', word2: 'sheep', meaning1: 'เรือ', meaning2: 'แกะ', correct: 'sheep' },
@@ -283,6 +307,16 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   chatSummaryVisible = false;
   chatSummaryLoading = false;
   showSummaryTranscript = false;
+  // Playful cycling status lines shown under the spinner while the summary loads
+  chatSummaryLoadingMessages = [
+    '🔍 กำลังอ่านบทสนทนาของคุณอย่างละเอียด...',
+    '📝 กำลังตรวจสอบไวยากรณ์และคำศัพท์...',
+    '🗣️ กำลังประเมินความลื่นไหลในการตอบโต้...',
+    '🎯 กำลังให้คะแนนและสรุปผลลัพธ์...',
+    '✨ อีกสักครู่นะ ใกล้เสร็จแล้ว...',
+  ];
+  chatSummaryLoadingTipIndex = 0;
+  private chatSummaryLoadingInterval: any = null;
   chatSummaryReport: {
     overall: string;
     scores?: { grammar: number; pronunciation: number; speed: number; total: number };
@@ -304,7 +338,6 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   // ====================================================
   showMoreSheet = false;
   showVoiceSettingsModal = false;
-  showVideoCallModal = false;
   showHistoryModal = false;
   showBadgesModal = false;
 
@@ -327,23 +360,6 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   // Speech Confirmation State
   stsPendingText = '';
   showStsConfirm = false;
-  videoCallPendingText = '';
-  showVideoCallConfirm = false;
-
-  // AI Video Call
-  videoCallStep: 'intro' | 'calling' | 'active' | 'feedback' = 'intro';
-  selectedTeacherAvatar = '👩‍🏫 Teacher Jane';
-  videoCallDuration = 0;
-  videoCallTimerInterval: any = null;
-  videoCallMessages: { sender: 'user' | 'ai'; text: string; time: Date }[] = [];
-  videoCallFeedback: {
-    pronunciation: number;
-    fluency: number;
-    grammar: number;
-    vocabulary: number;
-    suggestions: string;
-    xp: number;
-  } | null = null;
 
   private aiResponseDb: { [key: number]: { userKeyword: string; reply: string }[] } = {
     1: [
@@ -470,9 +486,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     if (this.practiceIsRecording) {
       this.stopPracticeRecordingFlow();
     }
-    if (this.videoCallTimerInterval) {
-      clearInterval(this.videoCallTimerInterval);
-    }
+    this.stopChatSummaryLoadingTips();
   }
 
   selectPracticeUnit(unitId: number) {
@@ -533,10 +547,19 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
         this.textPracticeSubMode = 'menu';
       }
       if (mode === 'speech-to-text') {
+        this.sttStep = 'setup';
         this.sttSessionCount = 0;
         this.sttWrongSentences = [];
         this.sttOriginalSentences = [...this.practiceSentences];
         this.showSttReviewModal = false;
+        this.sttSpeedScore = null;
+        this.sttFinalScore = null;
+      }
+      if (mode === 'text-to-speech') {
+        this.ttsDictationStep = 'setup';
+        this.ttsDictationCurrent = null;
+        this.ttsDictationInput = '';
+        this.ttsDictationResults = [];
       }
     }
   }
@@ -748,9 +771,27 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     };
   }
 
+  // Cycle the fun status line under the loading spinner while the AI summary is generating
+  private startChatSummaryLoadingTips(): void {
+    this.chatSummaryLoadingTipIndex = 0;
+    this.stopChatSummaryLoadingTips();
+    this.chatSummaryLoadingInterval = setInterval(() => {
+      this.chatSummaryLoadingTipIndex =
+        (this.chatSummaryLoadingTipIndex + 1) % this.chatSummaryLoadingMessages.length;
+    }, 1800);
+  }
+
+  private stopChatSummaryLoadingTips(): void {
+    if (this.chatSummaryLoadingInterval) {
+      clearInterval(this.chatSummaryLoadingInterval);
+      this.chatSummaryLoadingInterval = null;
+    }
+  }
+
   closeChatSummary(startNewTopic: boolean): void {
     this.chatSummaryVisible = false;
     this.chatSummaryReport = null;
+    this.stopChatSummaryLoadingTips();
     if (startNewTopic) {
       this.enterTextPracticeSubMode('chat');
     } else {
@@ -865,6 +906,402 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
       });
       if (onEnd) onEnd();
     }
+  }
+
+  // ====================================================
+  // Text-to-Speech Mode: Listening Dictation Quiz
+  // ====================================================
+
+  startTtsDictationQuiz(): void {
+    this.buildTtsDictationPools();
+
+    const hasWords = this.ttsDictationWordPool.length > 0;
+    const hasSentences = this.ttsDictationSentencePool.length > 0;
+    const canStart =
+      this.ttsDictationContentType === 'word' ? hasWords :
+      this.ttsDictationContentType === 'sentence' ? hasSentences :
+      hasWords || hasSentences;
+
+    if (!canStart) {
+      Swal.fire({
+        icon: 'info',
+        title: 'ไม่พบคำศัพท์/ประโยคในระดับนี้',
+        text: 'ลองเลือกระดับความยากอื่น หรือเปลี่ยนประเภทเนื้อหาดูนะคะ',
+        confirmButtonColor: '#6B21A8'
+      });
+      return;
+    }
+
+    this.ttsDictationResults = [];
+    this.ttsDictationWordQueue = [];
+    this.ttsDictationSentenceQueue = [];
+    this.ttsDictationNextIsWord = true;
+    this.ttsDictationStep = 'question';
+    this.gameFx.playSoundEffect('click');
+    this.nextTtsDictationQuestion();
+  }
+
+  // Pulls vocabulary words + speaking-practice sentences from every unit,
+  // then buckets each into beginner/intermediate/advanced by length -- there's
+  // no difficulty tag on this content in the lesson data, so length is the
+  // stand-in. Bucketed by RELATIVE tertile (shortest third / middle third /
+  // longest third of THIS pool), not fixed cutoffs: this content is mostly
+  // professional/teacher vocabulary, so fixed absolute thresholds (e.g. "<=5
+  // characters = beginner") left "beginner" almost empty -- only 3 of 79
+  // words and 1 of 30 sentences qualified. Relative tertiles always split
+  // whatever content exists into 3 usably-sized groups.
+  private buildTtsDictationPools(): void {
+    const words: { text: string; type: 'word' }[] = [];
+    const sentences: { text: string; type: 'sentence' }[] = [];
+    const seen = new Set<string>();
+
+    this.lessonsData.units.forEach((u: any) => {
+      (u.vocabularies || []).forEach((v: any) => {
+        const w = (v?.word || '').trim();
+        if (w && !seen.has('w:' + w.toLowerCase())) {
+          seen.add('w:' + w.toLowerCase());
+          words.push({ text: w, type: 'word' });
+        }
+      });
+      (u.speakingQuestions || []).forEach((s: string) => {
+        const t = (s || '').trim();
+        if (t && !seen.has('s:' + t.toLowerCase())) {
+          seen.add('s:' + t.toLowerCase());
+          sentences.push({ text: t, type: 'sentence' });
+        }
+      });
+    });
+
+    const wordBuckets = this.bucketByLengthTertile(words, w => w.text.replace(/\s+/g, '').length);
+    const sentenceBuckets = this.bucketByLengthTertile(sentences, s => s.text.trim().split(/\s+/).filter(Boolean).length);
+
+    this.ttsDictationWordPool = wordBuckets[this.ttsDictationLevel];
+    this.ttsDictationSentencePool = sentenceBuckets[this.ttsDictationLevel];
+  }
+
+  // Sorts by length and splits into 3 roughly-equal groups (shortest third
+  // = beginner, longest third = advanced) instead of a fixed length cutoff.
+  private bucketByLengthTertile<T>(
+    items: T[],
+    getLength: (item: T) => number
+  ): { beginner: T[]; intermediate: T[]; advanced: T[] } {
+    const sorted = [...items].sort((a, b) => getLength(a) - getLength(b));
+    const third = Math.ceil(sorted.length / 3);
+    return {
+      beginner: sorted.slice(0, third),
+      intermediate: sorted.slice(third, third * 2),
+      advanced: sorted.slice(third * 2)
+    };
+  }
+
+  private shuffleCopy<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Draws the next item from a shuffled queue, reshuffling from the full
+  // pool once the queue runs dry -- keeps the quiz going indefinitely
+  // (session length is unbounded; the student ends it manually) without
+  // repeating an item before the rest of the pool has been seen.
+  private nextTtsWordItem(): { text: string; type: 'word' } | null {
+    if (this.ttsDictationWordQueue.length === 0) {
+      if (this.ttsDictationWordPool.length === 0) return null;
+      this.ttsDictationWordQueue = this.shuffleCopy(this.ttsDictationWordPool);
+    }
+    return this.ttsDictationWordQueue.shift()!;
+  }
+
+  private nextTtsSentenceItem(): { text: string; type: 'sentence' } | null {
+    if (this.ttsDictationSentenceQueue.length === 0) {
+      if (this.ttsDictationSentencePool.length === 0) return null;
+      this.ttsDictationSentenceQueue = this.shuffleCopy(this.ttsDictationSentencePool);
+    }
+    return this.ttsDictationSentenceQueue.shift()!;
+  }
+
+  nextTtsDictationQuestion(): void {
+    let item: { text: string; type: 'word' | 'sentence' } | null = null;
+
+    if (this.ttsDictationContentType === 'word') {
+      item = this.nextTtsWordItem();
+    } else if (this.ttsDictationContentType === 'sentence') {
+      item = this.nextTtsSentenceItem();
+    } else {
+      // 'both' -> strictly alternate word/sentence each turn; if the
+      // preferred type's pool is empty, fall back to the other one.
+      item = this.ttsDictationNextIsWord ? this.nextTtsWordItem() : this.nextTtsSentenceItem();
+      if (!item) {
+        item = this.ttsDictationNextIsWord ? this.nextTtsSentenceItem() : this.nextTtsWordItem();
+      }
+      this.ttsDictationNextIsWord = !this.ttsDictationNextIsWord;
+    }
+
+    if (!item) {
+      // Pool is entirely empty for this level/type combo -- nothing left to ask.
+      this.finishTtsDictationSession();
+      return;
+    }
+
+    this.ttsDictationCurrent = item;
+    this.ttsDictationInput = '';
+    this.ttsDictationQuestionStartTime = 0;
+    this.cdr.detectChanges();
+
+    // Auto-play the target audio twice, back to back. The response-time
+    // clock only starts once both plays finish (see playTtsDictationAudio).
+    this.playTtsDictationAudio(item.text, 2);
+  }
+
+  // Bumped every time playback is started/skipped/torn down -- lets a
+  // stale timer or a late speechSynthesis callback recognize it no longer
+  // applies (see playTtsDictationAudio/skipTtsDictationAudio).
+  private ttsDictationPlaybackToken = 0;
+
+  private playTtsDictationAudio(text: string, playsRemaining: number): void {
+    if (playsRemaining <= 0) {
+      this.ttsDictationIsPlaying = false;
+      this.ttsDictationQuestionStartTime = Date.now();
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const token = ++this.ttsDictationPlaybackToken;
+    this.ttsDictationIsPlaying = true;
+    this.cdr.detectChanges();
+
+    let settled = false;
+    const proceed = () => {
+      // Ignore if a newer play/skip/next-question already superseded this one,
+      // or if this already fired once (onend AND the safety timer both landing).
+      if (settled || token !== this.ttsDictationPlaybackToken) return;
+      settled = true;
+
+      const nextRemaining = playsRemaining - 1;
+      if (nextRemaining > 0) {
+        // ~2s breathing gap between repeats -- back-to-back with zero pause
+        // felt too rushed to make out the word/sentence the second time.
+        setTimeout(() => {
+          if (token !== this.ttsDictationPlaybackToken) return;
+          this.playTtsDictationAudio(text, nextRemaining);
+        }, 2000);
+      } else {
+        this.playTtsDictationAudio(text, nextRemaining);
+      }
+    };
+
+    // Safety net: SpeechSynthesisUtterance occasionally never fires onend/
+    // onerror in some browsers (e.g. after the tab loses focus) -- without
+    // this, ttsDictationIsPlaying would stay stuck `true` forever and the
+    // answer box would stay permanently disabled/un-typeable. Cap the wait
+    // at a generous, text-length-based estimate.
+    const estimatedMs = Math.max(2500, text.length * 90) / (this.sharedUi.ttsSpeed || 1);
+    const safetyTimer = setTimeout(proceed, estimatedMs + 4000);
+
+    this.practiceSpeakText(text, () => {
+      clearTimeout(safetyTimer);
+      proceed();
+    });
+  }
+
+  // Manual escape hatch shown next to the audio icon while it's playing --
+  // in case playback gets stuck for any reason, the student isn't stuck
+  // waiting on it and can jump straight to typing the answer.
+  skipTtsDictationAudio(): void {
+    if (!this.ttsDictationIsPlaying) return;
+    this.ttsDictationPlaybackToken++; // invalidate any pending timer/callback for this play
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    this.ttsDictationIsPlaying = false;
+    this.ttsDictationQuestionStartTime = Date.now();
+    this.cdr.detectChanges();
+  }
+
+  // Word-overlap accuracy (0-100): same technique as calculatePronunciationScore,
+  // kept separate so it doesn't touch that function's pronunciationScore/
+  // matchedWords state (those belong to the unrelated Speech-to-Text mode).
+  private calculateDictationAccuracyScore(target: string, actual: string): number {
+    const cleanStr = (s: string) =>
+      s.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, '').trim();
+    const targetWords = cleanStr(target).split(/\s+/).filter(Boolean);
+    const actualWords = cleanStr(actual).split(/\s+/).filter(Boolean);
+    if (targetWords.length === 0) return 0;
+    const matchedCount = targetWords.filter(tw => actualWords.some(aw => aw === tw)).length;
+    return Math.round((matchedCount / targetWords.length) * 100);
+  }
+
+  // Speed score (0-100): full marks inside a per-item time budget (a flat
+  // base allowance + a per-word allowance), decaying to 0 by double that
+  // budget. Simple and explainable rather than scientifically tuned. Shared
+  // by both the Text-to-Speech dictation quiz (typing what was heard) and
+  // Speech-to-Text (reading a sentence aloud) -- each just passes its own
+  // per-word pace, since speaking a visible sentence is naturally faster
+  // than typing out an unknown one heard only twice.
+  private calculateSpeedScore(wordCount: number, elapsedSeconds: number, baseSeconds: number, perWordSeconds: number): number {
+    const expectedSeconds = baseSeconds + wordCount * perWordSeconds;
+    if (elapsedSeconds <= expectedSeconds) return 100;
+    const over = elapsedSeconds - expectedSeconds;
+    return Math.max(0, Math.round(100 - (over / expectedSeconds) * 100));
+  }
+
+  private calculateDictationSpeedScore(target: string, elapsedSeconds: number): number {
+    const wordCount = target.trim().split(/\s+/).filter(Boolean).length;
+    return this.calculateSpeedScore(wordCount, elapsedSeconds, 3, 2.5);
+  }
+
+  private calculateSttSpeedScore(target: string, elapsedSeconds: number): number {
+    const wordCount = target.trim().split(/\s+/).filter(Boolean).length;
+    return this.calculateSpeedScore(wordCount, elapsedSeconds, 3, 1.5);
+  }
+
+  submitTtsDictationAnswer(): void {
+    if (!this.ttsDictationCurrent) return;
+    const answer = this.ttsDictationInput.trim();
+    if (!answer || this.ttsDictationIsPlaying) return;
+
+    const elapsedSeconds = this.ttsDictationQuestionStartTime > 0
+      ? (Date.now() - this.ttsDictationQuestionStartTime) / 1000
+      : 0;
+
+    const target = this.ttsDictationCurrent.text;
+    const accuracyScore = this.calculateDictationAccuracyScore(target, answer);
+    const speedScore = this.calculateDictationSpeedScore(target, elapsedSeconds);
+    // ตอบไว (speed) 60% + ไวยากรณ์/คำถูก (accuracy) 40%
+    const finalScore = Math.round(speedScore * 0.6 + accuracyScore * 0.4);
+
+    this.ttsDictationResults.push({
+      text: target,
+      type: this.ttsDictationCurrent.type,
+      userAnswer: answer,
+      accuracyScore,
+      speedScore,
+      finalScore,
+      elapsedSeconds: Math.round(elapsedSeconds * 10) / 10
+    });
+
+    if (finalScore < 80) {
+      this.mistakes.trackWrongItem(
+        this.ttsDictationCurrent.type,
+        target,
+        target,
+        'Text-to-Speech Dictation'
+      );
+    }
+
+    this.gameFx.playSoundEffect(finalScore >= 80 ? 'success' : 'click');
+    this.nextTtsDictationQuestion();
+  }
+
+  finishTtsDictationSession(): void {
+    this.ttsDictationPlaybackToken++; // invalidate any pending timer/callback
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    this.ttsDictationIsPlaying = false;
+    this.ttsDictationCurrent = null;
+    this.ttsDictationStep = 'summary';
+
+    if (this.ttsDictationResults.length > 0) {
+      const avgScore = Math.round(
+        this.ttsDictationResults.reduce((sum, r) => sum + r.finalScore, 0) / this.ttsDictationResults.length
+      );
+      this.learningLog.learningLogs.unshift({
+        date: new Date(),
+        type: 'Speaking',
+        title: `Text-to-Speech Dictation (${this.ttsDictationResults.length} ข้อ)`,
+        score: avgScore,
+        xp: Math.min(30, this.ttsDictationResults.length * 3),
+        // เดิมยัดผล "target -> answer (score%)" ลงในช่อง transcript แล้วโชว์เป็นบับเบิล
+        // แชท ทั้งที่แบบฝึกหัดนี้ไม่มีบทสนทนาจริง (แค่ฟัง-พิมพ์ทีละคำ) ทำให้ดูแปลกเพราะ
+        // ทุกบับเบิลถูก label เป็น "คุณ" หมด — เก็บเป็น report (shape เดียวกับ
+        // chatSummaryReport ที่ modal "ผลสรุปการฝึกพูด" ใช้) ให้หน้าประวัติแสดงผลด้วย
+        // การ์ดสรุปแบบเดียวกัน + wordResults (รายการคำดิบ) แทนบทสนทนาปลอม
+        wordResults: this.ttsDictationResults.map(r => ({
+          text: r.text,
+          userAnswer: r.userAnswer,
+          score: r.finalScore
+        })),
+        report: this.buildTtsDictationReport(this.ttsDictationResults, avgScore)
+      });
+      this.learningLog.saveLearningLogs();
+    }
+
+    this.gameFx.playSoundEffect('success');
+    this.cdr.detectChanges();
+  }
+
+  /** สรุปผลรอบ Text-to-Speech Dictation หนึ่งรอบ ด้วย shape เดียวกับ chatSummaryReport
+   *  (ดูที่มาที่ finishTtsDictationSession) เพื่อให้หน้าประวัติใช้การ์ดสรุปแบบเดียวกันได้ */
+  private buildTtsDictationReport(
+    results: { text: string; userAnswer: string; finalScore: number; accuracyScore: number; speedScore: number }[],
+    avgScore: number
+  ): NonNullable<LearningLogEntry['report']> {
+    const avgSpeed = Math.round(results.reduce((sum, r) => sum + r.speedScore, 0) / results.length);
+    const avgAccuracy = Math.round(results.reduce((sum, r) => sum + r.accuracyScore, 0) / results.length);
+    const missed = results.filter(r => r.finalScore < 80);
+
+    let tip: string;
+    if (avgScore >= 80) {
+      tip = 'ทำได้ดีมากค่ะ ฟังและพิมพ์ตามได้แม่นยำ ลองเพิ่มความเร็วในการพิมพ์ในรอบถัดไปได้เลย';
+    } else if (avgScore >= 50) {
+      tip = 'ทำได้ปานกลางค่ะ ลองฟังซ้ำให้ชัดก่อนพิมพ์ และเช็คตัวสะกดให้ตรงกับที่ได้ยิน';
+    } else {
+      tip = 'ควรฝึกฟังคำศัพท์พื้นฐานเพิ่มเติม ลองเปิดความเร็วเสียงให้ช้าลงและฟังทีละคำก่อนพิมพ์';
+    }
+
+    return {
+      overall: `ทำแบบฝึกหัด Text-to-Speech Dictation ทั้งหมด ${results.length} ข้อ คะแนนเฉลี่ย ${avgScore}%`,
+      scoreItems: [
+        { icon: '⚡', label: 'ความไวในการตอบ', value: avgSpeed, max: 100 },
+        { icon: '✅', label: 'ความถูกต้อง', value: avgAccuracy, max: 100 },
+      ],
+      total: { value: avgScore, max: 100 },
+      corrections: missed.map(r => ({
+        original: `พิมพ์ว่า "${r.userAnswer}"`,
+        suggestion: `คำที่ถูกต้อง: "${r.text}"`,
+        issue: `ได้คะแนนความแม่นยำ ${r.finalScore}%`,
+      })),
+      tips: [
+        tip,
+        'ลองฝึกคำที่พลาดซ้ำได้ในแท็บ "ฝึกฝน ▸ คำผิดประจำ" เพื่อจำได้แม่นขึ้น',
+      ],
+    };
+  }
+
+  restartTtsDictationQuiz(): void {
+    this.ttsDictationStep = 'setup';
+    this.ttsDictationResults = [];
+    this.ttsDictationCurrent = null;
+    this.ttsDictationInput = '';
+  }
+
+  getTtsDictationAverageScore(): number {
+    if (this.ttsDictationResults.length === 0) return 0;
+    return Math.round(
+      this.ttsDictationResults.reduce((sum, r) => sum + r.finalScore, 0) / this.ttsDictationResults.length
+    );
+  }
+
+  getTtsDictationAverageSpeed(): number {
+    if (this.ttsDictationResults.length === 0) return 0;
+    return Math.round(
+      this.ttsDictationResults.reduce((sum, r) => sum + r.speedScore, 0) / this.ttsDictationResults.length
+    );
+  }
+
+  getTtsDictationAverageAccuracy(): number {
+    if (this.ttsDictationResults.length === 0) return 0;
+    return Math.round(
+      this.ttsDictationResults.reduce((sum, r) => sum + r.accuracyScore, 0) / this.ttsDictationResults.length
+    );
+  }
+
+  getTtsDictationPerfectCount(): number {
+    return this.ttsDictationResults.filter(r => r.finalScore >= 80).length;
   }
 
   getCustomGreeting(): string {
@@ -1007,6 +1444,7 @@ Start the conversation naturally and in character with a short opening line (1-2
     this.chatSummaryLoading = true;
     this.chatSummaryReport = null;
     this.showSummaryTranscript = false;
+    this.startChatSummaryLoadingTips();
 
     const transcript = this.practiceMessages
       .map((m) => `${m.sender === 'user' ? 'Student' : 'AI'}: ${m.text}`)
@@ -1037,6 +1475,7 @@ Start the conversation naturally and in character with a short opening line (1-2
       .subscribe({
         next: (res: any) => {
           this.chatSummaryLoading = false;
+          this.stopChatSummaryLoadingTips();
           this.chatSummaryReport = this.parseChatSummary(res.reply || '');
           if (this.chatSummaryReport && Array.isArray(this.chatSummaryReport.corrections)) {
             this.chatSummaryReport.corrections.forEach(c => {
@@ -1048,6 +1487,7 @@ Start the conversation naturally and in character with a short opening line (1-2
         },
         error: () => {
           this.chatSummaryLoading = false;
+          this.stopChatSummaryLoadingTips();
           this.chatSummaryReport = this.buildFallbackChatSummary();
           this.gameFx.awardGameXp(20);
           this.logChatSession();
@@ -1056,17 +1496,36 @@ Start the conversation naturally and in character with a short opening line (1-2
   }
 
   // บันทึกบทสนทนาที่จบแล้วลงประวัติการเรียนรู้ พร้อมแนบบทสนทนาทั้งหมด เพื่อย้อนดูภายหลังได้
+  // เดิมทิ้ง chatSummaryReport ที่ AI เพิ่งสรุปให้ (คะแนนแยกองค์ประกอบ/จุดที่ควรแก้/คำแนะนำ
+  // — โชว์ใน modal "ผลสรุปการฝึกพูด" ตอนจบสดๆ) ไปเฉยๆ ไม่เคยบันทึกลงประวัติเลย มีแต่
+  // transcript เปล่าๆ ทำให้เข้าประวัติย้อนหลังแล้วไม่เห็นการ์ดสรุปแบบเดียวกับตอนจบสด — ตอนนี้
+  // แปลง scores {grammar,pronunciation,speed,total} เป็น report.scoreItems/.total (shape
+  // เดียวกับที่ buildTtsDictationReport ใช้) แล้วบันทึกไปด้วย
   private logChatSession(): void {
+    const report: LearningLogEntry['report'] = this.chatSummaryReport ? {
+      overall: this.chatSummaryReport.overall,
+      scoreItems: this.chatSummaryReport.scores ? [
+        { icon: '📝', label: 'ไวยากรณ์', value: this.chatSummaryReport.scores.grammar, max: 50 },
+        { icon: '🗣️', label: 'ออกเสียง/ถอดคำ', value: this.chatSummaryReport.scores.pronunciation, max: 30 },
+        { icon: '⏱️', label: 'ความเร็วโต้ตอบ', value: this.chatSummaryReport.scores.speed, max: 20 },
+      ] : undefined,
+      total: this.chatSummaryReport.scores ? { value: this.chatSummaryReport.scores.total, max: 100 } : undefined,
+      corrections: this.chatSummaryReport.corrections || [],
+      tips: this.chatSummaryReport.tips || [],
+    } : undefined;
+
     this.learningLog.learningLogs.unshift({
       date: new Date(),
       type: 'Practice',
       title: `Text-to-Text Chat${this.currentChatTopic ? ': ' + this.currentChatTopic.titleTh : ''}`,
+      score: this.chatSummaryReport?.scores?.total,
       xp: 20,
       transcript: this.practiceMessages.map((m) => ({
         sender: m.sender,
         text: m.text,
         grammarSuggestion: m.grammarSuggestion || null
       })),
+      report,
     });
     this.learningLog.saveLearningLogs();
   }
@@ -1127,8 +1586,6 @@ Start the conversation naturally and in character with a short opening line (1-2
     
     this.practiceMessages = [];
     this.recognizedText = '';
-    this.stsPendingConfirm = false;
-    this.stsConfirmText = '';
 
     const greeting = this.getCustomGreeting();
     this.practiceMessages.push({ sender: 'ai', text: greeting, time: new Date() });
@@ -1146,8 +1603,6 @@ Start the conversation naturally and in character with a short opening line (1-2
     this.isRecordingCancelled = true;
     this.stopPracticeRecordingFlow();
     this.recognizedText = '';
-    this.stsPendingConfirm = false;
-    this.stsConfirmText = '';
     this.gameFx.playSoundEffect('click');
     this.cdr.detectChanges();
   }
@@ -1165,10 +1620,14 @@ Start the conversation naturally and in character with a short opening line (1-2
 
     this.practiceMessages = [];
     this.recognizedText = '';
-    this.stsPendingConfirm = false;
-    this.stsConfirmText = '';
     this.practiceMode = 'menu';
-    
+    this.ttsDictationStep = 'setup';
+    this.ttsDictationPlaybackToken++; // invalidate any pending timer/callback
+    this.ttsDictationIsPlaying = false;
+    this.ttsDictationCurrent = null;
+    this.ttsDictationInput = '';
+    this.ttsDictationResults = [];
+
     this.gameFx.playSoundEffect('click');
     this.cdr.detectChanges();
   }
@@ -1212,14 +1671,27 @@ Start the conversation naturally and in character with a short opening line (1-2
         this.isEvaluating = false;
         this.speakingEvaluationResult = res;
 
-        // Push the newly completed session log into history list
+        // Push the newly completed session log into history list — same report
+        // shape as buildTtsDictationReport()/logChatSession() so history shows
+        // the same score-breakdown card for every speaking activity type
         this.learningLog.learningLogs.unshift({
           date: new Date(),
           type: 'Speaking',
           title: `Speaking Practice (${this.practiceMode === 'speech-to-speech' ? 'Speech-to-Speech' : 'Video Call'})`,
           score: res.total_score,
           xp: 30,
-          transcript: this.practiceMessages.map((m: any) => ({ sender: m.sender, text: m.text }))
+          transcript: this.practiceMessages.map((m: any) => ({ sender: m.sender, text: m.text })),
+          report: {
+            overall: res.feedback || 'ประเมินผลการฝึกพูดของคุณเรียบร้อยแล้ว',
+            scoreItems: [
+              { icon: '📝', label: 'ไวยากรณ์', value: res.grammar_score ?? 0, max: 50 },
+              { icon: '🗣️', label: 'ออกเสียง/ถอดคำ', value: res.pronunciation_score ?? 0, max: 30 },
+              { icon: '⏱️', label: 'ความเร็วโต้ตอบ', value: res.speed_score ?? 0, max: 20 },
+            ],
+            total: { value: res.total_score ?? 0, max: 100 },
+            corrections: [],
+            tips: [],
+          },
         });
         this.learningLog.saveLearningLogs();
 
@@ -1320,12 +1792,12 @@ Start the conversation naturally and in character with a short opening line (1-2
     }
   }
 
-  // --- Audio capture for Whisper: records the raw mic audio for this turn
-  // and uploads it once stopped; this transcript (not the live one above) is
-  // what actually gets sent to the AI ---
+  // --- Mic audio capture: still records the raw audio for this turn (kept
+  // for the noise-filtered stream / possible future use), but the text
+  // that's actually sent to the AI now comes straight from the live
+  // transcript in startLiveTranscriptionOnly() above -- see mediaRecorder.onstop. ---
   startAudioRecordingOnly() {
     this.audioChunks = [];
-    this.whisperLoading = false;
 
     // ร้องขอสิทธิ์ใช้ไมโครโฟนจากเบราว์เซอร์ พร้อมเปิดระบบตัดเสียงรบกวนระดับฮาร์ดแวร์
     navigator.mediaDevices.getUserMedia({
@@ -1398,61 +1870,32 @@ Start the conversation naturally and in character with a short opening line (1-2
         this.mediaRecorder.onstop = () => {
           if (this.isRecordingCancelled) {
             this.isRecordingCancelled = false;
-            this.whisperLoading = false;
             return;
           }
-          const mimeType = this.mediaRecorder.mimeType || 'audio/webm';
-          const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
-          const audioBlob = new Blob(this.audioChunks, { type: mimeType });
-          const audioFile = new File([audioBlob], `speaking.${ext}`, { type: mimeType });
 
-          const formData = new FormData();
-          formData.append('audio', audioFile);
-          formData.append('language', 'en');
-
-          this.whisperLoading = true;
-          this.apiService.postAudioSpeaking(formData).subscribe({
-            next: (res: any) => {
-              this.whisperLoading = false;
-              const text = res.text || res.transcript || '';
-              if (text && text.trim()) {
-                this.recognizedText = text;
-                // Route to review: the student confirms/edits the transcript
-                // before it's sent to the AI (see confirmSendStsMessageDirect).
-                if (this.sharedUi.showVideoCallModal && this.videoCallStep === 'active') {
-                  this.confirmSendVideoCallMessageDirect(text);
-                } else {
-                  this.confirmSendStsMessageDirect(text);
-                }
+          // The live transcript (startLiveTranscriptionOnly) was already
+          // visible on screen the whole time the student was talking -- use
+          // it directly instead of re-transcribing the same audio through
+          // Whisper again (that was a second, redundant pass that only added
+          // a network round-trip + "กำลังแปลงเสียงเป็นข้อความ..." wait).
+          // Small grace delay: SpeechRecognition's own final 'onresult' for
+          // the last word(s) can land a beat after we call .stop() on it, so
+          // give that a moment to arrive before reading recognizedText.
+          setTimeout(() => {
+            const text = this.recognizedText.trim();
+            if (text) {
+              if (this.practiceMode === 'speech-to-text') {
+                this.scoreSttAttempt(text);
               } else {
-                // If Whisper returned empty, use fallback or browser transcription
-                const fallbackText = this.recognizedText.trim();
-                if (fallbackText) {
-                  if (this.sharedUi.showVideoCallModal && this.videoCallStep === 'active') {
-                    this.confirmSendVideoCallMessageDirect(fallbackText);
-                  } else {
-                    this.confirmSendStsMessageDirect(fallbackText);
-                  }
-                } else {
-                  this.fallbackSpeechRecognition();
-                }
+                this.confirmSendStsMessageDirect(text);
               }
-            },
-            error: (err: any) => {
-              console.warn("Backend Whisper failed, using local browser SpeechRecognition fallback:", err);
-              this.whisperLoading = false;
-              const fallbackText = this.recognizedText.trim();
-              if (fallbackText) {
-                if (this.sharedUi.showVideoCallModal && this.videoCallStep === 'active') {
-                  this.confirmSendVideoCallMessageDirect(fallbackText);
-                } else {
-                  this.confirmSendStsMessageDirect(fallbackText);
-                }
-              } else {
-                this.fallbackSpeechRecognition();
-              }
+            } else {
+              // No live transcript captured (e.g. the browser doesn't support
+              // the Web Speech API) -- fall back to a one-shot recognition pass.
+              this.fallbackSpeechRecognition();
             }
-          });
+            this.cdr.detectChanges();
+          }, 300);
 
           // Stop microphone track to release it
           stream.getTracks().forEach(track => track.stop());
@@ -1516,8 +1959,8 @@ Start the conversation naturally and in character with a short opening line (1-2
     
     rec.onresult = (event: any) => {
       const text = event.results[0][0].transcript;
-      if (this.sharedUi.showVideoCallModal && this.videoCallStep === 'active') {
-        this.confirmSendVideoCallMessageDirect(text);
+      if (this.practiceMode === 'speech-to-text') {
+        this.scoreSttAttempt(text);
       } else {
         this.confirmSendStsMessageDirect(text);
       }
@@ -1530,108 +1973,16 @@ Start the conversation naturally and in character with a short opening line (1-2
     rec.start();
   }
 
-  // --- Stage the transcript for the student to review/edit; it is NOT sent
-  // to the AI until they confirm via sendConfirmedStsMessage() ---
+  // --- Mic-off IS the "send" action: the live transcript was already
+  // visible on screen the whole time the student was talking, and the
+  // cancel/delete button next to the mic covers "that came out wrong" --
+  // so once the transcript is ready, send it straight to the AI with no
+  // separate review/confirm step. ---
   confirmSendStsMessageDirect(text: string): void {
     if (!text.trim()) return;
-    this.stsConfirmText = text;
-    this.stsPendingConfirm = true;
-    this.recognizedText = text;
-  }
-
-  // Student confirmed the (possibly edited) transcript looks right — send it now.
-  sendConfirmedStsMessage(): void {
-    const text = this.stsConfirmText.trim();
-    if (!text) return;
-    this.stsPendingConfirm = false;
-    this.stsConfirmText = '';
     this.recognizedText = '';
     this.sendPracticeMessage(text);
     this.gameFx.playSoundEffect('success');
-  }
-
-  // Student wants to discard the transcript and speak again.
-  discardStsConfirmation(): void {
-    this.stsPendingConfirm = false;
-    this.stsConfirmText = '';
-    this.recognizedText = '';
-  }
-
-  // Video Call feature has its own separate transcript/send path (below);
-  // it is not part of the Speech-to-Speech practice flow documented above.
-  confirmSendVideoCallMessageDirect(text: string): void {
-    if (!text.trim()) return;
-    this.videoCallMessages.push({ sender: 'user', text: text, time: new Date() });
-    
-    setTimeout(() => {
-      const vcallContainer = document.querySelector('.vcall-logs-scroll');
-      if (vcallContainer) {
-        try {
-          vcallContainer.scrollTop = vcallContainer.scrollHeight;
-        } catch (err) {}
-      }
-    }, 100);
-
-    const chatHistory = this.videoCallMessages
-      .map((m) => `${m.sender === 'user' ? 'Student' : 'AI'}: ${m.text}`)
-      .join('\n');
-
-    let personaPrompt = '';
-    if (this.selectedTeacherAvatar.includes('Jane')) {
-      personaPrompt = `Your name is Teacher Jane. You are a helpful, encouraging Thai-English teacher trainer. You speak kindly, use simple language, and speak slowly on this video call.`;
-    } else if (this.selectedTeacherAvatar.includes('David')) {
-      personaPrompt = `Your name is Mr. David. You are a British educator. You are polite, formal, professional, and speak in a precise British style.`;
-    } else if (this.selectedTeacherAvatar.includes('Alex')) {
-      personaPrompt = `Your name is Alex. You are a friendly, cool English tutor. You are enthusiastic, casual, and speak like a supportive peer.`;
-    } else if (this.selectedTeacherAvatar.includes('Maria')) {
-      personaPrompt = `Your name is Mama Maria. You are a parent of a student. You are caring and talk like a parent discussing their child's studies.`;
-    }
-
-    // Enforce conversation flow structure:
-    // 1. AI introduces itself (Greeting)
-    // 2. Student introduces themselves
-    // 3. AI acknowledges the introduction, then transitions ("เข้าเรื่อง") to the main topic.
-    let flowInstruction = '';
-    const userMessageCount = this.videoCallMessages.filter(m => m.sender === 'user').length;
-    if (userMessageCount === 1) {
-      flowInstruction = `
-CONVERSATION FLOW RULE - INTRODUCTION PHASE:
-The student has just introduced themselves. You MUST:
-1. Acknowledge the student's introduction warmly and politely (e.g. "Nice to meet you, [name]!").
-2. Immediately transition ("เข้าเรื่อง") to the main topic of the lesson or roleplay.`;
-    } else {
-      flowInstruction = `
-CONVERSATION FLOW RULE - ROLEPLAY/LESSON ACTIVE PHASE:
-You have already completed introductions. Focus entirely on continuing the roleplay/lesson conversation naturally.`;
-    }
-
-    const systemPrompt = `You are an AI partner on a simulated video call.
-Persona: ${personaPrompt}
-
-Stay in character. Keep your reply short (1-2 sentences) and conversational.
-Do NOT repeat or echo the student's message.
-${flowInstruction}
-
-Current call transcript history:
-${chatHistory}`;
-
-    this.apiService.postAiSpeaking('text-to-text', {
-      message: text,
-      context: systemPrompt,
-      user_id: this.session.currentUser?.id
-    }).subscribe({
-      next: (res: any) => {
-        const reply = res.reply || "I see. Let's continue practicing!";
-        this.videoCallMessages.push({ sender: 'ai', text: reply, time: new Date() });
-        this.practiceSpeakText(reply);
-      },
-      error: (err: any) => {
-        console.warn("Backend call failed for video call, using fallback:", err);
-        const reply = "I understand. Let's keep practicing our English speaking!";
-        this.videoCallMessages.push({ sender: 'ai', text: reply, time: new Date() });
-        this.practiceSpeakText(reply);
-      }
-    });
   }
 
   calculatePronunciationScore(target: string, actual: string) {
@@ -1654,18 +2005,87 @@ ${chatHistory}`;
     this.pronunciationScore = Math.round((matchedCount / targetWords.length) * 100);
   }
 
+  // --- Speech-to-Text setup screen: same level-selection pattern as the
+  // Text-to-Speech dictation quiz (relative-tertile length bucketing, since
+  // there's no difficulty tag in the lesson data -- see buildTtsDictationPools
+  // for why fixed length cutoffs don't work well on this content). ---
+  private buildSttSentencePool(): void {
+    const seen = new Set<string>();
+    const sentences: string[] = [];
+    this.lessonsData.units.forEach((u: any) => {
+      (u.speakingQuestions || []).forEach((s: string) => {
+        const t = (s || '').trim();
+        if (t && !seen.has(t.toLowerCase())) {
+          seen.add(t.toLowerCase());
+          sentences.push(t);
+        }
+      });
+    });
+
+    const buckets = this.bucketByLengthTertile(sentences, s => s.trim().split(/\s+/).filter(Boolean).length);
+    this.sttSentencePool = buckets[this.sttLevel];
+  }
+
+  startSttSession(): void {
+    this.buildSttSentencePool();
+    if (this.sttSentencePool.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'ไม่พบประโยคในระดับนี้',
+        text: 'ลองเลือกระดับความยากอื่นดูนะคะ',
+        confirmButtonColor: '#6B21A8'
+      });
+      return;
+    }
+
+    this.practiceSentences = this.shuffleCopy(this.sttSentencePool);
+    this.sttOriginalSentences = [...this.practiceSentences];
+    this.selectedSentenceIndex = 0;
+    this.sttSessionCount = 0;
+    this.sttWrongSentences = [];
+    this.showSttReviewModal = false;
+    this.recognizedText = '';
+    this.pronunciationScore = null;
+    this.matchedWords = [];
+    this.sttSpeedScore = null;
+    this.sttFinalScore = null;
+    this.sttSentenceShownTime = Date.now();
+    this.sttStep = 'practice';
+    this.gameFx.playSoundEffect('click');
+  }
+
+  // Called once the mic recording for this attempt has a final transcript
+  // (see mediaRecorder.onstop / fallbackSpeechRecognition). Combines reading
+  // accuracy (calculatePronunciationScore, 60%) with response speed (40%) --
+  // how long it took from the sentence appearing to finishing speaking it.
+  private scoreSttAttempt(text: string): void {
+    const target = this.practiceSentences[this.selectedSentenceIndex];
+    this.recognizedText = text;
+    this.calculatePronunciationScore(target, text);
+
+    const elapsedSeconds = this.sttSentenceShownTime > 0
+      ? (Date.now() - this.sttSentenceShownTime) / 1000
+      : 0;
+    this.sttSpeedScore = this.calculateSttSpeedScore(target, elapsedSeconds);
+    // ตอบไว (speed) 40% + อ่านถูก (accuracy) 60%
+    this.sttFinalScore = Math.round(this.sttSpeedScore * 0.4 + (this.pronunciationScore || 0) * 0.6);
+
+    this.gameFx.playSoundEffect(this.sttFinalScore >= 80 ? 'success' : 'click');
+    this.cdr.detectChanges();
+  }
+
   // สัดส่วนคำที่ตรงกัน (0-1) ใช้ตรวจคำตอบพูด/พิมพ์อิสระเทียบกับคำตอบตัวอย่าง
 
   nextSentence() {
     if (this.practiceMode === 'speech-to-text') {
       this.sttSessionCount++;
       const currentTarget = this.practiceSentences[this.selectedSentenceIndex];
-      // If score is null or less than 100, add to wrong list
-      if (this.pronunciationScore === null || this.pronunciationScore < 100) {
+      // If the combined score is null or less than 100, add to wrong list
+      if (this.sttFinalScore === null || this.sttFinalScore < 100) {
         if (!this.sttWrongSentences.includes(currentTarget)) {
           this.sttWrongSentences.push(currentTarget);
         }
-        if (this.pronunciationScore === null || this.pronunciationScore < 80) {
+        if (this.sttFinalScore === null || this.sttFinalScore < 80) {
           this.mistakes.trackWrongItem('sentence', currentTarget, currentTarget, 'Speech-to-Text Pronunciation');
         }
       }
@@ -1685,6 +2105,9 @@ ${chatHistory}`;
     this.recognizedText = '';
     this.pronunciationScore = null;
     this.matchedWords = [];
+    this.sttSpeedScore = null;
+    this.sttFinalScore = null;
+    this.sttSentenceShownTime = Date.now();
   }
 
   startSttReview() {
@@ -1696,6 +2119,9 @@ ${chatHistory}`;
     this.recognizedText = '';
     this.pronunciationScore = null;
     this.matchedWords = [];
+    this.sttSpeedScore = null;
+    this.sttFinalScore = null;
+    this.sttSentenceShownTime = Date.now();
   }
 
   exitSttPractice() {
@@ -1711,6 +2137,7 @@ ${chatHistory}`;
 
     this.practiceSentences = [...this.sttOriginalSentences];
     this.practiceMode = 'menu';
+    this.sttStep = 'setup';
     this.showSttReviewModal = false;
   }
 
@@ -1735,9 +2162,9 @@ ${chatHistory}`;
       .replace(/>/g, '&gt;');
 
     // Headings: ### title or ## title or # title
-    escaped = escaped.replace(/^### (.*?)$/gm, '<h5 style="margin: 0.75rem 0 0.5rem 0; font-size: 0.92rem; font-weight: 800; color: #4f46e5;">$1</h5>');
-    escaped = escaped.replace(/^## (.*?)$/gm, '<h4 style="margin: 1rem 0 0.75rem 0; font-size: 1rem; font-weight: 850; color: #7c3aed;">$1</h4>');
-    escaped = escaped.replace(/^# (.*?)$/gm, '<h3 style="margin: 1.25rem 0 1rem 0; font-size: 1.1rem; font-weight: 900; color: #7c3aed;">$1</h3>');
+    escaped = escaped.replace(/^### (.*?)$/gm, '<h5 style="margin: 0.75rem 0 0.5rem 0; font-size: 0.92rem; font-weight: 800; color: #0f766e;">$1</h5>');
+    escaped = escaped.replace(/^## (.*?)$/gm, '<h4 style="margin: 1rem 0 0.75rem 0; font-size: 1rem; font-weight: 850; color: #0f766e;">$1</h4>');
+    escaped = escaped.replace(/^# (.*?)$/gm, '<h3 style="margin: 1.25rem 0 1rem 0; font-size: 1.1rem; font-weight: 900; color: #0f766e;">$1</h3>');
 
     // Horizontal Rule: ---
     escaped = escaped.replace(/^---$/gm, '<hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.15); margin: 0.85rem 0;" />');
@@ -2058,293 +2485,6 @@ IMPORTANT: If the student made any grammar or spelling mistake in their last mes
     setTimeout(performScroll, 250);
     setTimeout(performScroll, 400);
   }
-  getAvatarImageByLabel(label: string): string {
-    if (label.includes('Jane')) return 'ai-avatar.jpg';
-    if (label.includes('David')) return 'david.png';
-    if (label.includes('Alex')) return 'alex.png';
-    if (label.includes('Maria')) return 'maria.png';
-    return 'ai-avatar.jpg';
-  }
-
-  getAvatarKeyByLabel(label: string): 'jane' | 'david' | 'alex' | 'maria' {
-    if (label.includes('Jane')) return 'jane';
-    if (label.includes('David')) return 'david';
-    if (label.includes('Alex')) return 'alex';
-    if (label.includes('Maria')) return 'maria';
-    return 'jane';
-  }
-
-  // ── AI Video Call feature (separate from Speech-to-Speech practice above:
-  // its own transcript/send path via confirmSendVideoCallMessageDirect,
-  // its own scoring/feedback at end of call) ──
-  openVideoCall(): void {
-    this.sharedUi.showVideoCallModal = true;
-    this.videoCallStep = 'intro';
-    this.videoCallDuration = 0;
-    this.videoCallMessages = [];
-    this.videoCallFeedback = null;
-    this.gameFx.playSoundEffect('click');
-  }
-
-  startVideoCall(): void {
-    this.gameFx.playSoundEffect('success');
-    this.videoCallStep = 'calling';
-    this.videoCallMessages = [];
-
-    setTimeout(() => {
-      this.videoCallStep = 'active';
-      this.videoCallDuration = 0;
-
-      // Start duration timer
-      if (this.videoCallTimerInterval) clearInterval(this.videoCallTimerInterval);
-      this.videoCallTimerInterval = setInterval(() => {
-        this.videoCallDuration++;
-      }, 1000);
-
-      this.videoCallRoleHint = '';
-      const cat = this.selectedCategory;
-      if (cat === 'teaching') {
-        if (this.selectedTeacherAvatar.includes('Jane')) {
-          this.videoCallRoleHint = "ครูฝึกสอน (Student Teacher) | แนะนำตัวเองว่าคุณชื่ออะไร และกำลังมาฝึกสอนภาษาอังกฤษภายใต้การแนะนำของครูเจน";
-        } else if (this.selectedTeacherAvatar.includes('David')) {
-          this.videoCallRoleHint = "ผู้สมัครงานครู (Teacher Candidate) | แนะนำตัวเองและประวัติสั้น ๆ เพื่อสมัครตำแหน่งครูสอนภาษาอังกฤษกับผู้อำนวยการเดวิด";
-        } else if (this.selectedTeacherAvatar.includes('Alex')) {
-          this.videoCallRoleHint = "ครูคู่หู (Co-teacher) | แนะนำตัวเองกับครูอเล็กซ์เพื่อวางแผนการเรียนการสอนภาษาอังกฤษร่วมกัน";
-        } else if (this.selectedTeacherAvatar.includes('Maria')) {
-          this.videoCallRoleHint = "ครูประจำชั้น (Homeroom Teacher - Ms. Parker) | แนะนำตัวกับมาเรีย (ผู้ปกครองน้องซาร่าห์) เพื่อพูดคุยปรึกษาการเรียนของเด็ก";
-        }
-      } else if (cat === 'daily') {
-        if (this.selectedTeacherAvatar.includes('Jane')) {
-          this.videoCallRoleHint = "ผู้ฝึกฝนภาษาอังกฤษ (English Learner) | แนะนำตัวกับครูเจนแบบกันเอง พูดคุยทักทายชีวิตประจำวันและงานอดิเรก";
-        } else if (this.selectedTeacherAvatar.includes('David')) {
-          this.videoCallRoleHint = "ผู้สนทนากับชาวต่างชาติ (English Speaker) | แนะนำตัวแบบสุภาพเพื่อฝึกคุยทักทายและเรียนรู้การแลกเปลี่ยนเรื่องทั่วไปกับเดวิด";
-        } else if (this.selectedTeacherAvatar.includes('Alex')) {
-          this.videoCallRoleHint = "เพื่อนใหม่ (New Friend) | ทักทายพูดคุยสไตล์สบาย ๆ กิจกรรมยามว่างและสิ่งที่คุณชอบกับอเล็กซ์";
-        } else if (this.selectedTeacherAvatar.includes('Maria')) {
-          this.videoCallRoleHint = "เพื่อนบ้านใหม่ (New Neighbor) | แนะนำตัวเองเพื่อทำความรู้จักและคุยแลกเปลี่ยนเรื่องทั่วไปกับเพื่อนบ้านมาเรีย";
-        }
-      } else if (cat === 'presentation') {
-        if (this.selectedTeacherAvatar.includes('Jane')) {
-          this.videoCallRoleHint = "ผู้นำเสนอผลงาน (Presenter) | แนะนำตัวเองพร้อมเกริ่นหัวข้องานนำเสนอและเป้าหมายของงานต่อครูเจน";
-        } else if (this.selectedTeacherAvatar.includes('David')) {
-          this.videoCallRoleHint = "ผู้นำเสนอวิชาการ (Formal Presenter) | แนะนำตัวเองและแจ้งหัวข้องานวิจัยต่อหน้าเดวิดที่เป็นผู้อำนวยการประชุม";
-        } else if (this.selectedTeacherAvatar.includes('Alex')) {
-          this.videoCallRoleHint = "ผู้นำเสนอสัมมนาครู (Workshop Presenter) | ทักทายแนะนำตัวแบบเพื่อนร่วมงาน บอกประเด็นหัวข้อนำเสนอกับครูอเล็กซ์";
-        } else if (this.selectedTeacherAvatar.includes('Maria')) {
-          this.videoCallRoleHint = "ครูผู้นำเสนอชี้แจง (Homeroom Teacher) | แนะนำตัวกับผู้ปกครองมาเรีย พร้อมเกริ่นเข้าสู่การรายงานแนวทางการสอนของชั้นเรียน";
-        }
-      } else if (cat === 'interview') {
-        if (this.selectedTeacherAvatar.includes('Jane')) {
-          this.videoCallRoleHint = "ผู้ถูกสัมภาษณ์เข้าฝึกสอน (Mock Interviewee) | แนะนำประวัติการเรียนสั้น ๆ เพื่อเตรียมสัมภาษณ์เป็นครูฝึกสอนกับครูเจน";
-        } else if (this.selectedTeacherAvatar.includes('David')) {
-          this.videoCallRoleHint = "ผู้สมัครงานครูสอนภาษาอังกฤษ (Job Candidate) | แนะนำประวัติการเรียน/การทำงาน จุดเด่น ทักษะการสอนเพื่อสัมภาษณ์กับเดวิด";
-        } else if (this.selectedTeacherAvatar.includes('Alex')) {
-          this.videoCallRoleHint = "ผู้ซ้อมสัมภาษณ์งาน (Practice Candidate) | แนะนำตัวเอง ทัศนคติต่อการสอนสไตล์สบาย ๆ เพื่อเตรียมสัมภาษณ์กับอเล็กซ์";
-        } else if (this.selectedTeacherAvatar.includes('Maria')) {
-          this.videoCallRoleHint = "ครูผู้ถูกสัมภาษณ์โดยผู้ปกครอง (Teacher under Interview) | แนะนำตัวและทัศนคติการสอนเพื่อสร้างความมั่นใจให้ผู้ปกครองมาเรีย";
-        }
-      }
-
-      const studentName = this.session.currentUser?.firstName || 'there';
-      let aiGreeting = '';
-      if (cat === 'teaching') {
-        if (this.selectedTeacherAvatar.includes('Jane')) {
-          aiGreeting = `Hello ${studentName}! I am Teacher Jane, your senior mentor. It's wonderful to connect with you today for your teacher training. Let's start!`;
-        } else if (this.selectedTeacherAvatar.includes('David')) {
-          aiGreeting = `Good day, ${studentName}. I am Mr. David, the Principal. Welcome to our school. Let's begin our teaching simulation.`;
-        } else if (this.selectedTeacherAvatar.includes('Alex')) {
-          aiGreeting = `Hey there, ${studentName}! Alex here. Glad to work with you as your co-teacher today. Let's start planning our lesson.`;
-        } else if (this.selectedTeacherAvatar.includes('Maria')) {
-          aiGreeting = `Hello, Teacher ${studentName}! This is Mama Maria, Sarah's mother. Thank you for taking my call to discuss Sarah's studies.`;
-        } else {
-          aiGreeting = `Hello ${studentName}! I am your AI partner. Let's begin.`;
-        }
-      } else if (cat === 'daily') {
-        if (this.selectedTeacherAvatar.includes('Jane')) {
-          aiGreeting = `Hello ${studentName}! I am Teacher Jane. It's great to talk to you. How are you doing today?`;
-        } else if (this.selectedTeacherAvatar.includes('David')) {
-          aiGreeting = `Good day, ${studentName}. I am Mr. David. It's a pleasure to connect with you. What would you like to chat about today?`;
-        } else if (this.selectedTeacherAvatar.includes('Alex')) {
-          aiGreeting = `Hey there, ${studentName}! Alex here! Awesome to connect with you. How has your week been?`;
-        } else if (this.selectedTeacherAvatar.includes('Maria')) {
-          aiGreeting = `Hello ${studentName}! I am Maria, your neighbor. Glad to meet you. How are you today?`;
-        } else {
-          aiGreeting = `Hello ${studentName}! I am your AI partner. Let's start our chat!`;
-        }
-      } else if (cat === 'presentation') {
-        if (this.selectedTeacherAvatar.includes('Jane')) {
-          aiGreeting = `Hello ${studentName}! I am Teacher Jane. I am ready to listen to your presentation. Please start whenever you are ready.`;
-        } else if (this.selectedTeacherAvatar.includes('David')) {
-          aiGreeting = `Good day, ${studentName}. I am Mr. David. I will be evaluating your presentation today. Please feel free to begin.`;
-        } else if (this.selectedTeacherAvatar.includes('Alex')) {
-          aiGreeting = `Hey there, ${studentName}! Alex here. Excited to hear about your project! Let's get started.`;
-        } else if (this.selectedTeacherAvatar.includes('Maria')) {
-          aiGreeting = `Hello ${studentName}! This is Mama Maria. Thank you for organizing this parents' meeting. Please go ahead with your presentation, teacher.`;
-        } else {
-          aiGreeting = `Hello ${studentName}! I am your AI partner. Please start your presentation.`;
-        }
-      } else if (cat === 'interview') {
-        if (this.selectedTeacherAvatar.includes('Jane')) {
-          aiGreeting = `Hello ${studentName}! I am Teacher Jane. I am glad to do this mock interview with you today. Let's start with your teaching background.`;
-        } else if (this.selectedTeacherAvatar.includes('David')) {
-          aiGreeting = `Good day, ${studentName}. I am Mr. David, the School Director. Welcome to the interview. Let's begin: Why do you want to teach at our school?`;
-        } else if (this.selectedTeacherAvatar.includes('Alex')) {
-          aiGreeting = `Hey there, ${studentName}! Alex here. Glad to help you practice your interview questions today. Ready for the first question?`;
-        } else if (this.selectedTeacherAvatar.includes('Maria')) {
-          aiGreeting = `Hello! This is Mama Maria. I am looking for a teacher/tutor for my child. Let's discuss your qualifications.`;
-        } else {
-          aiGreeting = `Hello ${studentName}! I am your AI partner. Welcome to the mock interview. Let's begin.`;
-        }
-      } else {
-        aiGreeting = `Hello ${studentName}! Let's start our practice.`;
-      }
-
-      this.videoCallMessages.push({ sender: 'ai', text: aiGreeting, time: new Date() });
-      this.practiceSpeakText(aiGreeting);
-    }, 2000);
-  }
-
-  endVideoCall(): void {
-    if (this.videoCallTimerInterval) {
-      clearInterval(this.videoCallTimerInterval);
-      this.videoCallTimerInterval = null;
-    }
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-
-    this.gameFx.playSoundEffect('success');
-    this.videoCallFeedback = null;
-    this.videoCallStep = 'feedback';
-
-    const hasUserTurn = this.videoCallMessages.some((m) => m.sender === 'user');
-    if (!hasUserTurn) {
-      this.videoCallFeedback = this.buildFallbackVideoCallFeedback();
-      this.finishVideoCallScoring();
-      return;
-    }
-
-    const transcript = this.videoCallMessages
-      .map((m) => `${m.sender === 'user' ? 'Student' : 'AI'}: ${m.text}`)
-      .join('\n');
-
-    const evalPrompt = `You just finished a spoken English roleplay video call practice with a university student. Their speech was transcribed live via speech recognition.
-Here is the full transcript:
-${transcript}
-
-Evaluate the student's English based ONLY on their messages in the transcript. Score each area as an integer from 0-100:
-- grammar: correctness of sentence structure
-- vocabulary: range and appropriateness of word choice
-- fluency: how naturally and completely the student expressed ideas (short/broken fragments score lower)
-- pronunciation: this is a text transcript from speech recognition, so estimate this from how clean and complete the recognized speech was (garbled or very short fragments suggest lower clarity)
-Respond with ONLY valid JSON in this exact shape and nothing else:
-{"pronunciation": 0-100, "fluency": 0-100, "grammar": 0-100, "vocabulary": 0-100, "suggestions": "1-2 sentence feedback in English, encouraging tone"}`;
-
-    this.apiService
-      .postAiSpeaking('text-to-text', {
-        message: 'Please evaluate the call now.',
-        context: evalPrompt,
-        user_id: this.session.currentUser?.id,
-      })
-      .subscribe({
-        next: (res: any) => {
-          this.videoCallFeedback = this.parseVideoCallFeedback(res.reply || '');
-          this.finishVideoCallScoring();
-        },
-        error: () => {
-          this.videoCallFeedback = this.buildFallbackVideoCallFeedback();
-          this.finishVideoCallScoring();
-        },
-      });
-  }
-
-  private finishVideoCallScoring(): void {
-    const fb = this.videoCallFeedback!;
-    this.progress.practiceCount += 1;
-    this.session.currentUser.total_score = (this.session.currentUser.total_score || 0) + fb.xp;
-
-    this.learningLog.log({
-      type: 'AI Video Call',
-      title: `Practice Call with ${this.selectedTeacherAvatar.split(' ')[1]}`,
-      score: Math.round((fb.pronunciation + fb.fluency + fb.grammar + fb.vocabulary) / 4),
-      xp: fb.xp,
-      suggestions: fb.suggestions,
-      feedback: fb,
-      transcript: this.videoCallMessages.map((m) => ({ sender: m.sender, text: m.text }))
-    } as any);
-  }
-
-  private parseVideoCallFeedback(raw: string): {
-    pronunciation: number;
-    fluency: number;
-    grammar: number;
-    vocabulary: number;
-    suggestions: string;
-    xp: number;
-  } {
-    const clamp = (n: any, fallback: number) => {
-      const v = Math.round(Number(n));
-      return Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : fallback;
-    };
-    try {
-      const start = raw.indexOf('{');
-      const end = raw.lastIndexOf('}');
-      if (start === -1 || end === -1) throw new Error('no JSON found');
-      const parsed = JSON.parse(raw.substring(start, end + 1));
-      return {
-        pronunciation: clamp(parsed.pronunciation, 70),
-        fluency: clamp(parsed.fluency, 70),
-        grammar: clamp(parsed.grammar, 70),
-        vocabulary: clamp(parsed.vocabulary, 70),
-        suggestions: parsed.suggestions || 'Good effort! Keep practicing your spoken English.',
-        xp: 20,
-      };
-    } catch {
-      return this.buildFallbackVideoCallFeedback();
-    }
-  }
-
-  private buildFallbackVideoCallFeedback(): {
-    pronunciation: number;
-    fluency: number;
-    grammar: number;
-    vocabulary: number;
-    suggestions: string;
-    xp: number;
-  } {
-    return {
-      pronunciation: 70,
-      fluency: 70,
-      grammar: 70,
-      vocabulary: 70,
-      suggestions: 'ระบบประเมินผลจาก AI ไม่สำเร็จ ลองฝึกอีกครั้งเพื่อรับผลประเมินที่แม่นยำขึ้นนะคะ',
-      xp: 20,
-    };
-  }
-
-  closeVideoCall(): void {
-    if (this.videoCallTimerInterval) {
-      clearInterval(this.videoCallTimerInterval);
-      this.videoCallTimerInterval = null;
-    }
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-    this.isPlayingTTS = false;
-    this.sharedUi.showVideoCallModal = false;
-    this.gameFx.playSoundEffect('click');
-    this.cdr.detectChanges();
-  }
-
-  triggerVideoCallSpeech(): void {
-    this.practiceToggleRecording();
-  }
-
-  handleVideoCallSpeechResult(text: string): void {
-    if (!text.trim()) return;
-    this.videoCallPendingText = text;
-    this.showVideoCallConfirm = true;
-  }
 
   loadPastChatSession(log: any): void {
     if (!log || !log.transcript || log.transcript.length === 0) return;
@@ -2396,8 +2536,10 @@ Respond with ONLY valid JSON in this exact shape and nothing else:
           <div style="text-align: left; font-size: 0.9rem; line-height: 1.6; color: #475569; padding: 0.5rem 0;">
             <p style="margin: 6px 0;"><strong>ประเภทกิจกรรม:</strong> ${log.type || 'กิจกรรมทั่วไป'}</p>
             <p style="margin: 6px 0;"><strong>วันที่ทำกิจกรรม:</strong> ${dateFormatted}</p>
-            ${log.score !== undefined ? `<p style="margin: 6px 0;"><strong>คะแนนสำเร็จ:</strong> <span style="color: #4f46e5; font-weight: 800;">${log.score}%</span></p>` : ''}
+            ${log.score !== undefined ? `<p style="margin: 6px 0;"><strong>คะแนนสำเร็จ:</strong> <span style="color: #0d9488; font-weight: 800;">${log.score}%</span></p>` : ''}
             <p style="margin: 6px 0;"><strong>คะแนนประสบการณ์ที่ได้รับ:</strong> <span style="color: #10b981; font-weight: 800;">+${log.xp} XP</span></p>
+            ${log.report?.overall ? `<p style="margin: 10px 0 0; padding-top: 10px; border-top: 1px solid #f1f5f9; white-space: pre-line;">${log.report.overall}</p>` : ''}
+            ${log.report?.tips?.length ? `<p style="margin: 8px 0 0; padding-top: 8px; border-top: 1px solid #f1f5f9; white-space: pre-line;"><strong>💡 คำแนะนำ:</strong><br>${log.report.tips.join('<br>')}</p>` : ''}
           </div>
         `,
         icon: icon,

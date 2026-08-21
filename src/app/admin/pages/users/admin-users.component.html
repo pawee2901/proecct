@@ -1,0 +1,150 @@
+<div class="tab-panel animate-fade">
+
+  <!-- Pending Teachers Section -->
+  @if (adminUsers.pendingTeachersList.length > 0) {
+    <div class="section-container alert-border">
+      <div class="section-header-row">
+        <div>
+          <h3 class="section-title text-red">สมาชิกอาจารย์รอการอนุมัติสิทธิ์ / Pending Approvals</h3>
+          <p class="section-desc">อาจารย์ที่สมัครสมาชิกจำเป็นต้องได้รับการยืนยันตัวตนจากแอดมินก่อนจึงจะเริ่มจัดการชั้นเรียนได้</p>
+        </div>
+        <span class="pending-count-badge">{{ adminUsers.pendingTeachersList.length }} คน</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="cute-table margin-top">
+          <thead>
+            <tr>
+              <th>ชื่อผู้ใช้</th>
+              <th>ชื่อจริง-นามสกุล</th>
+              <th>อีเมล</th>
+              <th>วันที่สมัคร</th>
+              <th>บทบาท</th>
+              <th>การอนุมัติ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (teacher of adminUsers.pendingTeachersList; track teacher.id) {
+              <tr>
+                <td><code>{{ teacher.username }}</code></td>
+                <td><strong>{{ teacher.name }}</strong></td>
+                <td>{{ teacher.email }}</td>
+                <td>{{ teacher.created_at || 'ล่าสุด' }}</td>
+                <td><span class="role-badge teacher">อาจารย์ (Teacher)</span></td>
+                <td class="action-cell">
+                  <button type="button" class="btn-approve" (click)="approveTeacher(teacher.id)">อนุมัติสิทธิ์</button>
+                  <button type="button" class="btn-reject" (click)="rejectTeacher(teacher.id)">ปฏิเสธ</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- All Users Section -->
+  <div class="section-container">
+    <div class="section-header-row">
+      <div>
+        <h3 class="section-title">บัญชีผู้ใช้งานทั้งหมดในระบบ / All User Directory</h3>
+        <p class="section-desc">ค้นหา แก้ไข เปลี่ยนบทบาท รีเซ็ตรหัสผ่าน และจัดการบัญชีในระบบ</p>
+      </div>
+      <div class="header-buttons-row">
+        <button type="button" class="btn-primary-action purple" (click)="openTeacherDirectoryModal()">
+          ดูรายชื่ออาจารย์ทั้งหมด
+        </button>
+        <button type="button" class="btn-primary-action" (click)="openAddUserModal()">
+          เพิ่มผู้ใช้ใหม่ / Add User
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-controls-row">
+      <div class="search-input-wrapper">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" class="filter-input" [(ngModel)]="userSearchQuery" placeholder="ค้นหาตามชื่อ, Username หรือ อีเมล...">
+      </div>
+
+      <div class="filter-dropdown-group">
+        <select class="filter-select" [(ngModel)]="userRoleFilter">
+          <option value="all">ทุกบทบาท (All Roles)</option>
+          <option value="student">นักศึกษา (Student)</option>
+          <option value="teacher">อาจารย์ (Teacher)</option>
+          <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+        </select>
+
+        <select class="filter-select" [(ngModel)]="userStatusFilter">
+          <option value="all">ทุกสถานะ (All Status)</option>
+          <option value="active">เปิดใช้งานแล้ว</option>
+          <option value="pending">รออนุมัติ</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="cute-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>ผู้ใช้งาน</th>
+            <th>ชื่อจริง-นามสกุล</th>
+            <th>อีเมล</th>
+            <th>สิทธิ์การใช้งาน (Role)</th>
+            <th>สถานะ</th>
+            <th style="text-align: center;">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of filteredUsers; track user.id) {
+            <tr>
+              <td><span class="id-tag">#{{ user.id }}</span></td>
+              <td><strong>{{ user.username }}</strong></td>
+              <td>{{ user.name }}</td>
+              <td>{{ user.email }}</td>
+              <td>
+                <select
+                  class="role-select-badge"
+                  [class.student]="user.role === 'student'"
+                  [class.teacher]="user.role === 'teacher'"
+                  [class.admin]="user.role === 'admin'"
+                  [value]="user.role"
+                  (change)="changeUserRole(user, $any($event.target).value)"
+                >
+                  <option value="student">STUDENT</option>
+                  <option value="teacher">TEACHER</option>
+                  <option value="admin">ADMIN</option>
+                </select>
+              </td>
+              <td>
+                <span class="status-indicator-pill" [class.active]="user.is_approved">
+                  {{ user.is_approved ? 'เปิดใช้งาน' : 'รอการอนุมัติ' }}
+                </span>
+              </td>
+              <td style="text-align: center;">
+                <div class="table-actions-row">
+                  <button type="button" class="btn-icon-action" (click)="openEditUserModal(user)" title="แก้ไขข้อมูล">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                  </button>
+                  <button type="button" class="btn-icon-action" (click)="openResetPasswordModal(user)" title="รีเซ็ตรหัสผ่าน">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-2-2l2 2M3 11a8 8 0 0 1 15.15-3.66L22 11l-3 3 1.5 1.5L19 17l-1.5-1.5L16 17l-1.5-1.5L13 17l-1.5-1.5L10 17l-1.5-1.5L7 17l-1.5-1.5L4 17l-1-1 3-3.66A8 8 0 0 1 3 11z"></path></svg>
+                  </button>
+                  <button type="button" class="btn-icon-action danger" (click)="deleteUser(user)" title="ลบบัญชี">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (filteredUsers.length === 0) {
+            <tr>
+              <td colspan="7" class="empty-table-msg">ไม่พบข้อมูลผู้ใช้ที่ตรงตามเงื่อนไขค้นหา</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

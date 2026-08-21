@@ -3,15 +3,14 @@ import { StudentSessionService } from './student-session.service';
 
 // Extracted from student.component.ts: modal visibility flags (~416-436),
 // openVoiceSettings/saveVoiceSettings/loadVoiceSettings (~8602-8639),
-// openBadges (~8735). Video Call's own conversation flow stays with
-// StudentPracticeComponent (Phase 6) — only its shared modal-open flag lives
-// here, since both the Shell "More" menu and the Practice tab used to open it.
-// The "More" bottom sheet itself was dead code (no open-trigger in the
-// template) and was dropped rather than migrated, per the approved plan.
+// openBadges (~8735). The "More" bottom sheet itself was dead code (no
+// open-trigger in the template) and was dropped rather than migrated, per
+// the approved plan. showVideoCallModal/openVideoCallModal/closeVideoCallModal
+// (the AI Video Call feature's shared open/close flag) were dropped when
+// that feature was removed entirely — see git history.
 @Injectable({ providedIn: 'root' })
 export class SharedUiStateService {
   showVoiceSettingsModal = false;
-  showVideoCallModal = false;
   showBadgesModal = false;
 
   // Badges & Achievements — small static demo data, rendered only by the
@@ -81,13 +80,5 @@ export class SharedUiStateService {
 
   closeBadges(): void {
     this.showBadgesModal = false;
-  }
-
-  openVideoCallModal(): void {
-    this.showVideoCallModal = true;
-  }
-
-  closeVideoCallModal(): void {
-    this.showVideoCallModal = false;
   }
 }

@@ -1,0 +1,70 @@
+<div class="active-game-area animate-fade">
+  <div class="active-game-topbar">
+    <h3>{{ game.title }}</h3>
+    <button class="btn-exit-game" (click)="exit()">ออกจากเกม</button>
+  </div>
+
+  @if (loading) {
+    <p class="quiz-loading">กำลังโหลดคำถาม...</p>
+  } @else if (questions.length === 0) {
+    <div class="game-done-card">
+      <h3>ยังไม่มีคำถามในเกมนี้</h3>
+      <p>ให้ผู้สอนเพิ่มคำถามจากหน้า "จัดการเนื้อหา" ก่อน แล้วกลับมาเล่นใหม่อีกครั้ง</p>
+      <button class="btn-ok-step" (click)="exit()">ตกลง</button>
+    </div>
+  } @else if (!finished) {
+    <div class="game-body-scramble">
+      <div class="scramble-card">
+        <span class="game-meta-tag">คำถามที่ {{ index + 1 }} / {{ questions.length }}</span>
+
+        <p class="scramble-hint">{{ currentQuestion.question_text }}</p>
+        @if (currentQuestion.question_image) {
+          <img [src]="currentQuestion.question_image" alt="" class="quiz-question-img" />
+        }
+
+        <div class="quiz-answers-list">
+          @for (a of currentQuestion.answers; track a.answer_id) {
+            <button
+              type="button"
+              class="quiz-answer-btn"
+              [class.selected]="selectedAnswerId === a.answer_id"
+              [class.correct]="answered && a.is_correct"
+              [class.wrong]="answered && selectedAnswerId === a.answer_id && !a.is_correct"
+              [disabled]="answered"
+              (click)="selectAnswer(a)"
+            >
+              @if (a.answer_image) {
+                <img [src]="a.answer_image" alt="" class="quiz-answer-img" />
+              }
+              <span>{{ a.answer_text }}</span>
+            </button>
+          }
+        </div>
+
+        @if (answered) {
+          <div class="feedback-block" [class.correct]="isCorrectSelected" [class.wrong]="!isCorrectSelected">
+            <p class="feedback-msg">{{ isCorrectSelected ? '✅ ถูกต้อง!' : '❌ ยังไม่ถูก' }}</p>
+            @if (currentQuestion.explanation) {
+              <p class="feedback-sub">{{ currentQuestion.explanation }}</p>
+            }
+            <button class="btn-ok-step" (click)="next()">
+              {{ index < questions.length - 1 ? 'ข้อถัดไป' : 'ดูผลคะแนน' }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="game-done-card">
+      <h3>🎉 เล่นจบแล้ว!</h3>
+      <p>
+        ตอบถูก {{ correctCount }} / {{ questions.length }} ข้อ ·
+        ได้ {{ earnedPoints }} / {{ totalPoints }} คะแนน
+      </p>
+      <div class="quiz-done-actions">
+        <button class="btn-ok-step" (click)="restart()">เล่นอีกครั้ง</button>
+        <button class="btn-exit-game" (click)="exit()">ออกจากเกม</button>
+      </div>
+    </div>
+  }
+</div>

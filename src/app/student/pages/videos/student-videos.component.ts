@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import Swal from 'sweetalert2';
 
+import { ApiService } from '../../../services/api.service';
 import { StudentSessionService } from '../../services/student-session.service';
 import { LearningLogService } from '../../services/learning-log.service';
 import { GameFxService } from '../../services/game-fx.service';
@@ -13,7 +14,11 @@ import { SharedUiStateService } from '../../services/shared-ui-state.service';
 // student.component.html (@if (activeTab === 'videos') block, ~4469-4597).
 // This tab is a UI mockup — "playback" is a setTimeout progress simulation,
 // there's no real video asset or <video> element, and the quiz answers are
-// hardcoded per lesson id. Preserved as-is; not in scope to fix here.
+// hardcoded per lesson id. Product decision (2026-08-17): keep the simulated
+// playback as-is (no real video assets exist in this project), but wire
+// completion/XP through the real backend (video_progress table) instead of
+// only living in-memory — so "watched" state persists across reloads/devices
+// via GET/POST /student/video-progress, same as every other quiz result.
 @Component({
   selector: 'app-student-videos',
   standalone: true,
@@ -21,7 +26,7 @@ import { SharedUiStateService } from '../../services/shared-ui-state.service';
   templateUrl: './student-videos.component.html',
   styleUrl: './student-videos.component.scss',
 })
-export class StudentVideosComponent {
+export class StudentVideosComponent implements OnInit {
   videoLessons = [
     {
       id: 1,
@@ -62,11 +67,25 @@ export class StudentVideosComponent {
   videoQuizAnswer = '';
 
   constructor(
+    private apiService: ApiService,
     public session: StudentSessionService,
     public learningLog: LearningLogService,
     public gameFx: GameFxService,
     public sharedUi: SharedUiStateService,
   ) {}
+
+  ngOnInit(): void {
+    if (!this.session.currentUser?.id) return;
+    this.apiService.getVideoProgress(this.session.currentUser.id).subscribe({
+      next: (videoIds: number[]) => {
+        if (!Array.isArray(videoIds)) return;
+        this.videoLessons.forEach((lesson) => {
+          if (videoIds.includes(lesson.id)) lesson.completed = true;
+        });
+      },
+      error: () => {},
+    });
+  }
 
   selectVideoLesson(lesson: any): void {
     this.selectedVideoLesson = lesson;
@@ -130,6 +149,14 @@ export class StudentVideosComponent {
         title: `Watch Video: ${this.selectedVideoLesson.title}`,
         xp: this.selectedVideoLesson.xpReward,
       });
+
+      // บันทึกจริงลง backend (video_progress) ให้สถานะ "ดูจบแล้ว" คงอยู่ข้ามอุปกรณ์/
+      // reload แทนที่จะอยู่แค่ใน memory ของแท็บนี้ — playback ยังจำลองเหมือนเดิม
+      if (this.session.currentUser?.id) {
+        this.apiService
+          .saveVideoProgress(this.session.currentUser.id, this.selectedVideoLesson.id, this.selectedVideoLesson.xpReward)
+          .subscribe({ error: () => {} });
+      }
     } else {
       this.gameFx.triggerGameShake();
       Swal.fire({

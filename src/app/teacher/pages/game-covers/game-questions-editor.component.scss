@@ -1,0 +1,6 @@
+@use '../../shared' as *;
+
+// ใช้ modal-backdrop / modal-panel / key-card / form-field ฯลฯ จาก
+// src/app/teacher/_shared.scss ทั้งหมด (import ผ่านบรรทัดบน เพราะ Angular
+// view encapsulation แบบ emulated ไม่ดึงสไตล์ของ parent component มาให้
+// อัตโนมัติ) — component นี้ไม่มีสไตล์ของตัวเองเพิ่ม

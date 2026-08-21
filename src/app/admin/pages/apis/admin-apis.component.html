@@ -1,0 +1,202 @@
+<div class="tab-panel animate-fade">
+
+  <!-- API Endpoints Header -->
+  <div class="section-container">
+    <div class="section-header-row">
+      <div>
+        <h3 class="section-title">จัดการและเพิ่ม API Endpoints (API Directory)</h3>
+        <p class="section-desc">กำหนดค่า เพิ่ม API ใหม่ ทดสอบการเชื่อมต่อ และควบคุมสิทธิ์การเรียกใช้งานทั้งหมดของผู้ดูแลระบบ</p>
+      </div>
+      <div class="header-buttons-row">
+        <button type="button" class="btn-primary-action cyan" (click)="openAddApiEndpointModal()">
+          เพิ่ม API Endpoint ใหม่
+        </button>
+        <button type="button" class="btn-primary-action purple" (click)="openAddApiKeyModal()">
+          เพิ่ม API Key ใหม่
+        </button>
+      </div>
+    </div>
+
+    <!-- Search & Category Filters -->
+    <div class="filter-controls-row">
+      <div class="search-input-wrapper">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" class="filter-input" [(ngModel)]="apiSearchQuery" placeholder="ค้นหา API ตามชื่อ, URL หรือคำอธิบาย...">
+      </div>
+
+      <div class="filter-dropdown-group">
+        <select class="filter-select" [(ngModel)]="apiCategoryFilter">
+          <option value="all">ทุกหมวดหมู่ (All Categories)</option>
+          <option value="ai">AI / LLM Model</option>
+          <option value="speech">Speech & STT</option>
+          <option value="user">Auth & User</option>
+          <option value="course">Course & Content</option>
+          <option value="custom">Custom Webhook</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- API Endpoints Table -->
+    <div class="table-responsive">
+      <table class="cute-table">
+        <thead>
+          <tr>
+            <th>METHOD</th>
+            <th>ชื่อ API / Service</th>
+            <th>URL Endpoint</th>
+            <th>หมวดหมู่</th>
+            <th>Latency</th>
+            <th>สถานะ</th>
+            <th style="text-align: center;">จัดการ & ทดสอบ</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (api of filteredApiEndpoints; track api.id) {
+            <tr>
+              <td>
+                <span class="method-chip" [class.post]="api.method === 'POST'" [class.get]="api.method === 'GET'" [class.put]="api.method === 'PUT'" [class.delete]="api.method === 'DELETE'">
+                  {{ api.method }}
+                </span>
+              </td>
+              <td>
+                <strong>{{ api.name }}</strong>
+                <p class="sub-table-desc">{{ api.description }}</p>
+              </td>
+              <td><code class="url-code">{{ api.url }}</code></td>
+              <td>
+                <span class="category-chip">
+                  @if (api.category === 'ai') { AI Model }
+                  @else if (api.category === 'speech') { Speech STT }
+                  @else if (api.category === 'user') { Auth User }
+                  @else if (api.category === 'course') { Course }
+                  @else { Custom }
+                </span>
+              </td>
+              <td>
+                <span class="latency-indicator" [class.fast]="(api.latency_ms || 0) < 450" [class.slow]="(api.latency_ms || 0) >= 450">
+                  {{ api.latency_ms || '—' }} ms
+                </span>
+              </td>
+              <td>
+                <button type="button" class="status-toggle-pill" [class.active]="api.status === 'active'" (click)="toggleApiStatus(api)">
+                  {{ api.status === 'active' ? 'Active' : 'Inactive' }}
+                </button>
+              </td>
+              <td style="text-align: center;">
+                <div class="table-actions-row">
+                  <button type="button" class="btn-test-action" (click)="openTestApiModal(api)">ทดสอบ API</button>
+                  <button type="button" class="btn-icon-action danger" (click)="deleteApiEndpoint(api)" title="ลบ Endpoint">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (filteredApiEndpoints.length === 0) {
+            <tr>
+              <td colspan="7" class="empty-table-msg">ไม่พบข้อมูล API Endpoint ที่ตรงกับเงื่อนไขค้นหา</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- API Keys Section -->
+  <div class="section-container margin-top-lg">
+    <div class="section-header-row">
+      <div>
+        <h3 class="section-title">จัดการ AI Keys & Service Tokens (API Key Vault)</h3>
+        <p class="section-desc">คีย์สำหรับบริการ Gemini AI, Whisper STT, OpenAI และบริการประมวลผลเสียงภาษาอังกฤษ</p>
+      </div>
+      <button type="button" class="btn-primary-action purple" (click)="openAddApiKeyModal()">
+        เพิ่ม API Key ใหม่
+      </button>
+    </div>
+
+    <div class="keys-grid">
+      @for (keyItem of adminApiHub.apiKeysList; track keyItem.id) {
+        <div class="key-card" [class.disabled]="keyItem.status === 'disabled'">
+          <div class="key-card-header">
+            <div>
+              <h4 class="key-provider">{{ keyItem.provider }}</h4>
+              <span class="key-label">{{ keyItem.key_name }}</span>
+            </div>
+            <button type="button" class="status-toggle-pill" [class.active]="keyItem.status === 'active'" (click)="toggleApiKeyStatus(keyItem)">
+              {{ keyItem.status === 'active' ? 'Active' : 'Disabled' }}
+            </button>
+          </div>
+
+          <div class="key-value-box">
+            <span class="key-text">
+              {{ keyItem.show_key ? keyItem.api_key : '••••••••••••••••••••••••' }}
+            </span>
+            <button type="button" class="eye-btn" (click)="toggleKeyVisibility(keyItem)">
+              {{ keyItem.show_key ? 'ซ่อน' : 'แสดง' }}
+            </button>
+          </div>
+
+          <div class="key-usage-section">
+            <div class="usage-text-row">
+              <span>โควตาวันนี้ (Daily Token Usage):</span>
+              <strong>{{ keyItem.used_today | number }} / {{ keyItem.daily_limit | number }}</strong>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill purple" [style.width.%]="(keyItem.used_today / keyItem.daily_limit) * 100"></div>
+            </div>
+          </div>
+
+          <div class="key-card-footer">
+            <button type="button" class="btn-text-danger" (click)="deleteApiKey(keyItem)">ลบ API Key</button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- AI Prompts (ระดับระบบ) -->
+  <div class="section-container margin-top-lg">
+    <div class="section-header-row">
+      <div>
+        <h3 class="section-title">Prompt AI ระดับระบบ (System AI Prompts)</h3>
+        <p class="section-desc">แก้บุคลิก/กฎหลักของ Pingo AI ที่ใช้ตรวจภาษาอังกฤษทุกบทเรียน ทุกชั้นปี โดยไม่ต้องแก้โค้ด — มีผลทันทีหลังบันทึก แยกจากเกณฑ์คะแนน/prompt เฉพาะบทที่อาจารย์ตั้งเองได้ในหน้าจัดการบทเรียนของอาจารย์</p>
+      </div>
+    </div>
+
+    @for (p of aiPromptsList; track p.scope_key) {
+      <div class="key-card" style="margin-bottom: 1rem;">
+        <div class="key-card-header">
+          <div>
+            <h4 class="key-provider">{{ p.scope_key }}</h4>
+            <span class="key-label">{{ p.description }}</span>
+          </div>
+          @if (p.is_customized) {
+            <span class="status-toggle-pill active">แก้ไขแล้ว</span>
+          } @else {
+            <span class="status-toggle-pill">ค่าเริ่มต้นในโค้ด</span>
+          }
+        </div>
+
+        <textarea
+          class="filter-input"
+          style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.65rem 0.9rem; width: 100%; min-height: 160px; box-sizing: border-box; background: #ffffff; font-family: monospace; font-size: 0.8rem; margin-top: 0.6rem;"
+          [(ngModel)]="aiPromptDrafts[p.scope_key]"
+          name="aiPrompt_{{ p.scope_key }}"
+        ></textarea>
+
+        <div class="key-card-footer">
+          @if (p.updated_at) {
+            <span class="sub-table-desc">แก้ไขล่าสุด: {{ p.updated_at }}</span>
+          }
+          <button type="button" class="btn-primary-action purple" [disabled]="aiPromptSaving[p.scope_key]" (click)="saveAiPrompt(p.scope_key)">
+            {{ aiPromptSaving[p.scope_key] ? 'กำลังบันทึก...' : 'บันทึก Prompt' }}
+          </button>
+        </div>
+      </div>
+    }
+    @if (aiPromptsList.length === 0) {
+      <p class="sub-table-desc">กำลังโหลด... หรือยังไม่มี scope ที่ตั้งค่าได้ในระบบ</p>
+    }
+  </div>
+
+</div>

@@ -1,0 +1,236 @@
+<!-- Academic-year toggle now lives in the shell's top tab row (same row as
+     the 3 main tabs) — see TeacherShellComponent. Switching year there fires
+     session.yearChanged$, which ngOnInit below listens to and resets
+     selectedStudent, same as this page's own switchYearLevel() used to do
+     inline before it was removed. -->
+<div class="tab-panel animate-fade">
+
+  <!-- มุมมอง 1: รายชื่อนักเรียนปกติ -->
+  @if (!selectedStudent) {
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <span class="kpi-tag success">นักศึกษาในคลาส</span>
+        </div>
+        <div>
+          <span class="kpi-val">{{ studentCount }}</span>
+          <span class="kpi-lbl">จำนวนนักศึกษาทั้งหมด</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+          </div>
+          <span class="kpi-tag success">ผลการเรียนรวม</span>
+        </div>
+        <div>
+          <span class="kpi-val">{{ classAverage }}%</span>
+          <span class="kpi-lbl">คะแนนเฉลี่ยห้องเรียน</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <span class="kpi-tag success">อัตราความสำเร็จ</span>
+        </div>
+        <div>
+          <span class="kpi-val">{{ completedRate }}%</span>
+          <span class="kpi-lbl">การส่งงานและฝึกพูด</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-container">
+      <div class="filter-controls-row">
+        <div class="search-input-wrapper">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="filter-input" placeholder="ค้นหาชื่อหรือรหัสนักศึกษา..." [(ngModel)]="searchQuery" />
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="cute-table">
+          <thead>
+            <tr>
+              <th>รหัสประจำตัว</th>
+              <th>ชื่อ-นามสกุล</th>
+              <th>คะแนนเฉลี่ย</th>
+              <th>บทเรียนสำเร็จ</th>
+              <th>สถานะ</th>
+              <th style="text-align: center;">จัดการข้อมูล</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (st of filteredStudents; track st.id) {
+              <tr>
+                <td><span class="id-tag">{{ st.student_code }}</span></td>
+                <td><strong>{{ st.name }}</strong></td>
+                <td>
+                  <span class="latency-indicator" [class.fast]="st.average_score >= 75" [class.slow]="st.average_score < 75">
+                    {{ st.average_score }}%
+                  </span>
+                </td>
+                <td>{{ st.lessons_completed }} / 5 บท</td>
+                <td>
+                  <span class="status-indicator-pill" [class.active]="!st.need_support">
+                    {{ st.need_support ? 'ควรช่วยเหลือ / Need Support' : 'ปกติ / Normal' }}
+                  </span>
+                </td>
+                <td style="text-align: center;">
+                  <button type="button" class="btn-test-action" (click)="selectStudent(st)">
+                    เปิดดูสถิติ / View Stats
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- มุมมอง 2: รายงานสถิตินักศึกษาแบบละเอียด -->
+  @if (selectedStudent) {
+    <div class="section-container animate-fade">
+
+      <!-- ส่วนหัวของรายงาน -->
+      <div class="section-header-row">
+        <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
+          <button type="button" class="btn-primary-action outline" (click)="selectedStudent = null">
+            ย้อนกลับ / Back to List
+          </button>
+          <div>
+            <h3 class="section-title">ผลการเรียนรายบุคคล: {{ selectedStudent.name }}</h3>
+            <p class="section-desc">รหัสประจำตัว: {{ selectedStudent.student_code }} | บทเรียนสำเร็จ: {{ selectedStudent.lessons_completed }}/5 บทเรียน</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- เลย์เอาต์ 3 คอลัมน์ -->
+      <div class="overview-split-row margin-top-lg">
+
+        <!-- คอลัมน์ที่ 1: ทักษะการพูด (AI Evaluated Skills) -->
+        <div class="status-summary-card">
+          <div class="card-heading-between">
+            <h3>ทักษะการพูด (AI Evaluated Skills)</h3>
+          </div>
+
+          <div class="server-metric-item">
+            <div class="metric-row-header">
+              <span>ความคล่องแคล่ว (Fluency)</span>
+              <strong>{{ selectedStudent.skills.fluency }}%</strong>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill purple" [style.width.%]="selectedStudent.skills.fluency"></div>
+            </div>
+          </div>
+
+          <div class="server-metric-item">
+            <div class="metric-row-header">
+              <span>การออกเสียง (Pronunciation)</span>
+              <strong>{{ selectedStudent.skills.pronunciation }}%</strong>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill green" [style.width.%]="selectedStudent.skills.pronunciation"></div>
+            </div>
+          </div>
+
+          <div class="server-metric-item">
+            <div class="metric-row-header">
+              <span>ความถูกต้องไวยากรณ์ (Grammar)</span>
+              <strong>{{ selectedStudent.skills.grammar }}%</strong>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill blue" [style.width.%]="selectedStudent.skills.grammar"></div>
+            </div>
+          </div>
+
+          <div class="server-metric-item">
+            <div class="metric-row-header">
+              <span>คลังคำศัพท์ (Vocabulary)</span>
+              <strong>{{ selectedStudent.skills.vocabulary }}%</strong>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill purple" [style.width.%]="selectedStudent.skills.vocabulary"></div>
+            </div>
+          </div>
+
+          <div class="compact-log-item" style="margin-top: 1rem;">
+            <div class="compact-log-msg">
+              อีเมล: <strong>{{ selectedStudent.email }}</strong><br>
+              คะแนนเฉลี่ยรวม: <strong>{{ selectedStudent.average_score }}%</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- คอลัมน์ที่ 2: คะแนนสอบและเกม -->
+        <div class="recent-logs-card">
+          <div class="card-heading-between">
+            <h3>ผลคะแนนสอบ & แบบฝึกหัด (Quizzes)</h3>
+          </div>
+
+          <div class="compact-logs-list">
+            @for (score of selectedStudent.scores; track score.unit) {
+              <div class="compact-log-item">
+                <div class="compact-log-msg">
+                  <strong>{{ score.unit }}</strong><br>
+                  <span style="font-size: 0.76rem; color: #64748b;">
+                    ก่อนเรียน: {{ score.pre }}% | หลังเรียน: {{ score.post }}% | เกม: {{ score.game }}%
+                  </span>
+                </div>
+              </div>
+            } @empty {
+              <p class="empty-table-msg">ยังไม่ได้ทำแบบทดสอบก่อน/หลังเรียน</p>
+            }
+          </div>
+        </div>
+
+        <!-- คอลัมน์ที่ 3: ประวัติการทำกิจกรรม + ผลการคำนวณของ AI (รายครั้งจริงจาก practice_sessions) -->
+        <div class="recent-logs-card">
+          <div class="card-heading-between">
+            <h3>ประวัติการทำ & ผลการคำนวณของ AI (Activity History)</h3>
+          </div>
+
+          <div class="compact-logs-list">
+            @for (a of selectedStudent.activity; track a.session_id) {
+              <div class="compact-log-item" style="flex-direction: column; align-items: flex-start; gap: 0.3rem;">
+                <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.72rem; color: #94a3b8;">
+                  <span>{{ a.created_at_formatted }}</span>
+                  <span class="log-level-chip" [class.success]="a.total_score >= 75">คะแนน {{ a.total_score }}%</span>
+                </div>
+                <p style="font-weight: 700; color: #0f172a; margin: 0;">{{ a.lesson_name }} — {{ activityTypeLabel(a) }}</p>
+                @if (a.ai_feedback) {
+                  <p style="font-size: 0.76rem; color: #475569; margin: 0;">ผลวิเคราะห์ของ AI: {{ a.ai_feedback }}</p>
+                }
+              </div>
+            } @empty {
+              <p class="empty-table-msg">ยังไม่มีประวัติการทำกิจกรรมบันทึกไว้</p>
+            }
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  }
+
+</div>

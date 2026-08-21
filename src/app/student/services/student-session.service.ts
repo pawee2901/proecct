@@ -61,6 +61,16 @@ export class StudentSessionService {
     this.yearLevelChanged$.next(year);
   }
 
+  /** เขียน currentUser (หลังแก้ไขบางฟิลด์ เช่น email/avatarUrl จากหน้า Profile ▸
+   *  ข้อมูลโปรไฟล์) กลับลง localStorage ให้ค่าที่แก้ไว้อยู่รอดข้าม reload โดยไม่ต้อง
+   *  ล็อกอินใหม่ — mutate currentUser object ตรงๆ อย่างเดียวไม่พอเพราะ loadSession()
+   *  อ่านจาก localStorage ทุกครั้งที่ bootstrap ใหม่ */
+  persistCurrentUser(): void {
+    if (this.currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+    }
+  }
+
   logout(): void {
     localStorage.removeItem('currentUser');
     this.router.navigate(['/login']);

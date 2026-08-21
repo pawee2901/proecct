@@ -6,6 +6,20 @@ import { GameFxService } from './game-fx.service';
 import { ProgressService } from './progress.service';
 import { LearningLogService } from './learning-log.service';
 import { MistakesTrackerService } from './mistakes-tracker.service';
+import { ApiService } from '../../services/api.service';
+import {
+  TYPO_FIX_DEFAULT_BANK,
+  SCENARIO_DEFAULT_BANK,
+  EMAIL_CAPSTONE_DEFAULT_BANK,
+  PICTURE_WORD_DEFAULT_BANK,
+  DIALOGUE_DEFAULT_BANK,
+  POS_SORTER_DEFAULT_BANK,
+  SYNONYM_WORD_MAP,
+  SYNONYM_MATCH_DEFAULT_BANK,
+  DRAG_WORD_DEFAULT_BANK,
+  CONVERT_SENTENCE_DEFAULT_BANK,
+  ENG_TO_THAI_DEFAULT_BANK,
+} from '../../shared/game-default-content';
 
 // Full per-game state + logic for all ~20 mini-games (Phase 4 of the
 // migration plan), extracted verbatim from student.component.ts:
@@ -45,6 +59,22 @@ export class GameEngineService {
    *  quiz result. Left null for standalone Games-tab play. */
   roadmapQuizType: 'pre_game' | 'post_game' | null = null;
 
+  /** Teacher-edited content overrides (GET /game-contents, {game_key: items[]}) —
+   *  loaded once per session (StudentShellComponent.ngOnInit) via loadCustomGameContent().
+   *  Now checked by every one of the ~21 games (2026-08-12):
+   *   - typo-fix, scenario, email-capstone, picture-word, sentence-reorder, open-reply,
+   *     pos-sorter, synonym-match, convert-sentence, drag-word, eng-to-thai have a
+   *     standalone static bank as their only source.
+   *   - scramble, dialogue, picture-word, fill-blank ALSO have a per-lesson override
+   *     from that lesson's own "Dedicated Game Creator Studio" which takes priority
+   *     over this global one when the current lesson has set it (see
+   *     initScrambleGame()/initDialogueGame()/initPictureWordGame()/initFillBlankGame()).
+   *   - thai-recall, sprint, word-riddle, match-pair, dictation, save-mascot,
+   *     word-search fall back to the shared cross-lesson vocabulary pool
+   *     (gameVocabPool, built from every lesson's Vocabulary Manager) when left
+   *     unset here. */
+  customGameContent: { [gameKey: string]: any[] } = {};
+
   constructor(
     private lessonsData: LessonsDataService,
     private session: StudentSessionService,
@@ -52,7 +82,19 @@ export class GameEngineService {
     private progress: ProgressService,
     private learningLog: LearningLogService,
     private mistakes: MistakesTrackerService,
+    private apiService: ApiService,
   ) {}
+
+  loadCustomGameContent(): void {
+    this.apiService.getGameContents().subscribe({
+      next: (data: any) => {
+        this.customGameContent = data && typeof data === 'object' ? data : {};
+      },
+      error: () => {
+        this.customGameContent = {};
+      }
+    });
+  }
 
   /** original student.component.ts:5660-5670 ("Games Tab" quick-play shortcut,
    *  called only from the Games tab's own scramble/dialogue buttons). */
@@ -88,15 +130,24 @@ export class GameEngineService {
   scrambleScores: boolean[] = [];
   clickableLetters: { char: string; used: boolean; originalIndex: number }[] = [];
   scrambleUserWordList: { char: string; originalIndex: number }[] = [];
-  // สุ่มว่ารอบนี้จะหยิบคำไหนบ้างจาก scrambleWords ของหน่วยเรียน และเรียงลำดับใหม่ทุกครั้ง
+  // สุ่มว่ารอบนี้จะหยิบคำไหนบ้างจาก scrambleWordsActive และเรียงลำดับใหม่ทุกครั้ง
   // เพื่อให้แต่ละคน/แต่ละรอบเล่นได้ไม่เหมือนกัน (ไม่ตายตัวว่าต้องเจอคำที่ 1-2-3-4 เรียงกันเสมอ)
   scrambleRoundIndices: number[] = [];
+  // คลังคำที่ใช้เล่นรอบนี้จริง — คำนวณครั้งเดียวใน initScrambleGame() แล้ว
+  // setupCurrentScramble()/checkScrambleAnswer() อ่านจากตรงนี้เท่านั้น ไม่แตะ
+  // lessonsData.currentUnit.scrambleWords ตรงๆ อีกต่อไป เพราะตอนนี้มีคลังสำรอง
+  // ทั่วระบบ (customGameContent['scramble']) ให้ใช้เมื่อหน่วยเรียนไม่ได้กำหนดไว้
+  scrambleWordsActive: string[] = [];
   // เมื่อไม่ null แสดงว่ากำลังเล่นเกม (Picture-Word/Fill-blank) จากขั้นตอนบทเรียนของหน่วยนี้อยู่
   // ใช้ตอนบันทึกคะแนนแยกตามหน่วย และอัปเดตเครื่องหมายสำเร็จในแผนที่การเรียน
   roadmapGameUnitId: number | null = null;
 
   // ── Post-Lesson Game: Unscramble Dialogue State ──
   scrambledDialogueLines: { id: number; text: string; currentOrder: number }[] = [];
+  // บทสนทนาที่ใช้เล่นรอบนี้จริง (ต้นฉบับที่ยังไม่สุ่มลำดับ) — ใช้เทียบคำตอบใน
+  // checkDialogueOrder() แทนการอ่าน lessonsData.currentUnit.unscrambleDialogue
+  // ตรงๆ ด้วยเหตุผลเดียวกับ scrambleWordsActive ด้านบน
+  dialogueActive: { id: number; text: string; order: number }[] = [];
   dialogueSuccessMessage = '';
   dialogueFinished = false;
 
@@ -129,28 +180,9 @@ export class GameEngineService {
 
 
   // ── Game: Picture → Type the Word (Rebus Word Combinations) ──
-  pw_rebusPool = [
-    { word: 'classroom', meaning: 'ห้องเรียน', emoji1: '🏫', emoji2: '🚪', clue: 'สถานที่เรียนในโรงเรียน/ห้องเรียน?', unitId: 1 },
-    { word: 'icebreaker', meaning: 'กิจกรรมละลายพฤติกรรม', emoji1: '🧊', emoji2: '🔨', clue: 'กิจกรรมเปิดใจ/ละลายพฤติกรรม?', unitId: 1 },
-    { word: 'face-to-face', meaning: 'เผชิญหน้า / ส่วนตัว', emoji1: '👦', emoji2: '👦', clue: 'การพบกันตรงๆ/แบบส่วนตัว?', unitId: 1 },
-    { word: 'appointment', meaning: 'การนัดหมาย', emoji1: '📅', emoji2: '🤝', clue: 'การกำหนดวันเจอกันล่วงหน้า?', unitId: 1 },
-    { word: 'schedule', meaning: 'กำหนดการ / ตารางเวลา', emoji1: '📅', emoji2: '⏱️', clue: 'แผนกำหนดเวลาหรือกิจกรรม?', unitId: 1 },
-    { word: 'verify', meaning: 'ยืนยันความถูกต้อง', emoji1: '🔍', emoji2: '✅', clue: 'การตรวจทานเพื่อความถูกต้อง?', unitId: 2 },
-    { word: 'multitasking', meaning: 'การทำงานหลายอย่างพร้อมกัน', emoji1: '🧑‍💻', emoji2: '🤹', clue: 'การทำงานหลายอย่างในเวลาเดียวกัน?', unitId: 2 },
-    { word: 'extension', meaning: 'เบอร์ต่อภายใน', emoji1: '☎️', emoji2: '➡️', clue: 'หมายเลขโทรศัพท์ภายในองค์กร?', unitId: 2 },
-    { word: 'takeaway', meaning: 'ข้อคิดหลัก / ข้อสรุป', emoji1: '🥡', emoji2: '📦', clue: 'ข้อคิดสำคัญที่ได้จากการเรียนรู้?', unitId: 3 },
-    { word: 'outline', meaning: 'โครงร่าง / หัวข้อหลัก', emoji1: '✏️', emoji2: '📋', clue: 'โครงสร้างหรือแผนร่างเนื้อหาคร่าวๆ?', unitId: 3 },
-    { word: 'transition', meaning: 'การเชื่อมต่อ', emoji1: '🔄', emoji2: '🌉', clue: 'การเปลี่ยนผ่านหรือส่วนเชื่อมโยง?', unitId: 3 },
-    { word: 'audience', meaning: 'ผู้ฟัง / ผู้ชม', emoji1: '👥', emoji2: '👂', clue: 'กลุ่มคนที่มาร่วมฟังการบรรยาย?', unitId: 3 },
-    { word: 'summarize', meaning: 'สรุปความ', emoji1: '📝', emoji2: '📑', clue: 'การเขียนย่อความประเด็นสำคัญ?', unitId: 3 },
-    { word: 'handout', meaning: 'เอกสารแจก', emoji1: '📄', emoji2: '🤲', clue: 'เอกสารคู่มือที่ครูแจกในห้องเรียน?', unitId: 3 },
-    { word: 'agenda', meaning: 'ระเบียบวาระการประชุม', emoji1: '📋', emoji2: '📅', clue: 'หัวข้อกำหนดการที่จะประชุมพูดคุย?', unitId: 4 },
-    { word: 'perspective', meaning: 'มุมมอง / ทัศนะ', emoji1: '👁️', emoji2: '🧠', clue: 'ทัศนคติหรือมุมมองส่วนบุคคล?', unitId: 4 },
-    { word: 'feedback', meaning: 'คำแนะนำป้อนกลับ', emoji1: '🗣️', emoji2: '🔄', clue: 'คำติชม/ข้อแนะนำเพื่อการปรับปรุง?', unitId: 4 },
-    { word: 'consensus', meaning: 'มติเอกฉันท์', emoji1: '👥', emoji2: '🤝', clue: 'ความเห็นพ้องต้องกันของคณะทำงาน?', unitId: 5 },
-    { word: 'collaboration', meaning: 'การร่วมมือทำงาน', emoji1: '🤝', emoji2: '👥', clue: 'การร่วมมือร่วมใจกันทำงานเป็นทีม?', unitId: 5 },
-    { word: 'worksheet', meaning: 'ใบงาน / แบบฝึกหัด', emoji1: '📄', emoji2: '✏️', clue: 'กระดาษแบบฝึกหัดทบทวนบทเรียน?', unitId: 5 }
-  ];
+  // ค่าเริ่มต้นย้ายไป shared/game-default-content.ts (2026-08-12) ให้
+  // TeacherGameCoversComponent ใช้พรีฟิลฟอร์ม "จัดการเนื้อหา" ได้ด้วย — ค่าเดิมทุกตัว
+  pw_rebusPool = PICTURE_WORD_DEFAULT_BANK;
   pw_pool: { word: string; meaning: string; emoji1?: string; emoji2?: string; clue?: string; unitId?: number; image?: string; icon?: string }[] = [];
   pw_index = 0;
   pw_roundSize = 10;
@@ -192,48 +224,8 @@ export class GameEngineService {
   sprint_finished = false;
 
   // ── Game: Spot & Fix the Typo ──
-  typoFixBank: { wrong: string; correct: string }[] = [
-    {
-      wrong: 'Please have a sit and wait for a moment.',
-      correct: 'Please have a seat and wait for a moment.',
-    },
-    {
-      wrong: 'Thank you for calling, how i can help you?',
-      correct: 'Thank you for calling, how can I help you?',
-    },
-    {
-      wrong: 'I would like to schedule a meeting for tommorow.',
-      correct: 'I would like to schedule a meeting for tomorrow.',
-    },
-    {
-      wrong: 'He is not available right now, would you like to leave a massage?',
-      correct: 'He is not available right now, would you like to leave a message?',
-    },
-    {
-      wrong: "Could you please repeat you're phone number?",
-      correct: 'Could you please repeat your phone number?',
-    },
-    {
-      wrong: 'We are exciting to welcome you to our school.',
-      correct: 'We are excited to welcome you to our school.',
-    },
-    {
-      wrong: "Let's begin the meeting, please turn to page 10 of you book.",
-      correct: "Let's begin the meeting, please turn to page 10 of your book.",
-    },
-    {
-      wrong: "I appreciate you're patience while we transfer the call.",
-      correct: 'I appreciate your patience while we transfer the call.',
-    },
-    {
-      wrong: 'Our next agenda item are the budget report.',
-      correct: 'Our next agenda item is the budget report.',
-    },
-    {
-      wrong: 'Please let me no if you have any questions.',
-      correct: 'Please let me know if you have any questions.',
-    },
-  ];
+  // ค่าเริ่มต้นย้ายไป shared/game-default-content.ts (2026-08-12) — ค่าเดิมทุกตัว
+  typoFixBank: { wrong: string; correct: string }[] = TYPO_FIX_DEFAULT_BANK;
   tf_pool: { wrong: string; correct: string }[] = [];
   tf_index = 0;
   tf_roundSize = 8;
@@ -276,58 +268,8 @@ export class GameEngineService {
   // ── Game: Scenario Sentence Construction ──
   // โจทย์สถานการณ์เป็นคำถามภาษาอังกฤษ (เหมือนสถานการณ์จริงที่ต้องอ่าน/ฟังแล้วตอบเป็นอังกฤษทันที)
   // ส่วน situationTh เป็นแค่คำแปลกำกับเล็กๆ ไว้ช่วยทำความเข้าใจ ไม่ใช่ตัวโจทย์หลัก
-  scenarioBank: { situationEn: string; situationTh: string; keywords: string[]; sampleAnswer: string }[] = [
-    {
-      situationEn: 'A caller asks for Mr. David, but he is not at his desk right now. What do you say?',
-      situationTh: 'ลูกค้าโทรมาถามหา Mr. David แต่เขาไม่อยู่ที่โต๊ะ คุณจะพูดว่าอย่างไร',
-      keywords: ['sorry', 'unavailable', 'message'],
-      sampleAnswer:
-        "I'm sorry, Mr. David is unavailable right now. Would you like to leave a message?",
-    },
-    {
-      situationEn: 'A visitor arrives at the school gate for the first time. How do you greet them?',
-      situationTh: 'มีแขกมาถึงประตูโรงเรียนเป็นครั้งแรก คุณควรทักทายอย่างไร',
-      keywords: ['good morning', 'welcome', 'help'],
-      sampleAnswer: 'Good morning, welcome to our school. How can I help you today?',
-    },
-    {
-      situationEn: 'You are about to start your presentation in front of the class. Introduce yourself.',
-      situationTh: 'คุณกำลังเริ่มนำเสนอผลงานหน้าชั้นเรียน แนะนำตัวเอง',
-      keywords: ['good afternoon', 'my name', 'today'],
-      sampleAnswer:
-        "Good afternoon everyone, my name is Anna, and today I'm excited to present our project.",
-    },
-    {
-      situationEn: 'You are opening a meeting. Announce the first agenda item.',
-      situationTh: 'เริ่มการประชุมและแจ้งวาระการประชุมแรก',
-      keywords: ['agenda', 'begin', 'item'],
-      sampleAnswer: "Let's begin the meeting. The first item on our agenda is the budget review.",
-    },
-    {
-      situationEn: 'A student arrives late to class. As the teacher, how do you politely ask them to sit down?',
-      situationTh: 'นักเรียนมาสาย ในฐานะครูควรพูดอย่างไรให้เขานั่งลงอย่างสุภาพ',
-      keywords: ['please', 'seat', 'quietly'],
-      sampleAnswer: 'Please take a seat quietly, we have already started the lesson.',
-    },
-    {
-      situationEn: "During your presentation, someone asks a question you don't know the answer to. How do you respond politely?",
-      situationTh: 'ระหว่างพรีเซนต์ มีคำถามที่คุณไม่รู้คำตอบ ควรตอบอย่างสุภาพว่าอย่างไร',
-      keywords: ['not sure', 'follow up', 'back to you'],
-      sampleAnswer: "I'm not sure about that, but I will follow up and get back to you.",
-    },
-    {
-      situationEn: 'Ask the caller to hold the line for a moment while you transfer the call.',
-      situationTh: 'ขอให้ผู้โทรถือสายรอสักครู่ระหว่างโอนสาย',
-      keywords: ['hold', 'moment', 'transfer'],
-      sampleAnswer: 'Could you please hold for a moment while I transfer your call?',
-    },
-    {
-      situationEn: 'Politely close the meeting and summarize the next action items.',
-      situationTh: 'จบการประชุมอย่างสุภาพและสรุปงานที่ต้องทำต่อ',
-      keywords: ['thank you', 'wrap up', 'action items'],
-      sampleAnswer: "Thank you, everyone. Let's wrap up and review our action items.",
-    },
-  ];
+  // ค่าเริ่มต้นย้ายไป shared/game-default-content.ts (2026-08-12) — ค่าเดิมทุกตัว
+  scenarioBank: { situationEn: string; situationTh: string; keywords: string[]; sampleAnswer: string }[] = SCENARIO_DEFAULT_BANK;
   scn_pool: { situationEn: string; situationTh: string; keywords: string[]; sampleAnswer: string }[] = [];
   scn_index = 0;
   scn_roundSize = 6;
@@ -338,43 +280,8 @@ export class GameEngineService {
   scn_finished = false;
 
   // ── Game: Email Reply Capstone ──
-  emailBank: { subject: string; body: string; keywords: string[]; minWords: number; sampleAnswer: string }[] = [
-    {
-      subject: "Question about tomorrow's schedule",
-      body: "Hi, could you confirm what time the orientation starts tomorrow? I don't want to be late. Thanks, Anna",
-      keywords: ['orientation', 'starts', 'thank'],
-      minWords: 12,
-      sampleAnswer: 'Hi Anna, the orientation starts at 9 AM tomorrow. Thank you for checking, see you there!',
-    },
-    {
-      subject: 'Request to reschedule our meeting',
-      body: "Hello, I'm unable to attend our meeting on Monday. Could we move it to Wednesday instead?",
-      keywords: ['wednesday', 'reschedule', 'works'],
-      minWords: 12,
-      sampleAnswer: "Hello, Wednesday works for me. Let's reschedule the meeting to that day, same time.",
-    },
-    {
-      subject: 'Missing homework submission',
-      body: 'Hi, I could not submit my homework on time because of an internet problem. Can I send it today?',
-      keywords: ['understand', 'today', 'submit'],
-      minWords: 12,
-      sampleAnswer: 'Hi, I understand. Please submit your homework today and I will accept it without penalty.',
-    },
-    {
-      subject: 'Asking about the presentation topic',
-      body: 'Hello, I am not sure what topic to choose for my presentation next week. Do you have any suggestions?',
-      keywords: ['suggest', 'topic', 'presentation'],
-      minWords: 12,
-      sampleAnswer: 'Hello, I suggest you choose a topic related to technology in education for your presentation.',
-    },
-    {
-      subject: 'Confirming the phone call time',
-      body: 'Hi, just confirming our phone call is at 3 PM today, is that still correct?',
-      keywords: ['confirm', 'correct', '3 pm'],
-      minWords: 10,
-      sampleAnswer: 'Hi, yes that is correct, our phone call is confirmed for 3 PM today. Talk soon!',
-    },
-  ];
+  // ค่าเริ่มต้นย้ายไป shared/game-default-content.ts (2026-08-12) — ค่าเดิมทุกตัว
+  emailBank: { subject: string; body: string; keywords: string[]; minWords: number; sampleAnswer: string }[] = EMAIL_CAPSTONE_DEFAULT_BANK;
   em_pool: { subject: string; body: string; keywords: string[]; minWords: number; sampleAnswer: string }[] = [];
   em_index = 0;
   em_roundSize = 5;
@@ -634,22 +541,30 @@ export class GameEngineService {
     this.scrambleCompleted = false;
     this.scrambleScores = [];
 
+    // ลำดับความสำคัญของคลังคำ: คำศัพท์เฉพาะหน่วยเรียนนี้ (Game Creator Studio) >
+    // เนื้อหาที่แก้ไว้ทั่วระบบ (หน้า "ปกเกม" > เนื้อหาเกม)
+    const unitWords = this.lessonsData.currentUnit.scrambleWords;
+    const customWords = (this.customGameContent['scramble'] || [])
+      .map((w: any) => String(w?.word || '').trim())
+      .filter((w: string) => w.length > 0);
+    this.scrambleWordsActive = unitWords && unitWords.length > 0 ? unitWords : customWords;
+
     // สุ่มหยิบคำบางส่วน (ไม่ใช่ทั้งหมดเสมอไป) แล้วสุ่มลำดับใหม่ทุกครั้งที่เริ่มเกม
-    const totalWords = this.lessonsData.currentUnit.scrambleWords.length;
+    const totalWords = this.scrambleWordsActive.length;
     const minCount = Math.min(2, totalWords);
     const roundCount =
       totalWords > minCount
         ? minCount + Math.floor(Math.random() * (totalWords - minCount + 1))
         : totalWords;
     this.scrambleRoundIndices = this.gameFx.shuffleArray(
-      this.lessonsData.currentUnit.scrambleWords.map((_, i) => i),
+      this.scrambleWordsActive.map((_, i) => i),
     ).slice(0, roundCount);
 
     this.setupCurrentScramble();
   }
 
   setupCurrentScramble(): void {
-    const original = this.lessonsData.currentUnit.scrambleWords[this.scrambleRoundIndices[this.scrambleIndex]];
+    const original = this.scrambleWordsActive[this.scrambleRoundIndices[this.scrambleIndex]];
     let arr = original.split('');
     let attempts = 0;
     while (attempts < 10) {
@@ -687,7 +602,7 @@ export class GameEngineService {
   }
 
   checkScrambleAnswer(): void {
-    const original = this.lessonsData.currentUnit.scrambleWords[this.scrambleRoundIndices[this.scrambleIndex]];
+    const original = this.scrambleWordsActive[this.scrambleRoundIndices[this.scrambleIndex]];
     const userWord = this.scrambleUserWordList.map((item) => item.char).join('');
 
     const isCorrect = userWord.toUpperCase() === original.toUpperCase();
@@ -713,10 +628,7 @@ export class GameEngineService {
           score.toString(),
         );
 
-        this.gameFx.awardGameXp(15, `Word Scramble Game Unit ${this.lessonsData.currentUnit.id}`, score);
-        if (this.roadmapQuizType) {
-          this.progress.submitQuizResultToBackend(this.roadmapQuizType, score);
-        }
+        this.gameFx.awardGameXp(15, `Word Scramble Game Unit ${this.lessonsData.currentUnit.id}`, score, this.roadmapQuizType || 'post_game');
         this.progress.loadProgressHistory();
       }
     };
@@ -731,11 +643,19 @@ export class GameEngineService {
   initDialogueGame(): void {
     this.dialogueSuccessMessage = '';
     this.dialogueFinished = false;
+    // ลำดับความสำคัญ: บทสนทนาเฉพาะหน่วยเรียนนี้ (Game Creator Studio) > เนื้อหาที่
+    // แก้ไว้ทั่วระบบ (หน้า "ปกเกม" > เนื้อหาเกม) > ค่าเริ่มต้นในโค้ด
     const unitDialogue = this.lessonsData.currentUnit?.unscrambleDialogue;
-    const rawDialogue = unitDialogue && unitDialogue.length > 0 ? unitDialogue : [
-      { id: 1, text: 'Hello! Welcome to the course.', order: 0 },
-      { id: 2, text: 'Thank you! Excited to learn.', order: 1 }
-    ];
+    const customDialogue = (this.customGameContent['dialogue'] || [])
+      .map((item: any, index: number) => ({ id: index + 1, text: String(item?.text || '').trim(), order: index }))
+      .filter((line) => line.text.length > 0);
+    const defaultDialogue = DIALOGUE_DEFAULT_BANK.map((d, index) => ({ id: index + 1, text: d.text, order: index }));
+    const rawDialogue = unitDialogue && unitDialogue.length > 0
+      ? unitDialogue
+      : customDialogue.length > 0
+        ? customDialogue
+        : defaultDialogue;
+    this.dialogueActive = rawDialogue;
     this.scrambledDialogueLines = rawDialogue
       .map((line, index) => {
         return { id: line.id, text: line.text, currentOrder: index };
@@ -755,7 +675,7 @@ export class GameEngineService {
 
   checkDialogueOrder(): void {
     let allCorrect = true;
-    const correctDialogue = this.lessonsData.currentUnit?.unscrambleDialogue || [];
+    const correctDialogue = this.dialogueActive;
     this.scrambledDialogueLines.forEach((line, idx) => {
       const originalLine = correctDialogue.find((c) => c.text === line.text);
       if (originalLine && originalLine.order !== idx) {
@@ -772,9 +692,7 @@ export class GameEngineService {
         '100',
       );
       this.learningLog.log({ type: 'Game', title: `Dialogue Sequencer Game Unit ${this.lessonsData.currentUnit.id}`, score: 100, xp: 0 });
-      if (this.roadmapQuizType) {
-        this.progress.submitQuizResultToBackend(this.roadmapQuizType, 100);
-      }
+      this.progress.submitQuizResultToBackend(this.roadmapQuizType || 'post_game', 100);
       this.progress.loadProgressHistory();
     } else {
       this.gameFx.triggerGameShake();
@@ -791,19 +709,34 @@ export class GameEngineService {
   initPictureWordGame(unitId?: number): void {
     this.activeGameType = 'picture-word';
     this.roadmapGameUnitId = unitId ?? null;
-    
-    let candidatePool = [...this.pw_rebusPool];
-    if (unitId) {
-      const unitSpecific = this.pw_rebusPool.filter(w => w.unitId === +unitId);
-      const remaining = this.pw_rebusPool.filter(w => w.unitId !== +unitId);
-      candidatePool = [
-        ...this.gameFx.shuffleArray(unitSpecific),
-        ...this.gameFx.shuffleArray(remaining)
-      ];
+
+    // ลำดับความสำคัญของแหล่งโจทย์: เนื้อหาที่อาจารย์ตั้งเฉพาะบทเรียนนี้ (Game Creator
+    // Studio) > เนื้อหาที่แก้ไว้ทั่วระบบ (หน้า "ปกเกม" > เนื้อหาเกม) > bank เริ่มต้นในโค้ด
+    const unit = unitId ? this.lessonsData.units.find((u) => u.id === +unitId) : undefined;
+    const lessonPictureWords = unit?.pictureWords;
+
+    let candidatePool: typeof this.pw_pool;
+    if (lessonPictureWords && lessonPictureWords.length > 0) {
+      candidatePool = this.gameFx.shuffleArray(
+        lessonPictureWords.map((p) => ({ word: p.word, meaning: p.meaning, clue: p.clue, image: p.image })),
+      );
     } else {
-      candidatePool = this.gameFx.shuffleArray(candidatePool);
+      const basePool = this.customGameContent['picture-word']?.length
+        ? this.customGameContent['picture-word']
+        : this.pw_rebusPool;
+
+      if (unitId) {
+        const unitSpecific = basePool.filter((w) => w.unitId === +unitId);
+        const remaining = basePool.filter((w) => w.unitId !== +unitId);
+        candidatePool = [
+          ...this.gameFx.shuffleArray(unitSpecific),
+          ...this.gameFx.shuffleArray(remaining),
+        ];
+      } else {
+        candidatePool = this.gameFx.shuffleArray([...basePool]);
+      }
     }
-    
+
     this.pw_pool = candidatePool.slice(0, this.pw_roundSize);
     this.pw_index = 0;
     this.pw_score = 0;
@@ -872,14 +805,15 @@ export class GameEngineService {
         : `game_pictureword_${this.session.currentUser.id}`;
       localStorage.setItem(key, scorePct.toString());
     }
-    this.gameFx.awardGameXp(15, 'Picture → Word Game', Math.round((this.pw_score / this.pw_pool.length) * 100));
+    this.gameFx.awardGameXp(15, 'Picture → Word Game', Math.round((this.pw_score / this.pw_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: Thai → English Typing Recall ──
   initTypingRecallGame(): void {
     this.activeGameType = 'thai-recall';
-    this.tr_pool = this.gameFx.shuffleArray(this.gameVocabPool).slice(0, this.tr_roundSize);
+    const bank = this.customGameContent['thai-recall']?.length ? this.customGameContent['thai-recall'] : this.gameVocabPool;
+    this.tr_pool = this.gameFx.shuffleArray(bank).slice(0, this.tr_roundSize);
     this.tr_index = 0;
     this.tr_score = 0;
     this.tr_finished = false;
@@ -926,7 +860,7 @@ export class GameEngineService {
       const scorePct = Math.round((this.tr_score / this.tr_pool.length) * 100);
       localStorage.setItem(`game_typingrecall_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(15, 'Thai → English Typing Recall', Math.round((this.tr_score / this.tr_pool.length) * 100));
+    this.gameFx.awardGameXp(15, 'Thai → English Typing Recall', Math.round((this.tr_score / this.tr_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
@@ -964,6 +898,18 @@ export class GameEngineService {
       return this.buildFillBlankPool();
     }
     return pool;
+  }
+
+  // แปลงรายการที่อาจารย์กรอกไว้ในหน้า "ปกเกม" > เนื้อหาเกม ({fullSentence, answer}) ให้เป็น
+  // รูปแบบเดียวกับที่ buildFillBlankPool() สร้างเอง ({blanked, answer, full}) — คืน null
+  // ถ้าข้อมูลไม่ครบหรือหาคำตอบในประโยคไม่เจอ (เว้นวรรคไม่ได้)
+  private buildFillBlankItemFromCustom(item: any): { blanked: string; answer: string; full: string } | null {
+    const full = String(item?.fullSentence || '').trim();
+    const answer = String(item?.answer || '').trim();
+    if (!full || !answer) return null;
+    const blanked = full.replace(new RegExp(`\\b${this.gameFx.escapeRegExp(answer)}\\b`, 'i'), '_____');
+    if (blanked === full) return null;
+    return { blanked, answer, full };
   }
 
   // ดึงคำศัพท์เฉพาะหน่วยเรียนเดียว (สำหรับเกม Picture-Word ตอนเล่นในขั้นตอนบทเรียน)
@@ -1020,7 +966,22 @@ export class GameEngineService {
   initFillBlankGame(unitId?: number): void {
     this.activeGameType = 'fill-blank';
     this.roadmapGameUnitId = unitId ?? null;
-    this.fb_pool = this.gameFx.shuffleArray(this.buildFillBlankPool(unitId)).slice(0, this.fb_roundSize);
+
+    // ลำดับความสำคัญ: เนื้อหาที่อาจารย์ตั้งเฉพาะบทเรียนนี้ (Game Creator Studio) >
+    // เนื้อหาที่แก้ไว้ทั่วระบบ (หน้า "ปกเกม" > เนื้อหาเกม) > ประโยคที่ดึงอัตโนมัติจาก
+    // บทสนทนาของบทเรียน
+    const unit = unitId ? this.lessonsData.units.find((u) => u.id === +unitId) : undefined;
+    const lessonFillBlanks = unit?.fillBlankItems;
+    const customFillBlanks = (this.customGameContent['fill-blank'] || [])
+      .map((item: any) => this.buildFillBlankItemFromCustom(item))
+      .filter((item): item is { blanked: string; answer: string; full: string } => !!item);
+
+    const pool = lessonFillBlanks && lessonFillBlanks.length > 0
+      ? lessonFillBlanks
+      : customFillBlanks.length > 0
+        ? customFillBlanks
+        : this.buildFillBlankPool(unitId);
+    this.fb_pool = this.gameFx.shuffleArray(pool).slice(0, this.fb_roundSize);
     this.fb_index = 0;
     this.fb_score = 0;
     this.fb_finished = false;
@@ -1063,14 +1024,15 @@ export class GameEngineService {
         : `game_fillblank_${this.session.currentUser.id}`;
       localStorage.setItem(key, scorePct.toString());
     }
-    this.gameFx.awardGameXp(15, 'Fill in the Blank Game', Math.round((this.fb_score / this.fb_pool.length) * 100));
+    this.gameFx.awardGameXp(15, 'Fill in the Blank Game', Math.round((this.fb_score / this.fb_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: Vocabulary Typing Sprint ──
   initSprintGame(): void {
     this.activeGameType = 'sprint';
-    this.sprint_queue = this.gameFx.shuffleArray(this.gameVocabPool);
+    const bank = this.customGameContent['sprint']?.length ? this.customGameContent['sprint'] : this.gameVocabPool;
+    this.sprint_queue = this.gameFx.shuffleArray(bank);
     this.sprint_index = 0;
     this.sprint_input = '';
     this.sprint_score = 0;
@@ -1123,7 +1085,7 @@ export class GameEngineService {
         localStorage.setItem(bestKey, this.sprint_score.toString());
       }
     }
-    this.gameFx.awardGameXp(20, 'Typing Sprint', this.sprint_score);
+    this.gameFx.awardGameXp(20, 'Typing Sprint', this.sprint_score, this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
@@ -1138,7 +1100,8 @@ export class GameEngineService {
   // ── Game: Spot & Fix the Typo ──
   initTypoFixGame(): void {
     this.activeGameType = 'typo-fix';
-    this.tf_pool = this.gameFx.shuffleArray(this.typoFixBank).slice(0, this.tf_roundSize);
+    const bank = this.customGameContent['typo-fix']?.length ? this.customGameContent['typo-fix'] : this.typoFixBank;
+    this.tf_pool = this.gameFx.shuffleArray(bank).slice(0, this.tf_roundSize);
     this.tf_index = 0;
     this.tf_score = 0;
     this.tf_finished = false;
@@ -1178,14 +1141,15 @@ export class GameEngineService {
       const scorePct = Math.round((this.tf_score / this.tf_pool.length) * 100);
       localStorage.setItem(`game_typofix_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(20, 'Spot & Fix the Typo', Math.round((this.tf_score / this.tf_pool.length) * 100));
+    this.gameFx.awardGameXp(20, 'Spot & Fix the Typo', Math.round((this.tf_score / this.tf_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: Word Riddle (progressive letter reveal) ──
   initWordRiddleGame(): void {
     this.activeGameType = 'word-riddle';
-    this.wr_pool = this.gameFx.shuffleArray(this.gameVocabPool).slice(0, this.wr_roundSize);
+    const bank = this.customGameContent['word-riddle']?.length ? this.customGameContent['word-riddle'] : this.gameVocabPool;
+    this.wr_pool = this.gameFx.shuffleArray(bank).slice(0, this.wr_roundSize);
     this.wr_index = 0;
     this.wr_score = 0;
     this.wr_finished = false;
@@ -1249,14 +1213,20 @@ export class GameEngineService {
       const scorePct = Math.round((this.wr_score / this.wr_pool.length) * 100);
       localStorage.setItem(`game_wordriddle_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(15, 'Word Riddle', Math.round((this.wr_score / this.wr_pool.length) * 100));
+    this.gameFx.awardGameXp(15, 'Word Riddle', Math.round((this.wr_score / this.wr_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: Scrambled Sentence → Typed Reorder ──
   initSentenceReorderGame(): void {
     this.activeGameType = 'sentence-reorder';
-    this.ss_pool = this.gameFx.shuffleArray(this.buildDialogueSentencePool()).slice(
+    // เนื้อหาที่อาจารย์แก้ไว้ทั่วระบบ (หน้า "ปกเกม" > เนื้อหาเกม) มาก่อน ไม่งั้นดึงประโยค
+    // จากบทสนทนาของบทเรียนเหมือนเดิม
+    const customSentences = (this.customGameContent['sentence-reorder'] || [])
+      .map((it: any) => String(it.sentence || '').trim())
+      .filter((s: string) => s.length > 0);
+    const sentencePool = customSentences.length > 0 ? customSentences : this.buildDialogueSentencePool();
+    this.ss_pool = this.gameFx.shuffleArray(sentencePool).slice(
       0,
       this.ss_roundSize,
     );
@@ -1302,14 +1272,16 @@ export class GameEngineService {
       const scorePct = Math.round((this.ss_score / this.ss_pool.length) * 100);
       localStorage.setItem(`game_sentencereorder_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(20, 'Sentence Reorder', Math.round((this.ss_score / this.ss_pool.length) * 100));
+    this.gameFx.awardGameXp(20, 'Sentence Reorder', Math.round((this.ss_score / this.ss_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: Open Dialogue Reply ──
   initOpenReplyGame(): void {
     this.activeGameType = 'open-reply';
-    this.odr_pool = this.gameFx.shuffleArray(this.buildOpenReplyPool()).slice(0, this.odr_roundSize);
+    const custom = this.customGameContent['open-reply'];
+    const pool = custom && custom.length > 0 ? custom : this.buildOpenReplyPool();
+    this.odr_pool = this.gameFx.shuffleArray(pool).slice(0, this.odr_roundSize);
     this.odr_index = 0;
     this.odr_score = 0;
     this.odr_finished = false;
@@ -1355,14 +1327,15 @@ export class GameEngineService {
       const scorePct = Math.round((this.odr_score / this.odr_pool.length) * 100);
       localStorage.setItem(`game_openreply_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(20, 'Open Dialogue Reply', Math.round((this.odr_score / this.odr_pool.length) * 100));
+    this.gameFx.awardGameXp(20, 'Open Dialogue Reply', Math.round((this.odr_score / this.odr_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: Scenario Sentence Construction ──
   initScenarioGame(): void {
     this.activeGameType = 'scenario';
-    this.scn_pool = this.gameFx.shuffleArray(this.scenarioBank).slice(0, this.scn_roundSize);
+    const bank = this.customGameContent['scenario']?.length ? this.customGameContent['scenario'] : this.scenarioBank;
+    this.scn_pool = this.gameFx.shuffleArray(bank).slice(0, this.scn_roundSize);
     this.scn_index = 0;
     this.scn_score = 0;
     this.scn_finished = false;
@@ -1403,14 +1376,15 @@ export class GameEngineService {
       const scorePct = Math.round((this.scn_score / this.scn_pool.length) * 100);
       localStorage.setItem(`game_scenario_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(25, 'Scenario Construction', Math.round((this.scn_score / this.scn_pool.length) * 100));
+    this.gameFx.awardGameXp(25, 'Scenario Construction', Math.round((this.scn_score / this.scn_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: Email Reply Capstone ──
   initEmailCapstoneGame(): void {
     this.activeGameType = 'email-capstone';
-    this.em_pool = this.gameFx.shuffleArray(this.emailBank).slice(0, this.em_roundSize);
+    const bank = this.customGameContent['email-capstone']?.length ? this.customGameContent['email-capstone'] : this.emailBank;
+    this.em_pool = this.gameFx.shuffleArray(bank).slice(0, this.em_roundSize);
     this.em_index = 0;
     this.em_score = 0;
     this.em_finished = false;
@@ -1464,7 +1438,7 @@ export class GameEngineService {
       const scorePct = Math.round((this.em_score / this.em_pool.length) * 100);
       localStorage.setItem(`game_emailcapstone_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(30, 'Email Reply Capstone', Math.round((this.em_score / this.em_pool.length) * 100));
+    this.gameFx.awardGameXp(30, 'Email Reply Capstone', Math.round((this.em_score / this.em_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
@@ -1479,7 +1453,8 @@ export class GameEngineService {
 
   startMemoryMatchRound(): void {
     this.mm_selectedCards = [];
-    const pool = this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0].vocabularies;
+    const bank = this.customGameContent['match-pair']?.length ? this.customGameContent['match-pair'] : this.gameVocabPool;
+    const pool = bank.length > 0 ? bank : this.lessonsData.units[0].vocabularies;
     const shuffledPool = this.gameFx.shuffleArray([...pool]);
     const roundVocab = shuffledPool.slice(0, 4);
     
@@ -1550,14 +1525,15 @@ export class GameEngineService {
     if (this.session.currentUser) {
       localStorage.setItem(`game_memorymatch_${this.session.currentUser.id}`, '100');
     }
-    this.gameFx.awardGameXp(15, 'Memory Card Match', 100);
+    this.gameFx.awardGameXp(15, 'Memory Card Match', 100, this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: Dictation Master ──
   initDictationGame(): void {
     this.activeGameType = 'dictation';
-    const pool = this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0].vocabularies;
+    const bank = this.customGameContent['dictation']?.length ? this.customGameContent['dictation'] : this.gameVocabPool;
+    const pool = bank.length > 0 ? bank : this.lessonsData.units[0].vocabularies;
     this.dc_pool = this.gameFx.shuffleArray([...pool]).slice(0, 5);
     this.dc_index = 0;
     this.dc_score = 0;
@@ -1602,31 +1578,28 @@ export class GameEngineService {
       const scorePct = Math.round((this.dc_score / this.dc_pool.length) * 100);
       localStorage.setItem(`game_dictation_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(20, 'Dictation Master', Math.round((this.dc_score / this.dc_pool.length) * 100));
+    this.gameFx.awardGameXp(20, 'Dictation Master', Math.round((this.dc_score / this.dc_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: POS Sorter ──
   initPosSorterGame(): void {
     this.activeGameType = 'pos-sorter';
+    // เนื้อหาที่อาจารย์แก้ไว้ทั่วระบบ (หน้า "ปกเกม" > เนื้อหาเกม) มาก่อนเสมอ ถ้ามี — ไม่งั้น
+    // ค่อย fallback ไปคำศัพท์ของบทเรียน (ซึ่งตอนนี้ pos ถูก map เป็น 'n.' เสมอจาก DB จริง) แล้ว
+    // ค่อย fallback อีกชั้นเป็นชุดตัวอย่างในโค้ด
+    const customPool = (this.customGameContent['pos-sorter'] || []).filter((it: any) => (it.word || '').trim() && (it.pos || '').trim());
     const unitVocab = this.lessonsData.currentUnit?.vocabularies || [];
-    let pool = unitVocab.filter(v => v.pos && ['n.', 'v.', 'adj.', 'adv.', 'noun', 'verb', 'adjective', 'adverb'].some(p => v.pos!.toLowerCase().includes(p)));
-    
+    let pool: { word: string; pos?: string; meaning: string }[] = customPool.length > 0
+      ? customPool
+      : unitVocab.filter(v => v.pos && ['n.', 'v.', 'adj.', 'adv.', 'noun', 'verb', 'adjective', 'adverb'].some(p => v.pos!.toLowerCase().includes(p)));
+
     if (pool.length < 5) {
-      pool = [
-        { word: 'colleague', pos: 'n.', meaning: 'เพื่อนร่วมงาน' },
-        { word: 'collaborate', pos: 'v.', meaning: 'ร่วมมือ' },
-        { word: 'deadline', pos: 'n.', meaning: 'กำหนดส่ง' },
-        { word: 'strategic', pos: 'adj.', meaning: 'เชิงกลยุทธ์' },
-        { word: 'efficiently', pos: 'adv.', meaning: 'อย่างมีประสิทธิภาพ' },
-        { word: 'negotiate', pos: 'v.', meaning: 'เจรจาต่อรอง' },
-        { word: 'responsibility', pos: 'n.', meaning: 'ความรับผิดชอบ' },
-        { word: 'flexible', pos: 'adj.', meaning: 'ยืดหยุ่น' },
-        { word: 'innovate', pos: 'v.', meaning: 'สร้างนวัตกรรม' },
-        { word: 'successfully', pos: 'adv.', meaning: 'อย่างสำเร็จ' }
-      ];
+      // ค่าเริ่มต้นย้ายไป shared/game-default-content.ts (2026-08-12) — ค่าเดิมทุกตัว
+      // (pos สะกดเต็มแล้วแทน 'n./v./adj./adv.' ย่อ — cleanPos ด้านล่างรองรับทั้งสองแบบอยู่แล้ว)
+      pool = POS_SORTER_DEFAULT_BANK;
     }
-    
+
     this.pos_pool = this.gameFx.shuffleArray([...pool]).slice(0, 5).map(item => {
       let cleanPos = 'noun';
       const posStr = item.pos ? item.pos.toLowerCase() : '';
@@ -1673,54 +1646,42 @@ export class GameEngineService {
       const scorePct = Math.round((this.pos_score / this.pos_pool.length) * 100);
       localStorage.setItem(`game_possorter_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(15, 'POS Sorter', Math.round((this.pos_score / this.pos_pool.length) * 100));
+    this.gameFx.awardGameXp(15, 'POS Sorter', Math.round((this.pos_score / this.pos_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: Synonym Matcher ──
   initSynonymMatchGame(): void {
     this.activeGameType = 'synonym-match';
-    const synonymBank: { [key: string]: string } = {
-      colleague: 'coworker',
-      collaborate: 'cooperate',
-      manage: 'direct',
-      deadline: 'due date',
-      responsibility: 'duty',
-      overtime: 'extra hours',
-      promote: 'advance',
-      career: 'profession',
-      strategy: 'plan',
-      feedback: 'evaluation',
-      agenda: 'schedule',
-      negotiate: 'bargain',
-      discuss: 'talk over',
-      presentation: 'pitch',
-      project: 'assignment',
-      task: 'job',
-      revenue: 'income',
-      assistance: 'help',
-      innovative: 'creative',
-      improve: 'enhance',
-      terminate: 'end',
-      commence: 'start',
-      object: 'goal',
-      resolve: 'solve'
-    };
-    
+
+    // เนื้อหาที่อาจารย์แก้ไว้ทั่วระบบ (หน้า "ปกเกม" > เนื้อหาเกม) มาก่อนเสมอ ถ้ามี — ใช้คู่
+    // คำพ้อง/ตัวลวงที่อาจารย์กำหนดตรงๆ แทน synonymBank ที่ตายตัวด้านล่าง (เดิมคำศัพท์ที่
+    // อาจารย์เพิ่มเองในบทเรียนจะไม่มีคำพ้องให้เล่นเลยถ้าไม่ตรงกับ synonymBank พอดี)
+    const customPool = (this.customGameContent['synonym-match'] || []).filter((it: any) => (it.word || '').trim() && (it.synonym || '').trim());
+    if (customPool.length > 0) {
+      const chosen = this.gameFx.shuffleArray([...customPool]).slice(0, 5);
+      this.sm_pool = chosen.map((item: any) => {
+        const distractors: string[] = (Array.isArray(item.distractors) ? item.distractors : []).slice(0, 3);
+        const options = this.gameFx.shuffleArray([item.synonym, ...distractors]);
+        return { word: item.word, synonym: item.synonym, options };
+      });
+      this.sm_index = 0;
+      this.sm_score = 0;
+      this.sm_selectedOption = '';
+      this.sm_showFeedback = false;
+      this.sm_finished = false;
+      return;
+    }
+
+    // ค่าเริ่มต้นย้ายไป shared/game-default-content.ts (2026-08-12) — ค่าเดิมทุกตัว
+    const synonymBank = SYNONYM_WORD_MAP;
+
     const pool = this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0].vocabularies;
     let matchingWords = pool.filter(v => synonymBank[v.word.toLowerCase()]);
     
     if (matchingWords.length < 5) {
-      matchingWords = [
-        { word: 'colleague', meaning: 'เพื่อนร่วมงาน' },
-        { word: 'collaborate', meaning: 'ร่วมมือ' },
-        { word: 'manage', meaning: 'จัดการ' },
-        { word: 'deadline', meaning: 'กำหนดส่ง' },
-        { word: 'strategy', meaning: 'กลยุทธ์' },
-        { word: 'negotiate', meaning: 'เจรจา' },
-        { word: 'feedback', meaning: 'ข้อเสนอแนะ' },
-        { word: 'agenda', meaning: 'วาระการประชุม' }
-      ];
+      // ค่าเริ่มต้นย้ายไป shared/game-default-content.ts (2026-08-12) — ค่าเดิมทุกตัว
+      matchingWords = SYNONYM_MATCH_DEFAULT_BANK.map(({ word, meaning }) => ({ word, meaning }));
     }
     
     const chosenWords = this.gameFx.shuffleArray([...matchingWords]).slice(0, 5);
@@ -1773,14 +1734,15 @@ export class GameEngineService {
       const scorePct = Math.round((this.sm_score / this.sm_pool.length) * 100);
       localStorage.setItem(`game_synonymmatch_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(15, 'Synonym Matcher', Math.round((this.sm_score / this.sm_pool.length) * 100));
+    this.gameFx.awardGameXp(15, 'Synonym Matcher', Math.round((this.sm_score / this.sm_pool.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
   // ── Game: Save the Mascot ──
   initSaveMascotGame(): void {
     this.activeGameType = 'save-mascot';
-    const pool = this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0].vocabularies;
+    const bank = this.customGameContent['save-mascot']?.length ? this.customGameContent['save-mascot'] : this.gameVocabPool;
+    const pool = bank.length > 0 ? bank : this.lessonsData.units[0].vocabularies;
     const filterPool = pool.filter(v => !v.word.includes(' ') && !v.word.includes('-'));
     const cleanPool = filterPool.length >= 3 ? filterPool : pool;
     
@@ -1846,7 +1808,7 @@ export class GameEngineService {
       const scorePct = Math.round((this.hm_score / this.hm_roundWords.length) * 100);
       localStorage.setItem(`game_savemascot_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(25, 'Save the Mascot', Math.round((this.hm_score / this.hm_roundWords.length) * 100));
+    this.gameFx.awardGameXp(25, 'Save the Mascot', Math.round((this.hm_score / this.hm_roundWords.length) * 100), this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
@@ -1878,7 +1840,8 @@ export class GameEngineService {
       { word: 'answer', meaning: 'คำตอบ' },
     ];
 
-    const source = this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0]?.vocabularies || [];
+    const customBank = this.customGameContent['word-search'];
+    const source = customBank?.length ? customBank : (this.gameVocabPool.length > 0 ? this.gameVocabPool : this.lessonsData.units[0]?.vocabularies || []);
     const seen = new Set<string>();
     const candidatePool = source
       .filter((v) => /^[A-Za-z]+$/.test(v.word) && v.word.length >= 3 && v.word.length <= 10)
@@ -2078,7 +2041,7 @@ export class GameEngineService {
     if (this.session.currentUser) {
       localStorage.setItem(`game_wordsearch_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(20, 'Word Search Puzzle', scorePct);
+    this.gameFx.awardGameXp(20, 'Word Search Puzzle', scorePct, this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
@@ -2091,62 +2054,33 @@ export class GameEngineService {
     this.dw_showFeedback = false;
     this.dw_draggedWord = null;
 
-    this.dw_questions = [
-      {
-        id: 1,
-        thaiHint: 'เราจำเป็นต้องจัดการประชุมด่วนกับลูกค้าในบ่ายวันนี้',
-        sentenceTemplate: 'We need to [slot0] an urgent [slot1] with the client this afternoon.',
-        slots: [
-          { placeholder: 'เลือกคำกริยา', targetWord: 'schedule', currentWord: null },
-          { placeholder: 'เลือกคำนาม', targetWord: 'meeting', currentWord: null }
-        ],
-        wordBank: this.gameFx.shuffleArray(['schedule', 'meeting', 'cancel', 'contract', 'feedback', 'deliver']),
-        explanation: 'ใช้ "schedule an urgent meeting" หมายถึง นัดหมายประชุมด่วน'
-      },
-      {
-        id: 2,
-        thaiHint: 'กรุณาส่งใบเสนอราคาให้ฝ่ายจัดซื้อภายในวันศุกร์นี้',
-        sentenceTemplate: 'Please send the [slot0] to the [slot1] department by Friday.',
-        slots: [
-          { placeholder: 'เลือกคำนาม 1', targetWord: 'quotation', currentWord: null },
-          { placeholder: 'เลือกคำนาม 2', targetWord: 'purchasing', currentWord: null }
-        ],
-        wordBank: this.gameFx.shuffleArray(['quotation', 'purchasing', 'proposal', 'accounting', 'strategy', 'refund']),
-        explanation: 'ใช้ "quotation" (ใบเสนอราคา) และ "purchasing department" (ฝ่ายจัดซื้อ)'
-      },
-      {
-        id: 3,
-        thaiHint: 'ผลิตภัณฑ์ใหม่ของเราได้รับการตอบรับในเชิงบวกจากตลาด',
-        sentenceTemplate: 'Our new [slot0] received [slot1] feedback from the market.',
-        slots: [
-          { placeholder: 'เลือกคำนาม', targetWord: 'product', currentWord: null },
-          { placeholder: 'เลือกคำคุณศัพท์', targetWord: 'positive', currentWord: null }
-        ],
-        wordBank: this.gameFx.shuffleArray(['product', 'positive', 'invoice', 'negative', 'report', 'budget']),
-        explanation: 'ใช้ "product" (ผลิตภัณฑ์) และ "positive feedback" (คำชม/ตอบรับในเชิงบวก)'
-      },
-      {
-        id: 4,
-        thaiHint: 'ผู้จัดการเสนอกลยุทธ์ใหม่เพื่อเพิ่มยอดขายของบริษัท',
-        sentenceTemplate: 'The manager proposed a new [slot0] to increase company [slot1].',
-        slots: [
-          { placeholder: 'เลือกคำนาม 1', targetWord: 'strategy', currentWord: null },
-          { placeholder: 'เลือกคำนาม 2', targetWord: 'sales', currentWord: null }
-        ],
-        wordBank: this.gameFx.shuffleArray(['strategy', 'sales', 'agenda', 'expenses', 'discount', 'timeline']),
-        explanation: 'ใช้ "strategy" (กลยุทธ์) และ "company sales" (ยอดขายของบริษัท)'
-      },
-      {
-        id: 5,
-        thaiHint: 'กรุณาตรวจสอบรายละเอียดก่อนอนุมัติงบประมาณโครงการ',
-        sentenceTemplate: 'Please check the details before approving the project [slot0].',
-        slots: [
-          { placeholder: 'เลือกคำนาม', targetWord: 'budget', currentWord: null }
-        ],
-        wordBank: this.gameFx.shuffleArray(['budget', 'deadline', 'partner', 'negotiation', 'vacancy', 'supplier']),
-        explanation: 'ใช้ "project budget" หมายถึง งบประมาณของโครงการ'
-      }
-    ];
+    // เนื้อหาที่อาจารย์แก้ไว้ทั่วระบบ (หน้า "ปกเกม" > เนื้อหาเกม) มาก่อนเสมอ ถ้ามี — sentenceTemplate
+    // ที่อาจารย์กรอกใช้ token [slot0]/[slot1]/... เหมือนโค้ดเดิม, slotWords คือคำตอบเรียงตาม
+    // ลำดับ token ที่เจอ (คำที่ 1 → token แรกที่เจอ ฯลฯ), wordBank คือตัวเลือกทั้งหมดที่ให้ลาก —
+    // ไม่งั้นใช้ DRAG_WORD_DEFAULT_BANK (shared/game-default-content.ts) ผ่าน transform เดียวกัน
+    // (มี token [slot0]/[slot1] อยู่ในรูปแบบเดียวกันกับที่อาจารย์กรอกเองอยู่แล้ว)
+    const custom = (this.customGameContent['drag-word'] || []).filter(
+      (it: any) => (it.sentenceTemplate || '').trim() && Array.isArray(it.slotWords) && it.slotWords.length > 0,
+    );
+    const dwSource = custom.length > 0 ? custom : DRAG_WORD_DEFAULT_BANK;
+    this.dw_questions = dwSource.map((it: any, idx: number) => {
+      const template: string = it.sentenceTemplate;
+      const tokenCount = (template.match(/\[slot\d+\]/g) || []).length;
+      const slotWords: string[] = it.slotWords;
+      const slots = Array.from({ length: tokenCount }, (_, i) => ({
+        placeholder: `เลือกคำที่ ${i + 1}`,
+        targetWord: slotWords[i] || '',
+        currentWord: null as string | null,
+      }));
+      return {
+        id: idx + 1,
+        thaiHint: it.thaiHint || '',
+        sentenceTemplate: template,
+        slots,
+        wordBank: this.gameFx.shuffleArray(Array.isArray(it.wordBank) ? it.wordBank : []),
+        explanation: it.explanation || '',
+      };
+    });
   }
 
   onDwDragStart(event: DragEvent, word: string): void {
@@ -2237,7 +2171,7 @@ export class GameEngineService {
     if (this.session.currentUser) {
       localStorage.setItem(`game_dragword_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(15, 'เกมลากคำ (Drag & Drop Word Builder)', scorePct);
+    this.gameFx.awardGameXp(15, 'เกมลากคำ (Drag & Drop Word Builder)', scorePct, this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
@@ -2251,67 +2185,18 @@ export class GameEngineService {
     this.cs_showFeedback = false;
     this.cs_finished = false;
 
-    this.cs_questions = [
-      {
-        id: 1,
-        instruction: 'แปลงเป็น Past Simple Tense (เหตุการณ์ในอดีต)',
-        originalSentence: 'She sends the weekly sales report to the manager every Friday.',
-        hint: '💡 คำใบ้: ต้องเปลี่ยนกริยาแสดงการส่ง (send) ให้เป็นรูป Past Tense (ช่อง 2)',
-        correctAnswers: [
-          'She sent the weekly sales report to the manager every Friday.',
-          'She sent the weekly sales report to the manager.',
-          'She sent the weekly sales report to the manager last Friday.',
-          'She sent the weekly sales report to the manager'
-        ],
-        explanation: 'Past Simple ใช้กริยาช่อง 2: send -> sent'
-      },
-      {
-        id: 2,
-        instruction: 'แปลงเป็น Passive Voice (ประธานเป็นผู้ถูกกระทำ)',
-        originalSentence: 'The marketing team created a brilliant campaign.',
-        hint: '💡 คำใบ้: นำสิ่งที่ถูกกระทำ (A brilliant campaign) ขึ้นเป็นประธาน ตามด้วย was/were + V.3 + by...',
-        correctAnswers: [
-          'A brilliant campaign was created by the marketing team.',
-          'A brilliant campaign was created by the marketing team'
-        ],
-        explanation: 'A brilliant campaign เป็นเอกพจน์ในอดีต ใช้ was created by...'
-      },
-      {
-        id: 3,
-        instruction: 'แปลงเป็นประโยคปฏิเสธ (Negative Sentence)',
-        originalSentence: 'We have approved the project proposal.',
-        hint: '💡 คำใบ้: เติมคำปฏิเสธ (not) ต่อท้ายกริยาช่วย have',
-        correctAnswers: [
-          'We have not approved the project proposal.',
-          'We haven\'t approved the project proposal.',
-          'We have not approved the project proposal',
-          'We haven\'t approved the project proposal'
-        ],
-        explanation: 'Present Perfect ปฏิเสธใส่ not หลัง have -> have not approved'
-      },
-      {
-        id: 4,
-        instruction: 'แปลงเป็นประโยคคำถาม (Question Form)',
-        originalSentence: 'The client accepts our pricing terms.',
-        hint: '💡 คำใบ้: ขึ้นต้นประโยคด้วยกริยาช่วย (Does) สำหรับประธานเอกพจน์ แล้วเปลี่ยนกริยาหลักกลับเป็น V.inf',
-        correctAnswers: [
-          'Does the client accept our pricing terms?',
-          'Does the client accept our pricing terms'
-        ],
-        explanation: 'ประโยคคำถาม Present Simple ใช้ Does + Subject + V.inf'
-      },
-      {
-        id: 5,
-        instruction: 'แปลงเป็น Future Simple Tense (บอกอนาคตด้วย will)',
-        originalSentence: 'They launch the new product next month.',
-        hint: '💡 คำใบ้: แทรกกริยาช่วยบอกอนาคต (will) ไว้ข้างหน้ากริยาหลัก',
-        correctAnswers: [
-          'They will launch the new product next month.',
-          'They will launch the new product next month'
-        ],
-        explanation: 'Future Simple ใช้ will + V.inf (will launch)'
-      }
-    ];
+    // เนื้อหาที่อาจารย์แก้ไว้ทั่วระบบ (หน้า "ปกเกม" > เนื้อหาเกม) มาก่อนเสมอ ถ้ามี — ไม่งั้น
+    // ใช้ CONVERT_SENTENCE_DEFAULT_BANK (shared/game-default-content.ts) ผ่าน transform เดียวกัน
+    const custom = (this.customGameContent['convert-sentence'] || []).filter((it: any) => (it.originalSentence || '').trim() && Array.isArray(it.correctAnswers) && it.correctAnswers.length > 0);
+    const csSource = custom.length > 0 ? custom : CONVERT_SENTENCE_DEFAULT_BANK;
+    this.cs_questions = csSource.map((it: any, idx: number) => ({
+      id: idx + 1,
+      instruction: it.instruction || '',
+      originalSentence: it.originalSentence,
+      hint: it.hint || '',
+      correctAnswers: it.correctAnswers,
+      explanation: it.explanation || '',
+    }));
   }
 
   toggleConvertHint(): void {
@@ -2357,7 +2242,7 @@ export class GameEngineService {
     if (this.session.currentUser) {
       localStorage.setItem(`game_convertsentence_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(15, 'คอนเวิด - แปลงประโยค (Sentence Converter)', scorePct);
+    this.gameFx.awardGameXp(15, 'คอนเวิด - แปลงประโยค (Sentence Converter)', scorePct, this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 
@@ -2371,49 +2256,18 @@ export class GameEngineService {
     this.et_showFeedback = false;
     this.et_finished = false;
 
-    this.et_questions = [
-      {
-        id: 1,
-        englishSentence: 'Could you please confirm the meeting schedule with our client?',
-        thaiHint: '💡 คำใบ้: ประโยคขอร้องอย่างสุภาพ ให้ช่วยตรวจสอบหรือยืนยันเวลาพบปะกับลูกค้า',
-        primaryThai: 'คุณช่วยยืนยันกำหนดการประชุมกับลูกค้าของเราได้ไหม',
-        keyKeywords: ['ยืนยัน', 'กำหนดการ', 'ประชุม', 'ลูกค้า'],
-        explanation: 'confirm = ยืนยัน, meeting schedule = กำหนดการประชุม, client = ลูกค้า'
-      },
-      {
-        id: 2,
-        englishSentence: 'We need to submit the financial report by the end of this week.',
-        thaiHint: '💡 คำใบ้: บอกความจำเป็นในการส่งเอกสารสรุปตัวเลขการเงินก่อนถึงวันหยุดสัปดาห์',
-        primaryThai: 'เราจำเป็นต้องส่งรายงานการเงินภายในสิ้นสัปดาห์นี้',
-        keyKeywords: ['ส่ง', 'รายงานการเงิน', 'สิ้นสัปดาห์'],
-        explanation: 'submit = ส่ง/ยื่น, financial report = รายงานการเงิน, end of this week = สิ้นสัปดาห์นี้'
-      },
-      {
-        id: 3,
-        englishSentence: 'The customer service team provides 24-hour support.',
-        thaiHint: '💡 คำใบ้: การทำงานของแผนกดูแลผู้ซื้อที่พร้อมช่วยเหลือตลอดทั้งวันทั้งคืน',
-        primaryThai: 'ทีมบริการลูกค้าให้บริการช่วยเหลือตลอด 24 ชั่วโมง',
-        keyKeywords: ['บริการลูกค้า', '24', 'ชั่วโมง'],
-        explanation: 'customer service = บริการลูกค้า, provides support = ให้บริการช่วยเหลือ'
-      },
-      {
-        id: 4,
-        englishSentence: 'Thank you for your valuable feedback on our new product.',
-        thaiHint: '💡 คำใบ้: การแสดงความซาบซึ้งต่อข้อคิดเห็นหรือคำติชมที่มีประโยชน์ต่อสินค้าใหม่',
-        primaryThai: 'ขอบคุณสำหรับข้อเสนอแนะที่มีคุณค่าต่อผลิตภัณฑ์ใหม่ของเรา',
-        keyKeywords: ['ขอบคุณ', 'ข้อเสนอแนะ', 'ผลิตภัณฑ์'],
-        explanation: 'valuable feedback = ข้อเสนอแนะที่มีคุณค่า, new product = ผลิตภัณฑ์ใหม่'
-      },
-      {
-        id: 5,
-        englishSentence: 'Our manager will present the annual marketing strategy tomorrow.',
-        thaiHint: '💡 คำใบ้: ผู้นำทีมกำลังจะนำเสนอแผนงานใหญ่ของฝ่ายการตลาดประจำปีในวันพรุ่งนี้',
-        primaryThai: 'ผู้จัดการของเราจะนำเสนอกลยุทธ์การตลาดประจำปีในวันพรุ่งนี้',
-        keyKeywords: ['ผู้จัดการ', 'นำเสนอ', 'กลยุทธ์', 'การตลาด'],
-        explanation: 'present = นำเสนอ, annual marketing strategy = กลยุทธ์การตลาดประจำปี'
-      }
-    ];
-
+    // เนื้อหาที่อาจารย์แก้ไว้ทั่วระบบ (หน้า "ปกเกม" > เนื้อหาเกม) มาก่อนเสมอ ถ้ามี — ไม่งั้น
+    // ใช้ ENG_TO_THAI_DEFAULT_BANK (shared/game-default-content.ts) ผ่าน transform เดียวกัน
+    const custom = (this.customGameContent['eng-to-thai'] || []).filter((it: any) => (it.englishSentence || '').trim() && (it.primaryThai || '').trim());
+    const etSource = custom.length > 0 ? custom : ENG_TO_THAI_DEFAULT_BANK;
+    this.et_questions = etSource.map((it: any, idx: number) => ({
+      id: idx + 1,
+      englishSentence: it.englishSentence,
+      thaiHint: it.thaiHint || '',
+      primaryThai: it.primaryThai,
+      keyKeywords: Array.isArray(it.keyKeywords) ? it.keyKeywords : [],
+      explanation: it.explanation || '',
+    }));
     setTimeout(() => this.speakEngToThaiCurrent(), 400);
   }
 
@@ -2467,7 +2321,7 @@ export class GameEngineService {
     if (this.session.currentUser) {
       localStorage.setItem(`game_engtothai_${this.session.currentUser.id}`, scorePct.toString());
     }
-    this.gameFx.awardGameXp(15, 'แปลอังกฤษ พิมพ์ไทย (English to Thai Recall)', scorePct);
+    this.gameFx.awardGameXp(15, 'แปลอังกฤษ พิมพ์ไทย (English to Thai Recall)', scorePct, this.roadmapQuizType || 'post_game');
     this.progress.loadProgressHistory();
   }
 

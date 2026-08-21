@@ -1,185 +1,63 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { ApiService } from '../services/api.service';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
-interface MockStudent {
-  id: number;
-  name: string;
-  student_code: string;
-  email: string;
-  average_score: number;
-  lessons_completed: number;
-  need_support: boolean;
-  year_level?: number;
-  scores: { unit: string; pre: number; post: number; game: number }[];
-  skills: { fluency: number; pronunciation: number; grammar: number; vocabulary: number };
-  practiceLogs: { timestamp: string; sentence: string; score: number; attempt: number; feedback: string }[];
-  gameLogs?: { unit: string; gameType: string; score: number; details: string; duration: string }[];
-}
+import { ApiService } from '../../../services/api.service';
+import { TeacherSessionService } from '../../services/teacher-session.service';
 
+// "จัดการบทเรียนและข้อสอบ" tab extracted verbatim from the old TeacherComponent
+// (teacher.component.ts/.html). Reads/writes the shared activeYearLevel via
+// TeacherSessionService so it stays in sync with the Students page.
 @Component({
-  selector: 'app-teacher',
-  templateUrl: './teacher.component.html',
-  styleUrl: './teacher.component.scss',
+  selector: 'app-teacher-lessons',
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule],
+  templateUrl: './teacher-lessons.component.html',
+  styleUrl: './teacher-lessons.component.scss',
 })
-export class TeacherComponent implements OnInit {
-  currentUser: any = null;
-  activeSubTab: 'students' | 'lessons' = 'students';
-  activeYearLevel: 1 | 2 = 1;
-
-  // Stats
-  studentCount = 28;
-  classAverage = 82;
-  completedRate = 75;
-
-  // Students list
-  students: MockStudent[] = [];
-  selectedStudent: MockStudent | null = null;
-  searchQuery = '';
-
+export class TeacherLessonsComponent implements OnInit, OnDestroy {
   // Lessons list
   lessonsList: any[] = [];
   editingLesson: any = null;
   isCreatingNew = false;
 
-  constructor(private router: Router, private apiService: ApiService) {}
+  // เกณฑ์คะแนน/คำสั่งให้ AI ต่อบทเรียน (ai_grading_instruction ฯลฯ) — โหลด/บันทึกแยก
+  // จาก saveLesson() หลัก เพราะผูกกับ lesson_id จริงใน DB เท่านั้น (บทเรียนที่ยังไม่ได้
+  // บันทึกครั้งแรกจะยังไม่มีให้ตั้งค่า)
+  aiSettings: {
+    pass_threshold: number | null;
+    game_weight: number | null;
+    test_weight: number | null;
+    ai_grading_instruction: string | null;
+  } = { pass_threshold: null, game_weight: null, test_weight: null, ai_grading_instruction: null };
+  aiSettingsSaving = false;
+
+  // คำสั่งให้ AI แยกตามชั้นปี (ปี 1/ปี 2) — ต่างจาก aiSettings ด้านบนตรงไม่ผูกกับบทเรียน
+  // เดียว ระบบดึงจาก year_of_study ของนักศึกษาที่ล็อกอินอยู่เอง จึงมีผลกับหน้าฝึกพูดอิสระ
+  // ของนักศึกษาโดยตรง (ai/core.py:get_year_grading_instruction) โหลดครั้งเดียวตอนเข้าหน้า
+  // แล้วแสดง/บันทึกตามแท็บปีที่กำลังเลือกอยู่ (session.activeYearLevel) เหมือนกับที่ใช้
+  // กรองรายการบทเรียนอยู่แล้ว
+  yearAiInstructions: { [yearLevel: number]: string } = {};
+  yearAiInstructionsSaving: { [yearLevel: number]: boolean } = {};
+
+  constructor(public session: TeacherSessionService, private apiService: ApiService) {}
+
+  private yearChangedSub?: Subscription;
 
   ngOnInit(): void {
-    const userJson = localStorage.getItem('currentUser');
-    if (!userJson) {
-      this.router.navigate(['/login']);
-      return;
-    }
-    this.currentUser = JSON.parse(userJson);
-    if (this.currentUser.role !== 'teacher') {
-      this.router.navigate([`/${this.currentUser.role}`]);
-      return;
-    }
-
-    this.loadStudents();
     this.loadLessons();
-  }
-
-  logout(): void {
-    localStorage.removeItem('currentUser');
-    this.router.navigate(['/login']);
-  }
-
-  // เปิดดูสถิติรายบุคคล — โหลดคะแนนต่อบทเรียนจริงจาก backend
-  selectStudent(st: MockStudent): void {
-    this.selectedStudent = st;
-    this.apiService.getTeacherStudentScores(st.id).subscribe({
-      next: (data: any) => {
-        if (Array.isArray(data) && this.selectedStudent === st) {
-          this.selectedStudent.scores = data;
-        }
-      },
-      error: () => {}
+    this.loadYearAiInstructions();
+    // ปุ่มสลับปีย้ายไปอยู่ใน shell แล้ว (ดู TeacherShellComponent) — ฟัง event ตรงนี้แทน
+    // เพื่อยังคงเคลียร์ editingLesson เหมือนเดิมตอนสลับปีระหว่างแก้บทเรียนอยู่
+    this.yearChangedSub = this.session.yearChanged$.subscribe(() => {
+      this.editingLesson = null;
     });
   }
 
-  switchSubTab(tab: typeof this.activeSubTab): void {
-    this.activeSubTab = tab;
-    this.selectedStudent = null;
-    this.editingLesson = null;
-    this.isCreatingNew = false;
-  }
-
-  // ── Load student reports ──
-  loadStudents(): void {
-    // ดึงรายชื่อนักศึกษาพร้อมคะแนนจริงจาก practice_sessions
-    this.apiService.getTeacherStudents().subscribe({
-      next: (data: any) => {
-        if (Array.isArray(data)) {
-
-          this.students = data.map((st: any, idx: number) => {
-            const hasPracticed = st.lessons_completed && Number(st.lessons_completed) > 0;
-            const avg = hasPracticed ? (Number(st.average_score) || 0) : 0;
-            const lessonsCompleted = hasPracticed ? (Number(st.lessons_completed) || 0) : 0;
-            const needSupport = hasPracticed && avg < 75;
-
-            const nameVal = st.name || `${st.first_name || ''} ${st.last_name || ''}`.trim() || `Student ${idx + 1}`;
-            const codeVal = st.student_code || st.studentCode || `6510100${idx + 1}`;
-            const emailVal = st.email || `${st.username || 'student'}@university.ac.th`;
-
-            return {
-              id: st.user_id || st.id || idx + 1,
-              name: nameVal,
-              student_code: codeVal,
-              email: emailVal,
-              average_score: avg,
-              lessons_completed: lessonsCompleted,
-              need_support: needSupport,
-              // รายละเอียดคะแนนต่อบทเรียน/สกิล/ประวัติจะโหลดจริงตอนกด "เปิดดูสถิติ" (ดู selectStudent())
-              scores: [],
-              skills: { fluency: 0, pronunciation: 0, grammar: 0, vocabulary: 0 },
-              practiceLogs: [],
-              gameLogs: []
-            };
-          });
-
-          // อัปเดตสถิติห้องเรียน
-          this.studentCount = this.students.length;
-          if (this.studentCount > 0) {
-            const sum = this.students.reduce((acc, curr) => acc + curr.average_score, 0);
-            this.classAverage = Math.round(sum / this.studentCount);
-          }
-        }
-      },
-      error: () => {
-        // Fallback mock data หากยังไม่ได้เชื่อมต่อฐานข้อมูล
-        this.students = [
-          // ── ชั้นปีที่ 1 (Year 1 Students) ──
-          {
-            id: 1, name: 'Sarah Johnson', student_code: '651202201', email: 'sarah.j@school.ac.th', average_score: 92, lessons_completed: 5, need_support: false, year_level: 1,
-            scores: [
-              { unit: 'Unit 1: Welcoming', pre: 80, post: 100, game: 100 },
-              { unit: 'Unit 2: Telephoning', pre: 75, post: 95, game: 100 },
-              { unit: 'Unit 3: Presentation', pre: 80, post: 90, game: 90 },
-              { unit: 'Unit 4: Teacher Meeting', pre: 85, post: 95, game: 95 },
-              { unit: 'Unit 5: Giving Instruction', pre: 90, post: 100, game: 100 }
-            ],
-            skills: { fluency: 92, pronunciation: 88, grammar: 95, vocabulary: 90 },
-            practiceLogs: [
-              { timestamp: '01/07/2026 15:30', sentence: 'Hello, good morning. My name is Sarah.', score: 95, attempt: 1, feedback: 'การออกเสียงสระและจังหวะพูดดีเยี่ยม' },
-              { timestamp: '01/07/2026 15:40', sentence: 'Does anyone have any questions before we begin?', score: 100, attempt: 1, feedback: 'น้ำเสียงแสดงความมั่นใจสมบูรณ์แบบ' }
-            ],
-            gameLogs: [
-              { unit: 'Unit 1: Welcoming', gameType: 'ก่อนเรียน: Word Scramble', score: 100, details: 'จับคู่คำศัพท์ถูกต้อง 5/5 คำ', duration: '28 วินาที' }
-            ]
-          },
-          {
-            id: 2, name: 'สมชาย ดีดี (Somchai DeeDee)', student_code: '651202202', email: 'somchai.d@school.ac.th', average_score: 68, lessons_completed: 2, need_support: true, year_level: 1,
-            scores: [
-              { unit: 'Unit 1: Welcoming', pre: 50, post: 70, game: 80 },
-              { unit: 'Unit 2: Telephoning', pre: 40, post: 65, game: 70 }
-            ],
-            skills: { fluency: 65, pronunciation: 62, grammar: 70, vocabulary: 60 },
-            practiceLogs: [
-              { timestamp: '01/07/2026 14:15', sentence: 'Hello morning Ms. Parker.', score: 60, attempt: 1, feedback: 'ควรพูดให้เต็มประโยค: "Hello, good morning Ms. Parker."' }
-            ]
-          },
-          {
-            id: 3, name: 'ปวีณา แสนสวย (Paweena Sansuay)', student_code: '651202203', email: 'paweena.s@school.ac.th', average_score: 84, lessons_completed: 4, need_support: false, year_level: 1,
-            scores: [
-              { unit: 'Unit 1: Welcoming', pre: 70, post: 85, game: 100 },
-              { unit: 'Unit 2: Telephoning', pre: 65, post: 80, game: 90 }
-            ],
-            skills: { fluency: 82, pronunciation: 85, grammar: 80, vocabulary: 88 },
-            practiceLogs: [
-              { timestamp: '01/07/2026 11:20', sentence: 'Good morning, Ms. Parker speaking.', score: 88, attempt: 1, feedback: 'น้ำเสียงเป็นธรรมชาติ ชัดถ้อยชัดคำดีมาก' }
-            ]
-          },
-
-        ];
-        this.studentCount = this.students.length;
-      }
-    });
+  ngOnDestroy(): void {
+    this.yearChangedSub?.unsubscribe();
   }
 
   // ── Load lesson list ──
@@ -209,6 +87,7 @@ export class TeacherComponent implements OnInit {
   editLesson(lesson: any): void {
     this.editingLesson = { ...lesson };
     this.isCreatingNew = false;
+    this.loadLessonAiSettings(lesson.id);
 
     // Parse allowed games from contents if present
     if (lesson.contents && Array.isArray(lesson.contents)) {
@@ -226,7 +105,7 @@ export class TeacherComponent implements OnInit {
     if (!this.editingLesson.vocabularies) {
       this.editingLesson.vocabularies = [];
     }
-    
+
     // Parse speakingQuestions if it is a string
     if (typeof this.editingLesson.speakingQuestions === 'string') {
       try {
@@ -243,6 +122,7 @@ export class TeacherComponent implements OnInit {
     this.editingLesson.classHours = lesson.classHours || '';
     this.editingLesson.weekRange = lesson.weekRange || '';
     this.editingLesson.slidePath = lesson.slidePath || '';
+    this.editingLesson.cover_image = lesson.coverImage || lesson.cover_image || '';
 
     // Handle JSON fields safely
     this.editingLesson.topics = Array.isArray(lesson.topics) ? lesson.topics : (typeof lesson.topics === 'string' ? JSON.parse(lesson.topics) : []);
@@ -251,21 +131,27 @@ export class TeacherComponent implements OnInit {
     this.editingLesson.assessments = Array.isArray(lesson.assessments) ? lesson.assessments : (typeof lesson.assessments === 'string' ? JSON.parse(lesson.assessments) : []);
     this.editingLesson.preQuiz = Array.isArray(lesson.preQuiz) ? lesson.preQuiz : (typeof lesson.preQuiz === 'string' ? JSON.parse(lesson.preQuiz) : []);
     this.editingLesson.postQuiz = Array.isArray(lesson.postQuiz) ? lesson.postQuiz : (typeof lesson.postQuiz === 'string' ? JSON.parse(lesson.postQuiz) : []);
-    // Initialize custom games studio structure
+    // Custom Game Creator Studio content — actually load whatever was saved
+    // for THIS lesson (lesson_contents row, title='custom_games') instead of
+    // always resetting to the same hardcoded placeholder example on every
+    // open. Previously this field was never sent anywhere real (saveLesson()
+    // included it in the payload, but the backend silently ignored it and
+    // previewCustomGame() was a fake modal) — now it round-trips for real.
+    const customGamesItem = Array.isArray(lesson.contents)
+      ? lesson.contents.find((c: any) => c.content_type === 'custom_games')
+      : null;
+    if (customGamesItem && customGamesItem.content_body) {
+      try {
+        this.editingLesson.customGames = JSON.parse(customGamesItem.content_body);
+      } catch {
+        this.editingLesson.customGames = null;
+      }
+    } else {
+      this.editingLesson.customGames = null;
+    }
     if (!this.editingLesson.customGames) {
-      this.editingLesson.customGames = {
-        scrambleWords: ['WELCOME', 'GREETING', 'COMMUNICATION'],
-        dialoguePairs: [
-          { speakerA: 'Good morning! How can I help you today?', speakerB: 'Hello! I am looking for the administrator office.' },
-          { speakerA: 'Sure, please take the elevator to the second floor.', speakerB: 'Thank you very much!' }
-        ],
-        pictureWords: [
-          { hintText: 'ภาพต้อนรับนักศึกษาใหม่', correctWord: 'WELCOME' }
-        ],
-        fillBlanks: [
-          { sentence: 'Please fill out this ___ form before entering class.', missingWord: 'registration' }
-        ]
-      };
+      // บทเรียนนี้ยังไม่เคยตั้งค่าเนื้อหาเกมของตัวเองเลย — เริ่มจากค่าว่าง (ไม่ใช่ตัวอย่างหลอก)
+      this.editingLesson.customGames = { scrambleWords: [], dialoguePairs: [], pictureWords: [], fillBlanks: [] };
     }
   }
 
@@ -274,19 +160,20 @@ export class TeacherComponent implements OnInit {
       name: '',
       titleEn: '',
       description: '',
-      year_level: this.activeYearLevel,
+      year_level: this.session.activeYearLevel,
       vocabularies: [],
       speakingQuestions: [],
       allowedGames: ['scramble', 'dialogue'],
       customGames: {
         scrambleWords: ['STUDENT', 'LESSON'],
         dialoguePairs: [{ speakerA: 'Hello!', speakerB: 'Nice to meet you!' }],
-        pictureWords: [{ hintText: 'ภาพคำศัพท์ตัวอย่าง', correctWord: 'ENGLISH' }],
+        pictureWords: [{ hintText: 'ภาพคำศัพท์ตัวอย่าง', correctWord: 'ENGLISH', image: '' }],
         fillBlanks: [{ sentence: 'Welcome to our ___ class.', missingWord: 'speaking' }]
       },
       classHours: '4 คาบเรียน',
       weekRange: 'สัปดาห์ที่ 1',
       slidePath: 'บทที่ 1.pdf',
+      cover_image: '',
       topics: [],
       keywords: [],
       objectives: [],
@@ -295,6 +182,92 @@ export class TeacherComponent implements OnInit {
       postQuiz: []
     };
     this.isCreatingNew = true;
+    // บทเรียนใหม่ยังไม่มี lesson_id จริง — ต้องบันทึกบทเรียนก่อน แล้วค่อยกลับมาตั้งเกณฑ์ AI ทีหลัง
+    this.aiSettings = { pass_threshold: null, game_weight: null, test_weight: null, ai_grading_instruction: null };
+  }
+
+  loadLessonAiSettings(lessonId: number): void {
+    if (!lessonId) return;
+    this.apiService.getLessonAiSettings(lessonId).subscribe({
+      next: (data: any) => {
+        this.aiSettings = {
+          pass_threshold: data?.pass_threshold ?? null,
+          game_weight: data?.game_weight ?? null,
+          test_weight: data?.test_weight ?? null,
+          ai_grading_instruction: data?.ai_grading_instruction ?? null,
+        };
+      },
+      error: () => {
+        this.aiSettings = { pass_threshold: null, game_weight: null, test_weight: null, ai_grading_instruction: null };
+      }
+    });
+  }
+
+  saveAiSettings(): void {
+    if (!this.editingLesson?.id) return;
+    this.aiSettingsSaving = true;
+    this.apiService.saveLessonAiSettings(this.editingLesson.id, this.aiSettings).subscribe({
+      next: () => {
+        this.aiSettingsSaving = false;
+        Swal.fire({
+          icon: 'success',
+          title: 'บันทึกเกณฑ์ AI สำเร็จ',
+          text: 'AI จะใช้เกณฑ์นี้ตรวจ/ให้คะแนนนักเรียนในบทเรียนนี้ตั้งแต่ตอนนี้เป็นต้นไป',
+          confirmButtonColor: '#0f766e',
+          timer: 2000
+        });
+      },
+      error: () => {
+        this.aiSettingsSaving = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'บันทึกเกณฑ์ AI ไม่สำเร็จ',
+          confirmButtonColor: '#0f766e'
+        });
+      }
+    });
+  }
+
+  // ── Prompt AI ประจำชั้นปี ──
+  loadYearAiInstructions(): void {
+    this.apiService.getYearAiInstructions().subscribe({
+      next: (data: any) => {
+        if (Array.isArray(data)) {
+          data.forEach((row: any) => {
+            this.yearAiInstructions[row.year_level] = row.ai_instruction || '';
+          });
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  saveYearAiInstruction(): void {
+    const year = this.session.activeYearLevel;
+    const text = (this.yearAiInstructions[year] || '').trim();
+    this.yearAiInstructionsSaving[year] = true;
+    this.apiService.saveYearAiInstruction(year, text).subscribe({
+      next: () => {
+        this.yearAiInstructionsSaving[year] = false;
+        Swal.fire({
+          icon: 'success',
+          title: 'บันทึก Prompt ประจำชั้นปีสำเร็จ',
+          text: `AI จะใช้คำสั่งนี้เพิ่มเติมกับนักศึกษาชั้นปี ${year} ทุกคนตอนฝึกพูดอิสระ ตั้งแต่ตอนนี้เป็นต้นไป`,
+          confirmButtonColor: '#0f766e',
+          timer: 2200
+        });
+      },
+      error: () => {
+        this.yearAiInstructionsSaving[year] = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'บันทึก Prompt ประจำชั้นปีไม่สำเร็จ',
+          confirmButtonColor: '#0f766e'
+        });
+      }
+    });
   }
 
   // Syllabus Array Helper Methods
@@ -358,10 +331,41 @@ export class TeacherComponent implements OnInit {
       this.editingLesson.customGames = { scrambleWords: [], dialoguePairs: [], pictureWords: [], fillBlanks: [] };
     }
     if (!this.editingLesson.customGames.pictureWords) this.editingLesson.customGames.pictureWords = [];
-    this.editingLesson.customGames.pictureWords.push({ hintText: '', correctWord: '' });
+    this.editingLesson.customGames.pictureWords.push({ hintText: '', correctWord: '', image: '' });
   }
   removePictureWord(i: number): void {
     this.editingLesson.customGames.pictureWords.splice(i, 1);
+  }
+
+  onPictureWordImageUpload(i: number, event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      Swal.fire({
+        icon: 'error',
+        title: 'ชนิดไฟล์ไม่ถูกต้อง',
+        text: 'กรุณาอัปโหลดเฉพาะไฟล์รูปภาพเท่านั้นค่ะ',
+        confirmButtonColor: '#0f766e'
+      });
+      return;
+    }
+
+    this.apiService.uploadFile(file).subscribe({
+      next: (res: any) => {
+        if (res && res.url) {
+          this.editingLesson.customGames.pictureWords[i].image = res.url;
+        }
+      },
+      error: () => {
+        Swal.fire({
+          icon: 'error',
+          title: 'อัปโหลดล้มเหลว',
+          text: 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ',
+          confirmButtonColor: '#0f766e'
+        });
+      }
+    });
   }
 
   addFillBlank(): void {
@@ -376,17 +380,20 @@ export class TeacherComponent implements OnInit {
   }
 
   previewCustomGame(gameType: string): void {
+    // หมายเหตุ: โจทย์ที่กรอกไว้ด้านบนยังเป็นแค่ค่าในฟอร์ม (draft) — ต้องกด "บันทึกการ
+    // เปลี่ยนแปลง / Save" ที่หัวข้อด้านบนก่อน โจทย์ชุดนี้ถึงจะมีผลกับนักเรียนจริง
+    // (เดิม modal นี้อ้างว่า "บันทึกโจทย์เรียบร้อยแล้ว" ทั้งที่ยังไม่เคยส่งไปที่ไหนเลย)
     Swal.fire({
-      title: `ทดลองเล่นมินิเกม: ${gameType}`,
+      title: `โจทย์มินิเกม: ${gameType}`,
       html: `
         <div style="text-align: left; font-size: 0.85rem; color: #334155;">
-          <p><strong>สถานะการสร้างเกม:</strong> พร้อมใช้งานสำหรับนักเรียนในขั้นตอน Roadmap</p>
-          <p>ระบบสร้างเกมสำหรับบทเรียนนี้ได้รับการอัปเดตและบันทึกโจทย์มินิเกมเรียบร้อยแล้วค่ะ</p>
+          <p>โจทย์ที่กรอกไว้ด้านบนเป็นค่าฉบับร่างในหน้านี้เท่านั้น</p>
+          <p><strong>กด "บันทึกการเปลี่ยนแปลง / Save" ที่หัวข้อด้านบนก่อน</strong> เกมชุดนี้จึงจะมีผลกับนักเรียนจริงในขั้นตอน Roadmap ของบทเรียนนี้ค่ะ</p>
         </div>
       `,
-      icon: 'success',
-      confirmButtonText: 'ตกลง / Close Preview',
-      confirmButtonColor: '#7e22ce'
+      icon: 'info',
+      confirmButtonText: 'เข้าใจแล้ว / Got it',
+      confirmButtonColor: '#0d9488'
     });
   }
 
@@ -457,7 +464,7 @@ export class TeacherComponent implements OnInit {
         icon: 'warning',
         title: 'กรอกข้อมูลไม่ครบถ้วน',
         text: 'กรุณากรอกชื่อบทเรียนภาษาอังกฤษให้ครบถ้วน',
-        confirmButtonColor: '#6B21A8'
+        confirmButtonColor: '#0f766e'
       });
       return;
     }
@@ -471,7 +478,7 @@ export class TeacherComponent implements OnInit {
           icon: 'success',
           title: 'สำเร็จ',
           text: 'บันทึกข้อมูลบทเรียนสำเร็จเรียบร้อยค่ะ',
-          confirmButtonColor: '#6B21A8',
+          confirmButtonColor: '#0f766e',
           timer: 2000
         });
         this.editingLesson = null;
@@ -483,7 +490,7 @@ export class TeacherComponent implements OnInit {
           icon: 'error',
           title: 'เกิดข้อผิดพลาด',
           text: 'เกิดข้อผิดพลาดในการบันทึกบทเรียน',
-          confirmButtonColor: '#6B21A8'
+          confirmButtonColor: '#0f766e'
         });
       }
     });
@@ -507,7 +514,7 @@ export class TeacherComponent implements OnInit {
               icon: 'success',
               title: 'ลบสำเร็จ',
               text: 'ลบบทเรียนสำเร็จเรียบร้อยแล้วค่ะ',
-              confirmButtonColor: '#6B21A8',
+              confirmButtonColor: '#0f766e',
               timer: 1500
             });
             this.loadLessons();
@@ -517,7 +524,7 @@ export class TeacherComponent implements OnInit {
               icon: 'error',
               title: 'เกิดข้อผิดพลาด',
               text: 'ลบบทเรียนล้มเหลว',
-              confirmButtonColor: '#6B21A8'
+              confirmButtonColor: '#0f766e'
             });
           }
         });
@@ -525,26 +532,9 @@ export class TeacherComponent implements OnInit {
     });
   }
 
-
-
-  switchYearLevel(year: 1 | 2): void {
-    this.activeYearLevel = year;
-    this.selectedStudent = null;
-    this.editingLesson = null;
-  }
-
   // Filter Helper
-  get filteredStudents(): MockStudent[] {
-    const yearList = this.students.filter(st => (st.year_level || 1) === this.activeYearLevel);
-    if (!this.searchQuery.trim()) return yearList;
-    const query = this.searchQuery.toLowerCase();
-    return yearList.filter(
-      st => st.name.toLowerCase().includes(query) || st.student_code.includes(query)
-    );
-  }
-
   get filteredLessons(): any[] {
-    return this.lessonsList.filter(les => (les.year_level || 1) === this.activeYearLevel);
+    return this.lessonsList.filter(les => (les.year_level || 1) === this.session.activeYearLevel);
   }
 
   onSlideUpload(event: any): void {
@@ -556,7 +546,7 @@ export class TeacherComponent implements OnInit {
         icon: 'error',
         title: 'ชนิดไฟล์ไม่ถูกต้อง',
         text: 'กรุณาอัปโหลดเฉพาะไฟล์เอกสาร PDF เท่านั้นค่ะ',
-        confirmButtonColor: '#6B21A8'
+        confirmButtonColor: '#0f766e'
       });
       return;
     }
@@ -579,7 +569,7 @@ export class TeacherComponent implements OnInit {
             icon: 'success',
             title: 'อัปโหลดสไลด์สำเร็จ',
             text: `บันทึกไฟล์สไลด์บทเรียนเรียบร้อยแล้วค่ะ`,
-            confirmButtonColor: '#6B21A8',
+            confirmButtonColor: '#0f766e',
             timer: 2000
           });
         }
@@ -590,7 +580,62 @@ export class TeacherComponent implements OnInit {
           icon: 'error',
           title: 'อัปโหลดล้มเหลว',
           text: 'เกิดข้อผิดพลาดในการอัปโหลดไฟล์ PDF สไลด์บทเรียน',
-          confirmButtonColor: '#6B21A8'
+          confirmButtonColor: '#0f766e'
+        });
+      }
+    });
+  }
+
+  // รูปปกบทเรียนใส่หรือไม่ใส่ก็ได้ — ปุ่มนี้แค่ล้างค่าในฟอร์ม ยังไม่ยิงลบไฟล์ที่อัปโหลด
+  // ไว้จนกว่าจะกด "บันทึกบทเรียน" (saveLesson ส่ง cover_image ว่างไปแทนค่าเดิม)
+  removeCoverImage(): void {
+    this.editingLesson.cover_image = '';
+  }
+
+  onCoverImageUpload(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      Swal.fire({
+        icon: 'error',
+        title: 'ชนิดไฟล์ไม่ถูกต้อง',
+        text: 'กรุณาอัปโหลดเฉพาะไฟล์รูปภาพเท่านั้นค่ะ',
+        confirmButtonColor: '#0f766e'
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'กำลังอัปโหลด...',
+      text: 'ระบบกำลังนำส่งรูปปกบทเรียนไปยังเซิร์ฟเวอร์',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    this.apiService.uploadFile(file).subscribe({
+      next: (res: any) => {
+        Swal.close();
+        if (res && res.url) {
+          this.editingLesson.cover_image = res.url;
+          Swal.fire({
+            icon: 'success',
+            title: 'อัปโหลดรูปปกสำเร็จ',
+            text: 'บันทึกรูปปกบทเรียนเรียบร้อยแล้วค่ะ',
+            confirmButtonColor: '#0f766e',
+            timer: 2000
+          });
+        }
+      },
+      error: () => {
+        Swal.close();
+        Swal.fire({
+          icon: 'error',
+          title: 'อัปโหลดล้มเหลว',
+          text: 'เกิดข้อผิดพลาดในการอัปโหลดรูปปกบทเรียน',
+          confirmButtonColor: '#0f766e'
         });
       }
     });

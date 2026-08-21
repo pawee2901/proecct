@@ -1,0 +1,207 @@
+<div class="tab-panel animate-fade">
+  <div class="section-container">
+    @if (!showGameModal && !managingContentGame && !managingBuiltinGame) {
+      <!-- รายการเกมทั้งหมด -->
+      <div class="section-header-row">
+        <div>
+          <h3 class="section-title">ปกเกมทั้งหมด (Game Covers)</h3>
+          <p class="section-desc">จัดการเกมทั้งหมดได้จากที่นี่ — เพิ่มเกมใหม่ แก้ไข เปลี่ยนรูปปก จัดการคำถาม หรือลบเกม มีผลทันทีในหน้าเกมของนักศึกษา ไม่จำกัดจำนวนเกม</p>
+        </div>
+        <div class="header-buttons-row">
+          <button type="button" class="btn-primary-action" (click)="openCreateGameModal()">+ เพิ่มเกมใหม่ / Add New Game</button>
+        </div>
+      </div>
+
+      @if (gamesLoading) {
+        <p class="section-desc">กำลังโหลดรายการเกม...</p>
+      } @else {
+        <div class="courses-grid">
+          @for (g of games; track g.game_id) {
+            <div class="course-card">
+              @if (g.cover_image) {
+                <img [src]="g.cover_image" alt="" style="width: 100%; height: 120px; object-fit: cover; border-radius: 14px; margin: -1.3rem -1.3rem 0.4rem; width: calc(100% + 2.6rem);" />
+              } @else {
+                <div style="width: calc(100% + 2.6rem); height: 120px; margin: -1.3rem -1.3rem 0.4rem; border-radius: 14px; background: #f8fafc; border: 1.5px dashed #e2e8f0; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.72rem; font-weight: 600;">ยังไม่มีรูปปก</div>
+              }
+
+              <div class="course-card-top">
+                <span class="level-badge">
+                  {{ g.difficulty === 'easy' ? 'ง่าย' : g.difficulty === 'hard' ? 'ยาก' : 'ปานกลาง' }}
+                </span>
+                @if (g.is_builtin) {
+                  <span class="status-toggle-pill">เกมมาตรฐาน</span>
+                } @else {
+                  <span class="status-toggle-pill active">{{ g.question_count }} คำถาม</span>
+                }
+              </div>
+
+              <h4 class="course-title">{{ g.title }}</h4>
+              <p class="teacher-info">{{ g.description || 'ยังไม่มีคำอธิบาย' }}</p>
+
+              <div class="course-card-footer" style="flex-wrap: wrap;">
+                <button type="button" class="btn-test-action" (click)="openEditGameModal(g)">แก้ไขเกม</button>
+                <button type="button" class="btn-test-action" (click)="openContentManager(g)">จัดการเนื้อหา</button>
+                <button type="button" class="btn-test-action" (click)="openEditGameModal(g)">เปลี่ยนรูปปก</button>
+                <button type="button" class="btn-reject" (click)="confirmDeleteGame(g)">ลบเกม</button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    } @else if (showGameModal) {
+      <!-- หน้าสร้าง/แก้ไขเกม -->
+      <div class="section-header-row">
+        <div>
+          <h3 class="section-title">{{ gameModalMode === 'create' ? 'เพิ่มเกมใหม่' : 'แก้ไขเกม' }}</h3>
+          <p class="section-desc">กรอกข้อมูลแล้วกดบันทึก มีผลกับ Game Covers และหน้าเกมของนักศึกษาทันที</p>
+        </div>
+        <button type="button" class="btn-primary-action outline" (click)="closeGameModal()">← กลับไปที่รายการเกม</button>
+      </div>
+
+      <div class="form-field">
+        <label>ชื่อเกม *</label>
+        <input type="text" [(ngModel)]="gameForm.title" name="gf_title" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; box-sizing: border-box; background: #ffffff;" />
+      </div>
+
+      <div class="form-field">
+        <label>คำอธิบายเกม</label>
+        <textarea [(ngModel)]="gameForm.description" name="gf_description" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; min-height: 60px; box-sizing: border-box; background: #ffffff;"></textarea>
+      </div>
+
+      <div class="form-field" id="gf-cover-field">
+        <label>รูปปกเกม</label>
+        <div style="display: flex; gap: 0.6rem; align-items: center;">
+          @if (gameForm.cover_image) {
+            <img [src]="gameForm.cover_image" alt="" style="width: 64px; height: 64px; object-fit: cover; border-radius: 10px; border: 1px solid #e2e8f0; flex-shrink: 0;" />
+          } @else {
+            <div style="width: 64px; height: 64px; border-radius: 10px; border: 1.5px dashed #e2e8f0; background: #f8fafc; flex-shrink: 0;"></div>
+          }
+          <label class="btn-primary-action purple" style="cursor: pointer; font-size: 0.74rem; padding: 0.4rem 0.8rem;">
+            {{ uploadingGameCover ? 'กำลังอัปโหลด...' : 'เลือกรูปภาพ / Upload' }}
+            <input type="file" accept="image/*" (change)="onGameFormCoverUpload($event)" style="display: none;" />
+          </label>
+          @if (gameForm.cover_image) {
+            <button type="button" class="btn-reject" style="font-size: 0.74rem; padding: 0.4rem 0.8rem;" (click)="removeGameFormCover()">ลบปก / Remove</button>
+          }
+        </div>
+        <p style="margin: 0.35rem 0 0; font-size: 0.68rem; color: #94a3b8; font-weight: 600;">ไม่ใส่รูปปกก็ได้ — ระบบจะแสดงกรอบว่างแทน</p>
+      </div>
+
+      <div class="form-field">
+        <label>คำแนะนำการเล่น</label>
+        <textarea [(ngModel)]="gameForm.instructions" name="gf_instructions" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; min-height: 50px; box-sizing: border-box; background: #ffffff;"></textarea>
+      </div>
+
+      <div class="form-field-row">
+        <div class="form-field">
+          <label>ระดับความยาก</label>
+          <select [(ngModel)]="gameForm.difficulty" name="gf_difficulty" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; box-sizing: border-box; background: #ffffff;">
+            @for (d of difficultyOptions; track d.value) {
+              <option [value]="d.value">{{ d.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label>เวลาในการเล่น (วินาที, เว้นว่าง = ไม่จำกัด)</label>
+          <input type="number" min="0" [(ngModel)]="gameForm.time_limit_seconds" name="gf_time" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; box-sizing: border-box; background: #ffffff;" />
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label>คะแนนเต็ม</label>
+        <input type="number" min="0" [(ngModel)]="gameForm.total_score" name="gf_score" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; box-sizing: border-box; background: #ffffff;" />
+      </div>
+
+      <div class="modal-footer-row">
+        <button type="button" class="btn-primary-action outline" (click)="closeGameModal()">ยกเลิก</button>
+        <button type="button" class="btn-primary-action" [disabled]="savingGame" (click)="saveGameModal()">
+          {{ savingGame ? 'กำลังบันทึก...' : (gameModalMode === 'create' ? 'สร้างเกม' : 'บันทึก') }}
+        </button>
+      </div>
+    } @else if (managingContentGame) {
+      <!-- หน้าแก้ไขคำถาม/คำตอบของเกมที่ครูสร้างเอง (custom-quiz) -->
+      <app-game-questions-editor
+        [game]="managingContentGame"
+        (closed)="closeContentManager()"
+        (questionCountChanged)="onQuestionCountChanged(managingContentGame.game_id, $event)"
+      />
+    } @else if (managingBuiltinGame && managingBuiltinConfig) {
+      <!-- หน้าจัดการเนื้อหาของเกม builtin — พรีฟิลด้วยเนื้อหาจริงที่กำลังใช้เล่นอยู่เสมอ
+           (ค่าเริ่มต้นในโค้ด/คลังคำศัพท์ของบทเรียน) ไม่ใช่แถวว่างเปล่า -->
+      <div class="section-header-row">
+        <div>
+          <h3 class="section-title">จัดการเนื้อหา — {{ managingBuiltinConfig.label }}</h3>
+          @if (dynamicOnlyGameKeys.includes(managingBuiltinGame.game_type)) {
+            <p class="section-desc">เกมนี้ใช้บทสนทนา/แบบฝึกหัดของแต่ละบทเรียนเป็นค่าเริ่มต้น ซึ่งยังเป็นเนื้อหาที่ฝังอยู่ในโค้ดของระบบ ไม่ได้เก็บในฐานข้อมูล จึงยังไม่มีหน้าไหนให้แก้ไขต้นฉบับนั้นโดยตรงได้ในตอนนี้ (คนละส่วนกับคำศัพท์ที่แก้ได้จากหน้าจัดการบทเรียนแล้ว) — กรอก/บันทึกเนื้อหาด้านล่างนี้ได้ตามปกติ จะใช้แทนค่าเริ่มต้นเดิมทันที (ลบออกให้หมดเพื่อกลับไปใช้ค่าเริ่มต้นเหมือนเดิม)</p>
+          } @else {
+            <p class="section-desc">แสดงเนื้อหาที่กำลังใช้เล่นจริงอยู่ตอนนี้ แก้ไขแล้วกดบันทึกมีผลกับเกมนี้ทันที</p>
+          }
+        </div>
+        <button type="button" class="btn-primary-action outline" (click)="closeBuiltinContentManager()">← กลับไปที่รายการเกม</button>
+      </div>
+
+      @if (gameContentSavedFlag[managingBuiltinConfig.key]) {
+        <span class="status-toggle-pill active" style="margin-bottom: 0.75rem; display: inline-block;">แก้ไขแล้ว (บันทึกใน DB)</span>
+      } @else if (isVocabPoolGame(managingBuiltinConfig.key)) {
+        <span class="status-toggle-pill" style="margin-bottom: 0.75rem; display: inline-block;">คลังคำศัพท์รวมของทุกบทเรียน (ยังไม่เคยแก้)</span>
+      } @else if (!dynamicOnlyGameKeys.includes(managingBuiltinConfig.key)) {
+        <span class="status-toggle-pill" style="margin-bottom: 0.75rem; display: inline-block;">ค่าเริ่มต้นในโค้ด (ยังไม่เคยแก้)</span>
+      }
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        @for (item of gameContentItems[managingBuiltinConfig.key]; track $index; let i = $index) {
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.55rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.74rem; font-weight: 800; color: #0d9488;">ข้อที่ {{ i + 1 }}</span>
+              <button type="button" class="btn-reject" (click)="removeGameContentItem(managingBuiltinConfig.key, i)">ลบ / Delete</button>
+            </div>
+
+            @for (field of managingBuiltinConfig.fields; track field.key) {
+              <div>
+                <label style="font-size: 0.74rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.25rem;">{{ field.label }}</label>
+
+                @switch (field.type) {
+                  @case ('image') {
+                    <div style="display: flex; gap: 0.6rem; align-items: center;">
+                      @if (item[field.key]) {
+                        <img [src]="item[field.key]" alt="" style="width: 64px; height: 64px; object-fit: cover; border-radius: 10px; border: 1px solid #e2e8f0; flex-shrink: 0;" />
+                      } @else {
+                        <div style="width: 64px; height: 64px; border-radius: 10px; border: 1.5px dashed #e2e8f0; background: #ffffff; flex-shrink: 0;"></div>
+                      }
+                      <label class="btn-primary-action purple" style="cursor: pointer; font-size: 0.74rem; padding: 0.4rem 0.8rem;">
+                        เลือกรูปภาพ / Upload
+                        <input type="file" accept="image/*" (change)="onGameContentImageUpload(managingBuiltinConfig.key, i, field.key, $event)" style="display: none;" />
+                      </label>
+                    </div>
+                  }
+                  @case ('textarea') {
+                    <textarea class="filter-input" [(ngModel)]="item[field.key]" name="gc_{{managingBuiltinConfig.key}}_{{field.key}}_{{i}}" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; min-height: 60px; box-sizing: border-box; background: #ffffff;"></textarea>
+                  }
+                  @case ('lines') {
+                    <textarea class="filter-input" [(ngModel)]="item[field.key]" name="gc_{{managingBuiltinConfig.key}}_{{field.key}}_{{i}}" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; min-height: 60px; box-sizing: border-box; background: #ffffff;"></textarea>
+                    <span style="font-size: 0.68rem; color: #94a3b8; display: block; margin-top: 0.2rem;">1 บรรทัด = 1 คำตอบที่ยอมรับได้ (กด Enter เพื่อขึ้นบรรทัดใหม่)</span>
+                  }
+                  @case ('number') {
+                    <input type="number" class="filter-input" [(ngModel)]="item[field.key]" name="gc_{{managingBuiltinConfig.key}}_{{field.key}}_{{i}}" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; box-sizing: border-box; background: #ffffff;" />
+                  }
+                  @default {
+                    <input type="text" class="filter-input" [(ngModel)]="item[field.key]" name="gc_{{managingBuiltinConfig.key}}_{{field.key}}_{{i}}" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.5rem 0.75rem; width: 100%; box-sizing: border-box; background: #ffffff;" />
+                  }
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <button type="button" class="btn-primary-action outline" (click)="addGameContentItem(managingBuiltinConfig.key)">เพิ่มข้อใหม่ / Add Item</button>
+      </div>
+
+      <div class="modal-footer-row">
+        <button type="button" class="btn-primary-action outline" (click)="closeBuiltinContentManager()">ปิด</button>
+        <button type="button" class="btn-primary-action purple" [disabled]="gameContentSaving[managingBuiltinConfig.key]" (click)="saveGameContentItems(managingBuiltinConfig.key)">
+          {{ gameContentSaving[managingBuiltinConfig.key] ? 'กำลังบันทึก...' : 'บันทึกเนื้อหาเกม' }}
+        </button>
+      </div>
+    }
+  </div>
+</div>
