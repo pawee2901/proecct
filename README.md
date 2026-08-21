@@ -118,3 +118,4 @@ src/app/
 - ทุกหน้ามี mock data fallback เมื่อ API ล้มเหลว
 - Auth ใช้วิธีเก็บ user object ใน localStorage (ไม่มี JWT, ไม่มี route guard) — ทุกหน้าเช็คสิทธิ์เองใน `ngOnInit`
 - `proxy.conf.json` ที่ root ยังไม่ได้ต่อเข้ากับ `angular.json` และ `ApiService` ก็เรียกด้วย absolute URL อยู่แล้ว — จะเปลี่ยนที่อยู่ backend ต้องแก้ `baseUrl` ใน `src/app/services/api.service.ts` โดยตรง
+"# proecct" 
