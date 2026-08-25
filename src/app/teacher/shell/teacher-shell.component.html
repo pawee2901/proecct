@@ -1,4 +1,4 @@
-<div class="wrapper">
+<div class="wrapper" (click)="onWrapperClick()">
 
   <!-- ── TOP NAVIGATION BAR ── -->
   <header class="top-nav">
@@ -12,22 +12,33 @@
         </span>
       </div>
     </div>
-    <div class="user-profile">
-      <div class="profile-info">
+    <div class="profile-area">
+      <button class="avatar-btn" (click)="toggleProfileDropdown(); $event.stopPropagation()">
         <span class="avatar-circle">T</span>
-        <div class="user-details">
-          <p class="user-name">อาจารย์ {{ session.currentUser?.firstName || 'ผู้สอน' }} {{ session.currentUser?.lastName || '' }}</p>
-          <span class="user-role-badge">Teacher</span>
-        </div>
-      </div>
-      <button class="logout-btn" (click)="logout()" title="ออกจากระบบ">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
+        <svg class="chevron-svg" [class.open]="showProfileDropdown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
-        ออกจากระบบ / Logout
       </button>
+      @if (showProfileDropdown) {
+        <div class="profile-dropdown animate-fade" (click)="$event.stopPropagation()">
+          <div class="dropdown-header">
+            <span class="dd-avatar">T</span>
+            <div class="dd-info">
+              <p class="dd-name">อาจารย์ {{ session.currentUser?.firstName || 'ผู้สอน' }} {{ session.currentUser?.lastName || '' }}</p>
+              <span class="dd-role">Teacher · ผู้สอน</span>
+            </div>
+          </div>
+          <div class="dd-divider"></div>
+          <button class="dd-item dd-logout" (click)="logout()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            ออกจากระบบ / Logout
+          </button>
+        </div>
+      }
     </div>
   </header>
 

@@ -25,6 +25,7 @@ export class AdminShellComponent implements OnInit {
   // Mobile-only: whether the collapsible tab list is expanded. Ignored on
   // desktop, where the tab row is always shown regardless (see scss).
   navExpanded = false;
+  showProfileDropdown = false;
 
   constructor(
     public session: AdminSessionService,
@@ -40,6 +41,14 @@ export class AdminShellComponent implements OnInit {
     this.adminUsers.loadUsers();
     this.adminUsers.loadPendingTeachers();
     this.adminApiHub.loadApiEndpoints();
+  }
+
+  toggleProfileDropdown(): void {
+    this.showProfileDropdown = !this.showProfileDropdown;
+  }
+
+  onWrapperClick(): void {
+    this.showProfileDropdown = false;
   }
 
   logout(): void {

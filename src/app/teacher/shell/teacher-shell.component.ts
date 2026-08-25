@@ -28,6 +28,7 @@ export class TeacherShellComponent implements OnInit, OnDestroy {
   // Mobile-only: whether the collapsible tab list is expanded. Ignored on
   // desktop, where the tab row is always shown regardless (see scss).
   navExpanded = false;
+  showProfileDropdown = false;
   private navSub?: Subscription;
 
   constructor(public session: TeacherSessionService, private router: Router) {}
@@ -50,6 +51,14 @@ export class TeacherShellComponent implements OnInit, OnDestroy {
 
   switchYearLevel(year: 1 | 2): void {
     this.session.switchYearLevel(year);
+  }
+
+  toggleProfileDropdown(): void {
+    this.showProfileDropdown = !this.showProfileDropdown;
+  }
+
+  onWrapperClick(): void {
+    this.showProfileDropdown = false;
   }
 
   logout(): void {
