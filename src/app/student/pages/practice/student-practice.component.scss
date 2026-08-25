@@ -1656,6 +1656,26 @@
     padding: 0.9rem 1.1rem;
   }
 
+  /* Speech-to-speech call header: badges had no room next to the back
+     button, so their text wrapped to 2-3 lines inside a narrow pill and
+     read as oversized. Wrapping the row + shrinking the badges lets each
+     one sit on its own line at a size that actually fits. */
+  .ws-header {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    padding-bottom: 0.75rem !important;
+    margin-bottom: 1rem !important;
+  }
+  .ws-back-btn {
+    font-size: 0.78rem !important;
+    padding: 0.3rem 0.5rem !important;
+  }
+  .ws-badge {
+    font-size: 0.62rem !important;
+    padding: 0.3rem 0.65rem !important;
+    letter-spacing: 0.2px !important;
+  }
+
   /* Topic picker (step 1) + avatar picker (step 3): 2-per-row instead of
      1. Both lists/cards are inline-styled in the template (flex-column /
      auto-fit-220px, neither of which fits 2-up on a phone), so these need
