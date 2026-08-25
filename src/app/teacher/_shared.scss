@@ -860,8 +860,41 @@
     gap: 0.85rem;
   }
 
+  /* 2-per-row instead of 1 (was explicitly forced to 1 column here even
+     though 1024px already drops it to 2 -- per feedback, phones should
+     stay at 2 same as tablets). Card padding/text/footer trimmed to fit
+     the narrower column; buttons stack instead of squeezing their long
+     bilingual labels side-by-side. */
   .courses-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+  .course-card {
+    padding: 0.9rem;
+    gap: 0.5rem;
+  }
+  .course-title {
+    font-size: 0.85rem;
+  }
+  .teacher-info {
+    font-size: 0.7rem;
+  }
+  .sub-table-desc {
+    font-size: 0.68rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .course-card-footer {
+    flex-direction: column;
+  }
+  .course-card-footer .btn-approve,
+  .course-card-footer .btn-reject {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 0.72rem;
+    padding: 0.45rem 0.5rem;
   }
 
   .section-container {
