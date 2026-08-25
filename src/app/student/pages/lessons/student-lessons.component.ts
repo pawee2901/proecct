@@ -342,21 +342,15 @@ export class StudentLessonsComponent implements OnDestroy {
   downloadCurrentUnitPdf(): void {
     if (!this.lessonsData.currentUnit) return;
     const url = this.resolveSlideUrl(this.lessonsData.currentUnit.id, this.lessonsData.currentUnit.slidePath);
-    const filename = decodeURIComponent(url.substring(url.lastIndexOf('/') + 1));
 
-    fetch(url)
-      .then((res) => res.blob())
-      .then((blob) => {
-        const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
-      })
-      .catch((err) => console.error('Error downloading PDF:', err));
+    // These slide PDFs run 14-28MB. fetch().blob() used to buffer the whole
+    // file in memory with zero visible progress before anything happened
+    // (looked "stuck" on a big file / slow connection), and iOS Safari
+    // doesn't reliably honor <a download> on blob: URLs anyway -- it often
+    // just silently did nothing. Opening the URL directly instead lets the
+    // browser's own PDF viewer stream it in with real progress, and the
+    // user can save/share/print from there on both mobile and desktop.
+    window.open(url, '_blank');
   }
 
   toggleSlideFullscreen(): void {
