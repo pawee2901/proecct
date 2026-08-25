@@ -22,6 +22,10 @@ import { AdminMonitorService } from '../services/admin-monitor.service';
   styleUrl: './admin-shell.component.scss',
 })
 export class AdminShellComponent implements OnInit {
+  // Mobile-only: whether the collapsible tab list is expanded. Ignored on
+  // desktop, where the tab row is always shown regardless (see scss).
+  navExpanded = false;
+
   constructor(
     public session: AdminSessionService,
     public adminUsers: AdminUsersService,

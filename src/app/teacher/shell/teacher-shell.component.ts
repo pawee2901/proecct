@@ -25,6 +25,9 @@ import { TeacherSessionService } from '../services/teacher-session.service';
 })
 export class TeacherShellComponent implements OnInit, OnDestroy {
   showYearToggle = false;
+  // Mobile-only: whether the collapsible tab list is expanded. Ignored on
+  // desktop, where the tab row is always shown regardless (see scss).
+  navExpanded = false;
   private navSub?: Subscription;
 
   constructor(public session: TeacherSessionService, private router: Router) {}

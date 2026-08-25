@@ -52,7 +52,24 @@
   <div class="body-flat">
 
     <!-- ── NAVIGATION SUB-TAB BAR ── -->
-    <nav class="secondary-tabs" aria-label="Admin Sections">
+    <!-- Mobile-only toggle: same collapsible pattern as the Teacher shell,
+         since this list has 5 items and permanently eats even more space
+         on a phone. Desktop ignores navExpanded (see media query). -->
+    <button type="button" class="nav-collapse-toggle" (click)="navExpanded = !navExpanded">
+      <span>เมนู / Menu</span>
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        [class.rotated]="navExpanded"
+      >
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
+    <nav class="secondary-tabs" [class.mobile-collapsed]="!navExpanded" aria-label="Admin Sections">
       <button class="sub-tab-btn" routerLink="overview" routerLinkActive="active">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="7" height="7"></rect>
