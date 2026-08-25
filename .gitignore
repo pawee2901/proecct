@@ -45,3 +45,4 @@ Thumbs.db
 
 # Backend (Flask) - deployed separately, not part of this repo
 /backend/
+/backend-deploy.zip
