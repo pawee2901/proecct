@@ -1655,5 +1655,61 @@
   .qfs-header {
     padding: 0.9rem 1.1rem;
   }
+
+  /* Topic picker (step 1) + avatar picker (step 3): 2-per-row instead of
+     1. Both lists/cards are inline-styled in the template (flex-column /
+     auto-fit-220px, neither of which fits 2-up on a phone), so these need
+     !important to win over the inline style attribute. */
+  .duo-options-list,
+  .duo-avatar-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+  }
+  .duo-option-card,
+  .duo-avatar-card {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 0.9rem 0.6rem !important;
+    gap: 0.4rem !important;
+  }
+  .duo-option-card .opt-icon,
+  .duo-avatar-card .duo-avatar-face {
+    font-size: 1.7rem !important;
+  }
+  .duo-option-card .opt-info,
+  .duo-avatar-card > div:last-child {
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .duo-option-card .opt-info h4,
+  .duo-avatar-card h4 {
+    font-size: 0.76rem !important;
+    text-align: center !important;
+  }
+  .duo-option-card .opt-info p,
+  .duo-avatar-card p {
+    font-size: 0.64rem !important;
+    text-align: center !important;
+  }
+  .opt-badge.recommend {
+    right: 6px !important;
+    font-size: 0.58rem !important;
+    padding: 2px 7px !important;
+  }
+
+  /* Live call screen: smaller avatar so the panel fits without scrolling */
+  .avatar-ring {
+    width: 88px !important;
+    height: 88px !important;
+    margin-bottom: 1rem !important;
+    .inner-avatar {
+      font-size: 2.6rem !important;
+    }
+  }
+  .call-status-title {
+    font-size: 1rem !important;
+  }
 }
 
