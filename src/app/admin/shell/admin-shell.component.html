@@ -7,19 +7,15 @@
         <img src="assets/mascot-icon.png" alt="AI Speaking Assistant">
       </div>
       <div class="brand-text">
-        <h2 class="app-name">AI Speaking Assistant</h2>
-        <div class="sub-brand-row">
-          <span class="app-subtitle">Admin Operations & API Management Hub</span>
-          @if (adminMonitor.systemStatsIsLive) {
-            <span class="pulse-status-badge live">
-              <span class="pulse-dot"></span> System Live
-            </span>
-          } @else {
-            <span class="pulse-status-badge mock">
-              <span class="pulse-dot yellow"></span> Local Mode
-            </span>
-          }
-        </div>
+        @if (adminMonitor.systemStatsIsLive) {
+          <span class="pulse-status-badge live">
+            <span class="pulse-dot"></span> System Live
+          </span>
+        } @else {
+          <span class="pulse-status-badge mock">
+            <span class="pulse-dot yellow"></span> Local Mode
+          </span>
+        }
       </div>
     </div>
 
