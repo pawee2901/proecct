@@ -1745,5 +1745,40 @@
   .call-status-title {
     font-size: 1rem !important;
   }
+
+  /* Practice menu (the 5 mode cards shown before entering any wizard):
+     same auto-fill-280px story as the lesson/game grids -- never fits
+     2-up on a phone, so it always stacked to 1 column. Square icon
+     boxes like the other pickers, matching the app's icon-grid style. */
+  .practice-utils-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  .util-card {
+    aspect-ratio: 1 / 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    gap: 0.35rem;
+  }
+  .util-icon-wrapper {
+    width: 44px;
+    height: 44px;
+  }
+  .util-info {
+    h4 {
+      font-size: 0.76rem;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    p {
+      display: none;
+    }
+  }
 }
 
