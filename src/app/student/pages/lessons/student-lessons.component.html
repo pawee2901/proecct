@@ -91,74 +91,177 @@
                 <p class="detail-desc">{{ lessonDetailUnit.description }}</p>
               </div>
             </div>
-            <!-- Learning Path Steps -->
-            <div class="learning-steps">
-              <div class="step-node" (click)="startStep('pre-test')">
-                <div class="step-node-icon step-pre">1</div>
-                <div class="step-node-info">
-                  <span class="step-label">Pre-Test · แบบทดสอบก่อนเรียน</span>
+            <!-- Learning Path (trail map) -->
+            <div class="trail-progress">
+              <div class="trail-progress-top">
+                <span>เส้นทางการเรียนของคุณ</span>
+                <span class="trail-progress-count">{{ trailProgress.done }} / {{ trailProgress.total }} ขั้นตอน</span>
+              </div>
+              <div class="trail-progress-bar">
+                <div class="trail-progress-fill" [style.width.%]="trailProgress.percent"></div>
+              </div>
+            </div>
+
+            <div class="trail-path">
+              <!-- Step 1: Pre-Test -->
+              <div class="trail-row trail-row--left" (click)="startStep('pre-test')">
+                <div
+                  class="trail-node tn-pre"
+                  [class.tn-filled]="progress.progressReport[lessonDetailUnit.id - 1]?.preScore !== null"
+                  [class.tn-current]="currentRoadmapStep === 'pre-test'"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <path d="m9 15 2 2 4-4" />
+                  </svg>
                   @if (progress.progressReport[lessonDetailUnit.id - 1]?.preScore !== null) {
-                    <span class="step-score"
-                      >{{ progress.progressReport[lessonDetailUnit.id - 1]?.preScore }}%</span
-                    >
+                    <span class="trail-check-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </span>
                   }
                 </div>
+                <div class="trail-label">
+                  <div class="trail-eyebrow" [class.tn-current-tag]="currentRoadmapStep === 'pre-test'">
+                    ขั้นตอนที่ 1{{ currentRoadmapStep === 'pre-test' ? ' · ถัดไป' : '' }}
+                  </div>
+                  <div class="trail-title">
+                    Pre-Test
+                    @if (progress.progressReport[lessonDetailUnit.id - 1]?.preScore !== null) {
+                      <span class="trail-score-badge">{{ progress.progressReport[lessonDetailUnit.id - 1]?.preScore }}%</span>
+                    }
+                  </div>
+                  <div class="trail-sub">แบบทดสอบก่อนเรียน</div>
+                </div>
               </div>
-              <div class="step-connector"></div>
+
+              <div class="trail-connector">
+                <svg viewBox="0 0 100 56" preserveAspectRatio="none"><path d="M10,0 L90,56" /></svg>
+              </div>
+
+              <!-- Step 2: roadmap game (pre) -->
               @if (isRoadmapSlotEnabled(lessonDetailUnit.id, 'pre')) {
-                <div class="step-node" (click)="startStep('game-pre')">
-                  <div class="step-node-icon step-game1">2</div>
-                  <div class="step-node-info">
-                    <span class="step-label">{{ getRoadmapGameLabel(lessonDetailUnit.id, 'pre') }}</span>
+                <div class="trail-row trail-row--right" (click)="startStep('game-pre')">
+                  <div
+                    class="trail-node tn-game1"
+                    [class.tn-filled]="getRoadmapGameScore(lessonDetailUnit.id, 'pre') !== null"
+                    [class.tn-current]="currentRoadmapStep === 'game-pre'"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2z" /></svg>
                     @if (getRoadmapGameScore(lessonDetailUnit.id, 'pre') !== null) {
-                      <span class="step-done">สำเร็จ ✓</span>
+                      <span class="trail-check-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      </span>
                     }
+                  </div>
+                  <div class="trail-label">
+                    <div class="trail-eyebrow" [class.tn-current-tag]="currentRoadmapStep === 'game-pre'">
+                      ขั้นตอนที่ 2{{ currentRoadmapStep === 'game-pre' ? ' · ถัดไป' : '' }}
+                    </div>
+                    <div class="trail-title">{{ getRoadmapGameTitle(lessonDetailUnit.id, 'pre') }}</div>
+                    <div class="trail-sub">{{ getRoadmapGameSubLabel(lessonDetailUnit.id, 'pre') }}</div>
                   </div>
                 </div>
               } @else {
-                <div class="step-node" style="opacity: 0.6; cursor: not-allowed;">
-                  <div class="step-node-icon" style="background: #94A3B8; color: white; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; font-size: 1.1rem; font-weight: 800; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); flex-shrink: 0;">🔒</div>
-                  <div class="step-node-info">
-                    <span class="step-label" style="text-decoration: line-through; color: #94A3B8;">กิจกรรมก่อนเรียน (ปิดสิทธิ์โดยอาจารย์)</span>
+                <div class="trail-row trail-row--right tn-locked-row">
+                  <div class="trail-node tn-locked">🔒</div>
+                  <div class="trail-label">
+                    <div class="trail-eyebrow">ขั้นตอนที่ 2</div>
+                    <div class="trail-title">กิจกรรมก่อนเรียน</div>
+                    <div class="trail-sub">ปิดสิทธิ์โดยอาจารย์</div>
                   </div>
                 </div>
               }
-              <div class="step-connector"></div>
-              <div class="step-node" (click)="startStep('lesson')">
-                <div class="step-node-icon step-lesson">3</div>
-                <div class="step-node-info">
-                  <span class="step-label">Lesson · เนื้อหาบทเรียน</span>
+
+              <div class="trail-connector">
+                <svg viewBox="0 0 100 56" preserveAspectRatio="none"><path d="M90,0 L10,56" /></svg>
+              </div>
+
+              <!-- Step 3: Lesson -->
+              <div class="trail-row trail-row--left" (click)="startStep('lesson')">
+                <div class="trail-node tn-lesson">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 4.5A2.5 2.5 0 0 1 4.5 2H9a2 2 0 0 1 2 2v16a1.5 1.5 0 0 0-1.5-1.5H2Z" />
+                    <path d="M22 4.5A2.5 2.5 0 0 0 19.5 2H15a2 2 0 0 0-2 2v16a1.5 1.5 0 0 1 1.5-1.5H22Z" />
+                  </svg>
+                </div>
+                <div class="trail-label">
+                  <div class="trail-eyebrow">ขั้นตอนที่ 3</div>
+                  <div class="trail-title">Lesson</div>
+                  <div class="trail-sub">เนื้อหาบทเรียน</div>
                 </div>
               </div>
-              <div class="step-connector"></div>
+
+              <div class="trail-connector">
+                <svg viewBox="0 0 100 56" preserveAspectRatio="none"><path d="M10,0 L90,56" /></svg>
+              </div>
+
+              <!-- Step 4: roadmap game (post) -->
               @if (isRoadmapSlotEnabled(lessonDetailUnit.id, 'post')) {
-                <div class="step-node" (click)="startStep('game-post')">
-                  <div class="step-node-icon step-game2">4</div>
-                  <div class="step-node-info">
-                    <span class="step-label">{{ getRoadmapGameLabel(lessonDetailUnit.id, 'post') }}</span>
+                <div class="trail-row trail-row--right" (click)="startStep('game-post')">
+                  <div
+                    class="trail-node tn-game2"
+                    [class.tn-filled]="getRoadmapGameScore(lessonDetailUnit.id, 'post') !== null"
+                    [class.tn-current]="currentRoadmapStep === 'game-post'"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2z" /></svg>
                     @if (getRoadmapGameScore(lessonDetailUnit.id, 'post') !== null) {
-                      <span class="step-done">สำเร็จ ✓</span>
+                      <span class="trail-check-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      </span>
                     }
+                  </div>
+                  <div class="trail-label">
+                    <div class="trail-eyebrow" [class.tn-current-tag]="currentRoadmapStep === 'game-post'">
+                      ขั้นตอนที่ 4{{ currentRoadmapStep === 'game-post' ? ' · ถัดไป' : '' }}
+                    </div>
+                    <div class="trail-title">{{ getRoadmapGameTitle(lessonDetailUnit.id, 'post') }}</div>
+                    <div class="trail-sub">{{ getRoadmapGameSubLabel(lessonDetailUnit.id, 'post') }}</div>
                   </div>
                 </div>
               } @else {
-                <div class="step-node" style="opacity: 0.6; cursor: not-allowed;">
-                  <div class="step-node-icon" style="background: #94A3B8; color: white; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; font-size: 1.1rem; font-weight: 800; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); flex-shrink: 0;">🔒</div>
-                  <div class="step-node-info">
-                    <span class="step-label" style="text-decoration: line-through; color: #94A3B8;">กิจกรรมหลังเรียน (ปิดสิทธิ์โดยอาจารย์)</span>
+                <div class="trail-row trail-row--right tn-locked-row">
+                  <div class="trail-node tn-locked">🔒</div>
+                  <div class="trail-label">
+                    <div class="trail-eyebrow">ขั้นตอนที่ 4</div>
+                    <div class="trail-title">กิจกรรมหลังเรียน</div>
+                    <div class="trail-sub">ปิดสิทธิ์โดยอาจารย์</div>
                   </div>
                 </div>
               }
-              <div class="step-connector"></div>
-              <div class="step-node" (click)="startStep('post-test')">
-                <div class="step-node-icon step-post">5</div>
-                <div class="step-node-info">
-                  <span class="step-label">Post-Test · แบบทดสอบหลังเรียน</span>
+
+              <div class="trail-connector">
+                <svg viewBox="0 0 100 56" preserveAspectRatio="none"><path d="M90,0 L10,56" /></svg>
+              </div>
+
+              <!-- Step 5: Post-Test -->
+              <div class="trail-row trail-row--left" (click)="startStep('post-test')">
+                <div
+                  class="trail-node tn-post"
+                  [class.tn-filled]="progress.progressReport[lessonDetailUnit.id - 1]?.postScore !== null"
+                  [class.tn-current]="currentRoadmapStep === 'post-test'"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 22V4" />
+                    <path d="M4 4h13l-2 4 2 4H4" />
+                  </svg>
                   @if (progress.progressReport[lessonDetailUnit.id - 1]?.postScore !== null) {
-                    <span class="step-score"
-                      >{{ progress.progressReport[lessonDetailUnit.id - 1]?.postScore }}%</span
-                    >
+                    <span class="trail-check-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </span>
                   }
+                </div>
+                <div class="trail-label">
+                  <div class="trail-eyebrow" [class.tn-current-tag]="currentRoadmapStep === 'post-test'">
+                    ขั้นตอนสุดท้าย{{ currentRoadmapStep === 'post-test' ? ' · ถัดไป' : '' }}
+                  </div>
+                  <div class="trail-title">
+                    Post-Test
+                    @if (progress.progressReport[lessonDetailUnit.id - 1]?.postScore !== null) {
+                      <span class="trail-score-badge">{{ progress.progressReport[lessonDetailUnit.id - 1]?.postScore }}%</span>
+                    }
+                  </div>
+                  <div class="trail-sub">แบบทดสอบหลังเรียน</div>
                 </div>
               </div>
             </div>

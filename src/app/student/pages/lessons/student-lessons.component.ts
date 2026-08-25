@@ -130,14 +130,27 @@ export class StudentLessonsComponent implements OnDestroy {
     return this.getRoadmapGame(unitId, slot) !== 'none';
   }
 
-  getRoadmapGameLabel(unitId: number, slot: 'pre' | 'post'): string {
-    const labels: { [key: string]: string } = {
-      scramble: '🧩 Word Scramble · สลับตัวอักษร',
-      dialogue: '💬 Dialogue Sequencer · เรียงประโยค',
-      'picture-word': '🖼️ Picture → Word · ดูภาพทายคำ',
-      'fill-blank': '✏️ Fill in the Blank · เติมคำในประโยค',
+  // Split (title, subtitle) pair for the roadmap trail's two-line labels —
+  // replaces the old getRoadmapGameLabel(), which returned both halves
+  // pre-joined with " · " for the single-line step list.
+  getRoadmapGameTitle(unitId: number, slot: 'pre' | 'post'): string {
+    const titles: { [key: string]: string } = {
+      scramble: '🧩 Word Scramble',
+      dialogue: '💬 Dialogue Sequencer',
+      'picture-word': '🖼️ Picture → Word',
+      'fill-blank': '✏️ Fill in the Blank',
     };
-    return labels[this.getRoadmapGame(unitId, slot)] || '🧩 กิจกรรมฝึกฝน';
+    return titles[this.getRoadmapGame(unitId, slot)] || '🧩 กิจกรรมฝึกฝน';
+  }
+
+  getRoadmapGameSubLabel(unitId: number, slot: 'pre' | 'post'): string {
+    const subs: { [key: string]: string } = {
+      scramble: 'สลับตัวอักษร',
+      dialogue: 'เรียงประโยค',
+      'picture-word': 'ดูภาพทายคำ',
+      'fill-blank': 'เติมคำในประโยค',
+    };
+    return subs[this.getRoadmapGame(unitId, slot)] || '';
   }
 
   getRoadmapGameScore(unitId: number, slot: 'pre' | 'post'): number | null {
@@ -146,6 +159,49 @@ export class StudentLessonsComponent implements OnDestroy {
     const key = `game_${gameType.replace('-', '')}_${this.session.currentUser.id}_unit${unitId}`;
     const raw = localStorage.getItem(key);
     return raw ? parseInt(raw, 10) : null;
+  }
+
+  // First not-yet-scored checkpoint in the roadmap, used to give the trail's
+  // "up next" node its glow. Lesson has no completion signal of its own (no
+  // score, nothing tracked), so it's deliberately left out of this sequence
+  // rather than guessed at — the highlight only ever lands on a step that
+  // genuinely has a done/not-done answer.
+  get currentRoadmapStep(): 'pre-test' | 'game-pre' | 'game-post' | 'post-test' | null {
+    const u = this.lessonDetailUnit;
+    if (!u) return null;
+    const rep = this.progress.progressReport[u.id - 1];
+    if (!rep || rep.preScore === null) return 'pre-test';
+    if (this.isRoadmapSlotEnabled(u.id, 'pre') && this.getRoadmapGameScore(u.id, 'pre') === null) {
+      return 'game-pre';
+    }
+    if (this.isRoadmapSlotEnabled(u.id, 'post') && this.getRoadmapGameScore(u.id, 'post') === null) {
+      return 'game-post';
+    }
+    if (rep.postScore === null) return 'post-test';
+    return null;
+  }
+
+  // Progress-bar fraction above the trail. Only counts checkpoints that can
+  // actually be scored (same set as currentRoadmapStep) — a teacher-disabled
+  // slot doesn't count against the student, and the untracked Lesson step
+  // isn't padded into the denominator just to make the bar move.
+  get trailProgress(): { done: number; total: number; percent: number } {
+    const u = this.lessonDetailUnit;
+    if (!u) return { done: 0, total: 0, percent: 0 };
+    const rep = this.progress.progressReport[u.id - 1];
+    let total = 2;
+    let done = 0;
+    if (rep && rep.preScore !== null) done++;
+    if (rep && rep.postScore !== null) done++;
+    if (this.isRoadmapSlotEnabled(u.id, 'pre')) {
+      total++;
+      if (this.getRoadmapGameScore(u.id, 'pre') !== null) done++;
+    }
+    if (this.isRoadmapSlotEnabled(u.id, 'post')) {
+      total++;
+      if (this.getRoadmapGameScore(u.id, 'post') !== null) done++;
+    }
+    return { done, total, percent: total > 0 ? Math.round((done / total) * 100) : 0 };
   }
 
   // ── Learning Path Step Controllers ──
