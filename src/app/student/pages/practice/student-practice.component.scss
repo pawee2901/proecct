@@ -1666,37 +1666,51 @@
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.6rem !important;
   }
+  /* Square icon-grid boxes (icon centered on top, label below) instead of
+     the horizontal icon+text row the desktop layout uses. Description
+     text is hidden here -- it doesn't fit a square box, and the title
+     (which already includes the English name) carries enough meaning. */
   .duo-option-card,
   .duo-avatar-card {
+    aspect-ratio: 1 / 1;
     flex-direction: column !important;
     align-items: center !important;
+    justify-content: center !important;
     text-align: center !important;
-    padding: 0.9rem 0.6rem !important;
-    gap: 0.4rem !important;
+    padding: 0.75rem 0.5rem !important;
+    gap: 0.35rem !important;
   }
   .duo-option-card .opt-icon,
   .duo-avatar-card .duo-avatar-face {
-    font-size: 1.7rem !important;
+    font-size: 2rem !important;
   }
   .duo-option-card .opt-info,
   .duo-avatar-card > div:last-child {
     align-items: center !important;
     text-align: center !important;
+    flex: none !important;
   }
   .duo-option-card .opt-info h4,
   .duo-avatar-card h4 {
-    font-size: 0.76rem !important;
+    font-size: 0.72rem !important;
+    line-height: 1.25 !important;
     text-align: center !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   .duo-option-card .opt-info p,
   .duo-avatar-card p {
-    font-size: 0.64rem !important;
-    text-align: center !important;
+    display: none !important;
   }
   .opt-badge.recommend {
-    right: 6px !important;
-    font-size: 0.58rem !important;
+    top: -8px !important;
+    right: 50% !important;
+    transform: translateX(50%);
+    font-size: 0.56rem !important;
     padding: 2px 7px !important;
+    white-space: nowrap;
   }
 
   /* Live call screen: smaller avatar so the panel fits without scrolling */
