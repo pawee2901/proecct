@@ -38,6 +38,12 @@ export class TeacherSessionService {
     return true;
   }
 
+  persistCurrentUser(): void {
+    if (this.currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+    }
+  }
+
   switchYearLevel(year: 1 | 2): void {
     this.activeYearLevel = year;
     this.yearChanged$.next(year);

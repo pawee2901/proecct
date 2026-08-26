@@ -27,6 +27,12 @@ export class AdminSessionService {
     return true;
   }
 
+  persistCurrentUser(): void {
+    if (this.currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+    }
+  }
+
   logout(): void {
     localStorage.removeItem('currentUser');
     this.router.navigate(['/login']);

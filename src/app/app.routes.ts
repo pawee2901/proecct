@@ -4,12 +4,14 @@ import { TeacherShellComponent } from './teacher/shell/teacher-shell.component';
 import { TeacherStudentsComponent } from './teacher/pages/students/teacher-students.component';
 import { TeacherLessonsComponent } from './teacher/pages/lessons/teacher-lessons.component';
 import { TeacherGameCoversComponent } from './teacher/pages/game-covers/teacher-game-covers.component';
+import { TeacherProfileComponent } from './teacher/pages/profile/teacher-profile.component';
 import { AdminShellComponent } from './admin/shell/admin-shell.component';
 import { AdminOverviewComponent } from './admin/pages/overview/admin-overview.component';
 import { AdminUsersComponent } from './admin/pages/users/admin-users.component';
 import { AdminApisComponent } from './admin/pages/apis/admin-apis.component';
 import { AdminCoursesComponent } from './admin/pages/courses/admin-courses.component';
 import { AdminSystemComponent } from './admin/pages/system/admin-system.component';
+import { AdminProfileComponent } from './admin/pages/profile/admin-profile.component';
 import { StudentShellComponent } from './student/shell/student-shell.component';
 import { StudentLessonsComponent } from './student/pages/lessons/student-lessons.component';
 import { StudentVocabularyComponent } from './student/pages/vocabulary/student-vocabulary.component';
@@ -44,6 +46,7 @@ export const routes: Routes = [
       { path: 'students', component: TeacherStudentsComponent },
       { path: 'lessons', component: TeacherLessonsComponent },
       { path: 'game-covers', component: TeacherGameCoversComponent },
+      { path: 'profile', component: TeacherProfileComponent },
     ],
   },
   {
@@ -56,6 +59,7 @@ export const routes: Routes = [
       { path: 'apis', component: AdminApisComponent },
       { path: 'courses', component: AdminCoursesComponent },
       { path: 'system', component: AdminSystemComponent },
+      { path: 'profile', component: AdminProfileComponent },
     ],
   },
   { path: '**', redirectTo: 'login' }

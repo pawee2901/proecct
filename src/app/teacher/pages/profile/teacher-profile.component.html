@@ -1,0 +1,44 @@
+<div class="tab-panel animate-fade">
+  <div class="section-container">
+    <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 1rem;">ข้อมูลส่วนตัว / Personal Info</h4>
+
+    <div class="field-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">ชื่อจริง / First Name</label>
+        <input class="filter-input" type="text" style="width: 100%; box-sizing: border-box;" [(ngModel)]="editFirstName" name="firstName" placeholder="ชื่อจริง" />
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">นามสกุล / Last Name</label>
+        <input class="filter-input" type="text" style="width: 100%; box-sizing: border-box;" [(ngModel)]="editLastName" name="lastName" placeholder="นามสกุล" />
+      </div>
+    </div>
+
+    <button type="button" class="btn-primary-action" [disabled]="savingName" (click)="saveName()">
+      {{ savingName ? 'กำลังบันทึก...' : 'บันทึกชื่อ / Save' }}
+    </button>
+  </div>
+
+  <div class="section-container" style="margin-top: 1.25rem;">
+    <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">เปลี่ยนรหัสผ่าน / Change Password</h4>
+    <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">ต้องกรอกรหัสผ่านปัจจุบันให้ถูกต้องก่อนถึงจะเปลี่ยนรหัสผ่านใหม่ได้</p>
+
+    <div style="display: flex; flex-direction: column; gap: 0.85rem; max-width: 420px;">
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">รหัสผ่านปัจจุบัน</label>
+        <input class="filter-input" type="password" style="width: 100%; box-sizing: border-box;" [(ngModel)]="currentPassword" name="currentPassword" placeholder="รหัสผ่านปัจจุบัน" />
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">รหัสผ่านใหม่</label>
+        <input class="filter-input" type="password" style="width: 100%; box-sizing: border-box;" [(ngModel)]="newPassword" name="newPassword" placeholder="อย่างน้อย 4 ตัว" />
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">ยืนยันรหัสผ่านใหม่</label>
+        <input class="filter-input" type="password" style="width: 100%; box-sizing: border-box;" [(ngModel)]="confirmPassword" name="confirmPassword" placeholder="พิมพ์อีกครั้ง" />
+      </div>
+    </div>
+
+    <button type="button" class="btn-primary-action" style="margin-top: 1rem;" [disabled]="changingPassword" (click)="submitPasswordChange()">
+      {{ changingPassword ? 'กำลังเปลี่ยนรหัสผ่าน...' : 'เปลี่ยนรหัสผ่าน / Change Password' }}
+    </button>
+  </div>
+</div>
