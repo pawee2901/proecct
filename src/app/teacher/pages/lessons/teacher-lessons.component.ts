@@ -42,6 +42,12 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
   yearAiInstructions: { [yearLevel: number]: string } = {};
   yearAiInstructionsSaving: { [yearLevel: number]: boolean } = {};
 
+  // เนื้อหา prompt เดิมของระบบ (scope "system_speaking" ที่แอดมินตั้งค่าไว้) — แสดงเป็น
+  // ข้อมูลอ้างอิงอ่านอย่างเดียวเหนือกล่องข้อความด้านบน เพื่อให้อาจารย์เห็นว่า AI มีกฎ/บุคลิก
+  // พื้นฐานอะไรอยู่แล้วก่อนเขียนคำสั่งเพิ่มเติมเฉพาะชั้นปี (กันเขียนซ้ำ/ขัดกับของเดิม)
+  systemSpeakingPromptDefault = '';
+  showSystemPromptReference = false;
+
   constructor(public session: TeacherSessionService, private apiService: ApiService) {}
 
   private yearChangedSub?: Subscription;
@@ -49,6 +55,7 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadLessons();
     this.loadYearAiInstructions();
+    this.loadSystemSpeakingPromptDefault();
     // ปุ่มสลับปีย้ายไปอยู่ใน shell แล้ว (ดู TeacherShellComponent) — ฟัง event ตรงนี้แทน
     // เพื่อยังคงเคลียร์ editingLesson เหมือนเดิมตอนสลับปีระหว่างแก้บทเรียนอยู่
     this.yearChangedSub = this.session.yearChanged$.subscribe(() => {
@@ -226,6 +233,21 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
           confirmButtonColor: '#0f766e'
         });
       }
+    });
+  }
+
+  // โหลด prompt เดิมของระบบ (ที่แอดมินตั้งค่าไว้ใน Admin ▸ APIs) มาโชว์อ้างอิงเฉยๆ — endpoint
+  // นี้เดิมทำไว้ให้แอดมินเรียก แต่ backend นี้ไม่มี auth คุ้มกันเลยทั้งระบบอยู่แล้ว จึงเรียกจาก
+  // หน้าอาจารย์ตรงๆ ได้เลยโดยไม่ต้องเพิ่ม endpoint ใหม่
+  loadSystemSpeakingPromptDefault(): void {
+    this.apiService.getAdminAiPrompts().subscribe({
+      next: (data: any) => {
+        if (Array.isArray(data)) {
+          const row = data.find((p: any) => p.scope_key === 'system_speaking');
+          this.systemSpeakingPromptDefault = row?.prompt_text || '';
+        }
+      },
+      error: () => {}
     });
   }
 

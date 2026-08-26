@@ -11,7 +11,23 @@
   @if (editingLesson === null) {
     <div class="section-container">
       <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">Prompt AI ประจำชั้นปีที่ {{ session.activeYearLevel }} (Year-level AI Instruction)</h4>
-      <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">คำสั่งเพิ่มเติมนี้จะมีผลกับนักศึกษาชั้นปีที่ {{ session.activeYearLevel }} ทุกคนตอนฝึกพูดอิสระ (หน้า "ฝึกพูดกับ AI" ของนักศึกษา) ไม่ว่าจะกำลังฝึกหัวข้อไหนก็ตาม — เหมาะกับเรื่องที่ควรต่างกันตามชั้นปี เช่น "ปี 1 เน้นคำศัพท์พื้นฐาน พูดช้าๆ ให้กำลังใจเยอะๆ" หรือ "ปี 2 เข้มงวดเรื่อง grammar และคำศัพท์วิชาชีพครูมากขึ้น" ถ้าไม่ตั้งค่า AI จะใช้บุคลิก/กฎกลางของระบบตามปกติ</p>
+      <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.75rem;">คำสั่งเพิ่มเติมนี้จะมีผลกับนักศึกษาชั้นปีที่ {{ session.activeYearLevel }} ทุกคนตอนฝึกพูดอิสระ (หน้า "ฝึกพูดกับ AI" ของนักศึกษา) ไม่ว่าจะกำลังฝึกหัวข้อไหนก็ตาม — เหมาะกับเรื่องที่ควรต่างกันตามชั้นปี เช่น "ปี 1 เน้นคำศัพท์พื้นฐาน พูดช้าๆ ให้กำลังใจเยอะๆ" หรือ "ปี 2 เข้มงวดเรื่อง grammar และคำศัพท์วิชาชีพครูมากขึ้น" ถ้าไม่ตั้งค่า AI จะใช้บุคลิก/กฎกลางของระบบตามปกติ</p>
+
+      @if (systemSpeakingPromptDefault) {
+        <div style="margin-bottom: 0.85rem; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden;">
+          <button
+            type="button"
+            (click)="showSystemPromptReference = !showSystemPromptReference"
+            style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.9rem; background: #f8fafc; border: none; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: #475569;"
+          >
+            <span>📄 ดู Prompt เดิมของระบบ (อ้างอิง — บอกว่า AI มีกฎ/บุคลิกพื้นฐานอะไรอยู่แล้ว)</span>
+            <span>{{ showSystemPromptReference ? '▲' : '▼' }}</span>
+          </button>
+          @if (showSystemPromptReference) {
+            <pre style="margin: 0; padding: 0.9rem; font-size: 0.75rem; color: #64748b; white-space: pre-wrap; font-family: inherit; max-height: 220px; overflow-y: auto; background: #ffffff; border-top: 1px solid #e2e8f0;">{{ systemSpeakingPromptDefault }}</pre>
+          }
+        </div>
+      }
 
       <textarea class="filter-input" style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.65rem 0.9rem; width: 100%; min-height: 90px; box-sizing: border-box; background: #ffffff;" [(ngModel)]="yearAiInstructions[session.activeYearLevel]" name="yearAiInstruction" placeholder="เช่น เน้นคำศัพท์พื้นฐานในชีวิตประจำวัน พูดช้าๆ ชัดๆ และให้กำลังใจบ่อยๆ เพราะเป็นนักศึกษาปีแรก"></textarea>
 
