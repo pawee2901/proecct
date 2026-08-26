@@ -495,7 +495,7 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
     this.editingLesson.titleEn = this.editingLesson.name;
 
     this.apiService.saveLesson(this.editingLesson).subscribe({
-      next: (res: any) => {
+      next: () => {
         Swal.fire({
           icon: 'success',
           title: 'สำเร็จ',
@@ -596,7 +596,7 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
           });
         }
       },
-      error: (err: any) => {
+      error: () => {
         Swal.close();
         Swal.fire({
           icon: 'error',

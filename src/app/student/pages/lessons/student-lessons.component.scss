@@ -1052,6 +1052,11 @@
 .qfs-body {
   flex: 1;
   overflow-y: auto;
+  // Same iOS Safari fix as .main-content (student-shell.component.scss) --
+  // this sits inside .quiz-fs-overlay's position:fixed; inset:0, the exact
+  // nested-scroll setup that needs this explicitly on iOS.
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   padding: 1.5rem 1.4rem 3rem;
   max-width: 800px;
   width: 100%;

@@ -1,7 +1,6 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import Swal from 'sweetalert2';
 
@@ -469,8 +468,6 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     private practiceSession: PracticeSessionService,
     private cdr: ChangeDetectorRef,
     private sanitizer: DomSanitizer,
-    private router: Router,
-    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
@@ -2382,7 +2379,7 @@ IMPORTANT: If the student made any grammar or spelling mistake in their last mes
           }
 
           if (this.practiceMode === 'speech-to-speech') {
-            this.practiceSpeakText(reply);
+            this.practiceSpeakText(reply, () => this.autoResumeListening());
           }
         },
         error: (err: any) => {
@@ -2413,7 +2410,7 @@ IMPORTANT: If the student made any grammar or spelling mistake in their last mes
           }
 
           if (this.practiceMode === 'speech-to-speech') {
-            this.practiceSpeakText(reply);
+            this.practiceSpeakText(reply, () => this.autoResumeListening());
           }
         }
       });

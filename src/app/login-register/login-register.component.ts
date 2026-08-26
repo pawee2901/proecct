@@ -360,7 +360,7 @@ export class LoginRegisterComponent implements OnInit {
     this.successMessage = '';
 
     this.apiService.resetPasswordUpdate(this.resetUserId, newPassword).subscribe({
-      next: (res: any) => {
+      next: () => {
         this.loading = false;
         this.showSuccess('เปลี่ยนรหัสผ่านใหม่สำเร็จแล้ว! กำลังนำคุณกลับไปหน้าล็อกอิน...');
         setTimeout(() => {

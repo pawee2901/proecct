@@ -913,29 +913,6 @@ export class GameEngineService {
     return { blanked, answer, full };
   }
 
-  // ดึงคำศัพท์เฉพาะหน่วยเรียนเดียว (สำหรับเกม Picture-Word ตอนเล่นในขั้นตอนบทเรียน)
-  private buildUnitVocabPool(unitId: number): { word: string; meaning: string; image?: string; icon: string }[] {
-    const unit = this.lessonsData.units.find((u) => u.id === unitId);
-    if (!unit) return [];
-    const seen = new Set<string>();
-    const pool: { word: string; meaning: string; image?: string; icon: string }[] = [];
-    unit.vocabularies.forEach((v) => {
-      const key = v.word.toLowerCase();
-      if (!seen.has(key)) {
-        seen.add(key);
-        pool.push({
-          word: v.word,
-          meaning: v.meaning,
-          image: v.image || this.resolveVocabImage(v.word),
-          icon: this.resolveVocabIcon(v.word),
-        });
-      }
-    });
-    // ถ้าหน่วยนี้มีคำศัพท์เดี่ยว (ไม่มีเว้นวรรค) น้อยเกินไป ให้ใช้คลังรวมทุกหน่วยแทนกันเกมว่างเปล่า
-    const guessable = pool.filter((w) => !w.word.includes(' '));
-    return guessable.length >= 3 ? pool : this.gameVocabPool;
-  }
-
   private buildOpenReplyPool(): {
     context: string;
     label: string;

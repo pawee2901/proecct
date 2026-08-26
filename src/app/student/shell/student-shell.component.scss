@@ -137,6 +137,13 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  // iOS Safari doesn't reliably give momentum/touch scrolling to a
+  // scrollable region nested inside a position:fixed-ish, height-locked
+  // ancestor (.dashboard-wrap above) without this -- without it, a swipe
+  // in here can just do nothing on some iPhones. overscroll-behavior stops
+  // an overscroll at the top/bottom from chaining into a page-level bounce.
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   position: relative;
   padding: 1.5rem;
   box-sizing: border-box;
