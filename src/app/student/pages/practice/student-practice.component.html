@@ -1129,6 +1129,38 @@
                           }}
                           "
                         </p>
+
+                        <!-- ปุ่มแปล + ตัวอย่างคำตอบ (เล็กๆ ไม่เด่นเกินเนื้อความหลัก) -->
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                          <button
+                            type="button"
+                            (click)="translateLastAiMessage()"
+                            [disabled]="translatingLastAi"
+                            style="font-size: 0.72rem; font-weight: 700; padding: 0.3rem 0.65rem; border-radius: 9999px; border: 1px solid rgba(13, 148, 136, 0.3); background: rgba(13, 148, 136, 0.08); color: #0f766e; cursor: pointer;"
+                          >
+                            {{ translatingLastAi ? 'กำลังแปล...' : (translatedForText === getLastAiMessage() ? '✕ ซ่อนคำแปล' : '🌐 แปล') }}
+                          </button>
+                          <button
+                            type="button"
+                            (click)="getSuggestedReplies()"
+                            [disabled]="loadingSuggestedReplies"
+                            style="font-size: 0.72rem; font-weight: 700; padding: 0.3rem 0.65rem; border-radius: 9999px; border: 1px solid rgba(217, 119, 6, 0.3); background: rgba(217, 119, 6, 0.08); color: #b45309; cursor: pointer;"
+                          >
+                            {{ loadingSuggestedReplies ? 'กำลังคิด...' : ((suggestionsForText === getLastAiMessage() && suggestedReplies.length > 0) ? '✕ ซ่อนตัวอย่าง' : '💡 ตัวอย่างคำตอบ') }}
+                          </button>
+                        </div>
+
+                        @if (lastAiTranslation && translatedForText === getLastAiMessage()) {
+                          <p class="ex-text animate-fade" style="color: #0f766e; font-style: italic; margin-top: 0.45rem; font-size: 0.85rem;">{{ lastAiTranslation }}</p>
+                        }
+
+                        @if (suggestedReplies.length > 0 && suggestionsForText === getLastAiMessage()) {
+                          <div class="animate-fade" style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem;">
+                            @for (s of suggestedReplies; track s) {
+                              <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 0.5rem 0.7rem; font-size: 0.8rem; color: #92400e;">💬 {{ s }}</div>
+                            }
+                          </div>
+                        }
                       </div>
                     }
                   </div>

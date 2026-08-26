@@ -287,6 +287,17 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   }[] = [];
   aiWriting = false;
 
+  // ปุ่ม "แปล" + "ตัวอย่างคำตอบ" บนข้อความล่าสุดของ AI (call screen, speech-to-speech)
+  // เก็บ translatedForText/suggestionsForText คู่กับผลลัพธ์ไว้เทียบกับข้อความ AI ล่าสุด
+  // ปัจจุบันเสมอ (แทนที่จะเคลียร์ state ตรงทุกจุดที่ push ข้อความ AI ใหม่ ซึ่งมีหลายจุดและ
+  // เสี่ยงตกหล่น) — ถ้าไม่ตรงกันแปลว่าเป็นผลลัพธ์เก่าของข้อความก่อนหน้า ไม่โชว์
+  lastAiTranslation: string | null = null;
+  translatedForText: string | null = null;
+  translatingLastAi = false;
+  suggestedReplies: string[] = [];
+  suggestionsForText: string | null = null;
+  loadingSuggestedReplies = false;
+
   // Text-to-Text Sub-Modes Control
   textPracticeSubMode: 'menu' | 'chat' | 'qa' = 'menu';
 
@@ -1726,6 +1737,59 @@ Start the conversation naturally and in character with a short opening line (1-2
   getLastUserMessage(): string {
     const userMsgs = this.practiceMessages.filter(m => m.sender === 'user');
     return userMsgs.length > 0 ? userMsgs[userMsgs.length - 1].text : '';
+  }
+
+  getLastAiMessage(): string {
+    const aiMsgs = this.practiceMessages.filter(m => m.sender === 'ai');
+    return aiMsgs.length > 0 ? aiMsgs[aiMsgs.length - 1].text : '';
+  }
+
+  // ปุ่ม "แปล" — กดซ้ำอีกครั้งบนข้อความเดิมเพื่อซ่อน (toggle), กดตอนมีข้อความ AI ใหม่
+  // จะเรียก AI แปลใหม่เสมอเพราะ translatedForText ไม่ตรงกับข้อความล่าสุดแล้ว
+  translateLastAiMessage(): void {
+    const text = this.getLastAiMessage();
+    if (!text || this.translatingLastAi) return;
+    if (this.translatedForText === text) {
+      this.translatedForText = null;
+      this.lastAiTranslation = null;
+      return;
+    }
+    this.translatingLastAi = true;
+    this.apiService.translateToThai(text).subscribe({
+      next: (res: any) => {
+        this.translatingLastAi = false;
+        this.translatedForText = text;
+        this.lastAiTranslation = res?.translation || 'แปลไม่สำเร็จ ลองใหม่อีกครั้งค่ะ';
+      },
+      error: () => {
+        this.translatingLastAi = false;
+        this.translatedForText = text;
+        this.lastAiTranslation = 'แปลไม่สำเร็จ ลองใหม่อีกครั้งค่ะ';
+      },
+    });
+  }
+
+  // ปุ่ม "ตัวอย่างคำตอบ" — เช่นเดียวกับปุ่มแปล toggle ปิดได้ถ้ากดซ้ำข้อความเดิม
+  getSuggestedReplies(): void {
+    const text = this.getLastAiMessage();
+    if (!text || this.loadingSuggestedReplies) return;
+    if (this.suggestionsForText === text && this.suggestedReplies.length > 0) {
+      this.suggestionsForText = null;
+      this.suggestedReplies = [];
+      return;
+    }
+    this.loadingSuggestedReplies = true;
+    this.apiService.suggestReplies(text).subscribe({
+      next: (res: any) => {
+        this.loadingSuggestedReplies = false;
+        this.suggestionsForText = text;
+        this.suggestedReplies = Array.isArray(res?.suggestions) ? res.suggestions : [];
+      },
+      error: () => {
+        this.loadingSuggestedReplies = false;
+        this.suggestedReplies = [];
+      },
+    });
   }
 
   // --- Live transcript (Web Speech API): shows text on screen as the

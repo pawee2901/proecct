@@ -288,6 +288,15 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/ai-speaking/history/${userId}`);
   }
 
+  // ปุ่ม "แปล" + "ตัวอย่างคำตอบ" ในหน้าฝึกพูด (speech-to-speech)
+  translateToThai(text: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/ai-speaking/translate`, { text });
+  }
+
+  suggestReplies(aiMessage: string, context?: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/ai-speaking/suggest-replies`, { ai_message: aiMessage, context });
+  }
+
   postLessonAudioSpeaking(lessonId: number, modeRoute: string, formData: FormData): Observable<any> {
     return this.http.post(`${this.baseUrl}/lesson/${lessonId}/ai-speaking/${modeRoute}`, formData);
   }
