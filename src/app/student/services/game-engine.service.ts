@@ -610,6 +610,7 @@ export class GameEngineService {
 
     if (!isCorrect) {
       this.gameFx.triggerGameShake();
+      this.mistakes.trackWrongItem('word', original, original, 'Word Scramble');
     } else {
       this.gameFx.playSoundEffect('success');
     }
@@ -1002,7 +1003,11 @@ export class GameEngineService {
     if (!item || this.fb_feedback !== '' || !this.fb_input.trim()) return;
     const correct = this.gameFx.normalizeAnswer(this.fb_input) === this.gameFx.normalizeAnswer(item.answer);
     this.fb_feedback = correct ? 'correct' : 'wrong';
-    if (correct) this.fb_score++;
+    if (correct) {
+      this.fb_score++;
+    } else {
+      this.mistakes.trackWrongItem('sentence', item.answer, item.full, 'Fill in the Blank');
+    }
     setTimeout(() => this.nextFillBlankRound(), 1000);
   }
 
@@ -1122,7 +1127,11 @@ export class GameEngineService {
     if (!item || this.tf_feedback !== '' || !this.tf_input.trim()) return;
     const correct = this.gameFx.normalizeSentence(this.tf_input) === this.gameFx.normalizeSentence(item.correct);
     this.tf_feedback = correct ? 'correct' : 'wrong';
-    if (correct) this.tf_score++;
+    if (correct) {
+      this.tf_score++;
+    } else {
+      this.mistakes.trackWrongItem('sentence', item.wrong, item.correct, 'Spot & Fix the Typo');
+    }
     setTimeout(() => this.nextTypoFixRound(), 1400);
   }
 
@@ -1187,6 +1196,7 @@ export class GameEngineService {
       this.wr_wrongAttempts++;
       if (this.wr_wrongAttempts >= this.wr_maxAttempts) {
         this.wr_feedback = 'revealed';
+        this.mistakes.trackWrongItem('word', word.word, word.meaning, 'Word Riddle');
         setTimeout(() => this.nextWordRiddleRound(), 1700);
       } else {
         this.wr_feedback = 'wrong';
@@ -1253,7 +1263,11 @@ export class GameEngineService {
     const typed = this.gameFx.normalizeSentence(this.ss_input).split(' ');
     const correct = target.length === typed.length && target.every((w, i) => w === typed[i]);
     this.ss_feedback = correct ? 'correct' : 'wrong';
-    if (correct) this.ss_score++;
+    if (correct) {
+      this.ss_score++;
+    } else {
+      this.mistakes.trackWrongItem('sentence', this.ssCurrentSentence, this.ssCurrentSentence, 'Sentence Reorder');
+    }
     setTimeout(() => this.nextSentenceReorderRound(), 1300);
   }
 
