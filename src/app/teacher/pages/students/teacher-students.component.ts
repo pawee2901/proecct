@@ -49,11 +49,6 @@ interface MockStudent {
   styleUrl: './teacher-students.component.scss',
 })
 export class TeacherStudentsComponent implements OnInit, OnDestroy {
-  // Stats
-  studentCount = 28;
-  classAverage = 82;
-  completedRate = 75;
-
   // Students list
   students: MockStudent[] = [];
   selectedStudent: MockStudent | null = null;
@@ -163,13 +158,9 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
               activity: []
             };
           });
-
-          // อัปเดตสถิติห้องเรียน
-          this.studentCount = this.students.length;
-          if (this.studentCount > 0) {
-            const sum = this.students.reduce((acc, curr) => acc + curr.average_score, 0);
-            this.classAverage = Math.round(sum / this.studentCount);
-          }
+          // studentCount/classAverage/completedRate are getters derived from
+          // filteredStudents (see below) — no assignment needed here, and
+          // that keeps them reacting to the active year tab automatically.
         }
       },
       error: () => {
@@ -224,7 +215,6 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
           },
 
         ];
-        this.studentCount = this.students.length;
       }
     });
   }
@@ -234,10 +224,20 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
   // ตรงกับบทที่นักศึกษาทำจริง ทำให้คะแนนที่บันทึกลง DB แล้วดูเหมือน "ไม่ส่งถึงอาจารย์" (เห็นแค่
   // ในแท็บผิดปี) — นักศึกษาที่ยังไม่เคยทำอะไรเลย (practicedYears ว่าง) จะ fallback ไปโชว์ตาม
   // year_level/year_of_study เพื่อให้อาจารย์ยังเห็นรายชื่อครบตั้งแต่แรก
+  //
+  // แก้บั๊ก (พบจริงจาก DB — มีนักศึกษา year_of_study 3 และ 4 อยู่จริง): ระบบมีแค่ 2 แท็บ (ปี 1/ปี 2)
+  // ค่า fallback เดิม `(st.year_level || 1) === year` ไม่เคยตรงกับปี 1 หรือ 2 เลยถ้า year_level
+  // เป็น 3/4/ค่าอื่น ทำให้นักศึกษากลุ่มนี้หายไปจากทั้งสองแท็บเลยถ้ายังไม่เคยฝึกอะไร (ไม่ใช่แค่
+  // "จำนวนนักศึกษาไม่ตรง" แต่หายจริง) — clamp ให้เหลือแค่ 1 หรือ 2 เสมอ (ค่าอื่นทั้งหมด fallback
+  // ไปปี 1) เพื่อให้ทุกคนโผล่อย่างน้อย 1 แท็บแน่นอน
+  private normalizeYear(rawYear: number | undefined): 1 | 2 {
+    return rawYear === 2 ? 2 : 1;
+  }
+
   get filteredStudents(): MockStudent[] {
     const year = this.session.activeYearLevel;
     const yearList = this.students
-      .filter(st => (st.practicedYears.length > 0 ? st.practicedYears.includes(year) : (st.year_level || 1) === year))
+      .filter(st => (st.practicedYears.length > 0 ? st.practicedYears.includes(year) : this.normalizeYear(st.year_level) === year))
       .map(st => {
         const hasYearData = st.practicedYears.includes(year);
         const average_score = hasYearData ? (st.averageScoreByYear[year] || 0) : st.average_score;
@@ -249,5 +249,28 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
     return yearList.filter(
       st => st.name.toLowerCase().includes(query) || st.student_code.includes(query)
     );
+  }
+
+  // สถิติ 3 ใบบนสุด — คำนวณจาก filteredStudents (แท็บที่กำลังดูอยู่) เสมอ แทนที่จะเป็นค่ารวม
+  // ทั้งหมดคงที่แบบเดิม (studentCount/classAverage เดิมคำนวณครั้งเดียวตอนโหลดจากทั้ง 15 คนไม่
+  // สนใจแท็บที่เลือก, ส่วน completedRate เป็นเลข mock คงที่ = 75 มาตลอด ไม่เคยคำนวณจากข้อมูลจริงเลย)
+  get studentCount(): number {
+    return this.filteredStudents.length;
+  }
+
+  get classAverage(): number {
+    const list = this.filteredStudents;
+    if (list.length === 0) return 0;
+    const sum = list.reduce((acc, st) => acc + st.average_score, 0);
+    return Math.round(sum / list.length);
+  }
+
+  // "อัตราความสำเร็จ (การส่งงานและฝึกพูด)" — สัดส่วนนักศึกษาในแท็บนี้ที่มีบทเรียนสำเร็จอย่างน้อย
+  // 1 บท (เคยส่งงาน/ฝึกพูดจริง) ไม่ใช่แค่ค่าคงที่
+  get completedRate(): number {
+    const list = this.filteredStudents;
+    if (list.length === 0) return 0;
+    const engaged = list.filter(st => st.lessons_completed > 0).length;
+    return Math.round((engaged / list.length) * 100);
   }
 }
