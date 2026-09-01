@@ -143,17 +143,30 @@
    against siblings within .main-content, never against .top-nav
    (z-index: 200), so the sticky navbar would paint over the overlay's
    header and hide its close button. Staying at z-index: auto still paints
-   above .orb (z-index: 0, earlier in DOM) without creating that trap. */
+   above .orb (z-index: 0, earlier in DOM) without creating that trap.
+
+   Turns out that trap can also spring with no z-index in sight: real iOS
+   Safari (not Chrome DevTools' mobile emulation, which is still Blink —
+   this never reproduced there) promotes an element with
+   `-webkit-overflow-scrolling: touch` to its own compositing layer, which
+   in practice behaves like a stacking context on that engine even though
+   nothing here asks for one. .main-content had that property (see below —
+   removed now), so .quiz-fs-overlay's z-index: 1200 was only ever compared
+   against other things inside .main-content's layer; the layer itself,
+   at its own implicit z-index, still lost to .top-nav's explicit 200 and
+   got painted over -- exactly the qfs-header-and-close-button-vanish
+   symptom the paragraph above was already warning about, just triggered a
+   different way. */
 .main-content {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  // iOS Safari doesn't reliably give momentum/touch scrolling to a
-  // scrollable region nested inside a position:fixed-ish, height-locked
-  // ancestor (.dashboard-wrap above) without this -- without it, a swipe
-  // in here can just do nothing on some iPhones. overscroll-behavior stops
-  // an overscroll at the top/bottom from chaining into a page-level bounce.
-  -webkit-overflow-scrolling: touch;
+  // Used to also carry -webkit-overflow-scrolling: touch here for momentum
+  // scrolling on iOS -- dropped (see stacking-context note above). It's
+  // been unnecessary since iOS 13 (overflow: auto scrolls with momentum
+  // natively now) and was actively breaking .quiz-fs-overlay's stacking.
+  // overscroll-behavior alone still stops an overscroll at the top/bottom
+  // from chaining into a page-level bounce.
   overscroll-behavior-y: contain;
   position: relative;
   padding: 1.5rem;
