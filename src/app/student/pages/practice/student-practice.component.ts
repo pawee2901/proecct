@@ -204,6 +204,16 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   private sttSentenceShownTime = 0;
   sttSpeedScore: number | null = null;
   sttFinalScore: number | null = null;
+  // The per-attempt score above is local text-matching + timing, computed
+  // instantly so each sentence gets immediate feedback -- no AI involved.
+  // These accumulate the round's (target, transcript, elapsedSeconds) triples
+  // so evaluateSttSession() can send the whole round to the same AI
+  // evaluator speech-to-speech/text-to-text use, once, when the round ends
+  // (see nextSentence()/evaluateSttSession() below).
+  private sttLastElapsedSeconds = 0;
+  private sttSessionAttempts: { target: string; transcript: string; elapsedSeconds: number }[] = [];
+  sttSessionFeedback: string | null = null;
+  isEvaluatingSttSession = false;
 
   practiceUnitId = 1;
   practiceMode: 'menu' | 'text-to-text' | 'speech-to-text' | 'text-to-speech' | 'speech-to-speech' =
@@ -245,6 +255,8 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     finalScore: number;
     elapsedSeconds: number;
   }[] = [];
+  ttsDictationFeedback: string | null = null;
+  isEvaluatingTtsDictation = false;
 
   minimalPairsPool = [
     { word1: 'ship', word2: 'sheep', meaning1: 'เรือ', meaning2: 'แกะ', correct: 'sheep' },
@@ -579,12 +591,15 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
         this.showSttReviewModal = false;
         this.sttSpeedScore = null;
         this.sttFinalScore = null;
+        this.sttSessionAttempts = [];
+        this.sttSessionFeedback = null;
       }
       if (mode === 'text-to-speech') {
         this.ttsDictationStep = 'setup';
         this.ttsDictationCurrent = null;
         this.ttsDictationInput = '';
         this.ttsDictationResults = [];
+        this.ttsDictationFeedback = null;
       }
     }
   }
@@ -958,6 +973,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     }
 
     this.ttsDictationResults = [];
+    this.ttsDictationFeedback = null;
     this.ttsDictationWordQueue = [];
     this.ttsDictationSentenceQueue = [];
     this.ttsDictationNextIsWord = true;
@@ -1253,10 +1269,49 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
         report: this.buildTtsDictationReport(this.ttsDictationResults, avgScore)
       });
       this.learningLog.saveLearningLogs();
+      this.evaluateTtsDictationSession();
     }
 
     this.gameFx.playSoundEffect('success');
     this.cdr.detectChanges();
+  }
+
+  // Same "evaluate the whole round once, via the shared AI evaluator" pattern
+  // as evaluateSttSession() -- local accuracy/speed scoring above already
+  // gives instant per-item feedback, this adds an AI-judged pronunciation/
+  // grammar pass on top so the round shows up properly for teachers too
+  // (see get_teacher_student_activity() parsing get_teacher_student_activity's
+  // ai_feedback prefix, backend db/teacher.py).
+  private evaluateTtsDictationSession(): void {
+    const userId = this.session.currentUser?.id;
+    if (!userId || this.ttsDictationResults.length === 0) return;
+
+    const messages: { sender: 'ai' | 'user'; text: string }[] = [];
+    const responseTimes: number[] = [];
+    this.ttsDictationResults.forEach((r) => {
+      messages.push({ sender: 'ai', text: `Listen and type what you hear: "${r.text}"` });
+      messages.push({ sender: 'user', text: r.userAnswer || '(no answer typed)' });
+      responseTimes.push(r.elapsedSeconds);
+    });
+
+    this.isEvaluatingTtsDictation = true;
+    this.apiService
+      .postSpeakingEvaluation({
+        user_id: userId,
+        mode: 'text_to_speech',
+        category: 'listening_dictation',
+        messages,
+        response_times: responseTimes,
+      })
+      .subscribe({
+        next: (res: any) => {
+          this.isEvaluatingTtsDictation = false;
+          this.ttsDictationFeedback = res?.feedback || null;
+        },
+        error: () => {
+          this.isEvaluatingTtsDictation = false;
+        },
+      });
   }
 
   /** สรุปผลรอบ Text-to-Speech Dictation หนึ่งรอบ ด้วย shape เดียวกับ chatSummaryReport
@@ -1300,6 +1355,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   restartTtsDictationQuiz(): void {
     this.ttsDictationStep = 'setup';
     this.ttsDictationResults = [];
+    this.ttsDictationFeedback = null;
     this.ttsDictationCurrent = null;
     this.ttsDictationInput = '';
   }
@@ -2168,6 +2224,8 @@ Start the conversation naturally and in character with a short opening line (1-2
     this.sttSpeedScore = null;
     this.sttFinalScore = null;
     this.sttSentenceShownTime = Date.now();
+    this.sttSessionAttempts = [];
+    this.sttSessionFeedback = null;
     this.sttStep = 'practice';
     this.gameFx.playSoundEffect('click');
   }
@@ -2184,6 +2242,7 @@ Start the conversation naturally and in character with a short opening line (1-2
     const elapsedSeconds = this.sttSentenceShownTime > 0
       ? (Date.now() - this.sttSentenceShownTime) / 1000
       : 0;
+    this.sttLastElapsedSeconds = elapsedSeconds;
     this.sttSpeedScore = this.calculateSttSpeedScore(target, elapsedSeconds);
     // ตอบไว (speed) 40% + อ่านถูก (accuracy) 60%
     this.sttFinalScore = Math.round(this.sttSpeedScore * 0.4 + (this.pronunciationScore || 0) * 0.6);
@@ -2198,6 +2257,11 @@ Start the conversation naturally and in character with a short opening line (1-2
     if (this.practiceMode === 'speech-to-text') {
       this.sttSessionCount++;
       const currentTarget = this.practiceSentences[this.selectedSentenceIndex];
+      this.sttSessionAttempts.push({
+        target: currentTarget,
+        transcript: this.recognizedText,
+        elapsedSeconds: this.sttLastElapsedSeconds,
+      });
       // If the combined score is null or less than 100, add to wrong list
       if (this.sttFinalScore === null || this.sttFinalScore < 100) {
         if (!this.sttWrongSentences.includes(currentTarget)) {
@@ -2211,6 +2275,7 @@ Start the conversation naturally and in character with a short opening line (1-2
       if (this.sttSessionCount >= 5) {
         this.showSttReviewModal = true;
         this.gameFx.playSoundEffect('success');
+        this.evaluateSttSession();
         return;
       }
     }
@@ -2240,6 +2305,48 @@ Start the conversation naturally and in character with a short opening line (1-2
     this.sttSpeedScore = null;
     this.sttFinalScore = null;
     this.sttSentenceShownTime = Date.now();
+    this.sttSessionAttempts = [];
+    this.sttSessionFeedback = null;
+  }
+
+  // Fires once per 5-sentence round (see nextSentence()) rather than per
+  // attempt -- same "evaluate the whole session once" pattern as
+  // speech-to-speech/text-to-text, and each attempt already got instant
+  // local feedback (sttFinalScore) so there's no need to block that on a
+  // round-trip. Reuses evaluate-session as-is: it doesn't care whether
+  // "messages" is a real back-and-forth conversation or, like here, a set of
+  // (AI asked to say X) / (student's transcript) pairs -- either way it's
+  // just Gemini reading a transcript and scoring pronunciation/grammar.
+  private evaluateSttSession(): void {
+    const userId = this.session.currentUser?.id;
+    if (!userId || this.sttSessionAttempts.length === 0) return;
+
+    const messages: { sender: 'ai' | 'user'; text: string }[] = [];
+    const responseTimes: number[] = [];
+    this.sttSessionAttempts.forEach((a) => {
+      messages.push({ sender: 'ai', text: `Please read this sentence aloud: "${a.target}"` });
+      messages.push({ sender: 'user', text: a.transcript || '(no speech recognized)' });
+      responseTimes.push(a.elapsedSeconds);
+    });
+
+    this.isEvaluatingSttSession = true;
+    this.apiService
+      .postSpeakingEvaluation({
+        user_id: userId,
+        mode: 'speech_to_text',
+        category: 'reading_aloud',
+        messages,
+        response_times: responseTimes,
+      })
+      .subscribe({
+        next: (res: any) => {
+          this.isEvaluatingSttSession = false;
+          this.sttSessionFeedback = res?.feedback || null;
+        },
+        error: () => {
+          this.isEvaluatingSttSession = false;
+        },
+      });
   }
 
   exitSttPractice() {

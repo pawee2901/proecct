@@ -530,13 +530,23 @@
                     {{ sttWrongSentences.length > 0 ? 'ฝึกฝนครบ 5 ประโยคแล้ว!' : 'สุดยอดมาก! ฝึกครบ 5 ประโยค' }}
                   </h2>
                   
-                  <p style="font-size: 0.95rem; color: var(--slate-500); max-width: 500px; margin-bottom: 1.5rem; line-height: 1.5;">
+                  <p style="font-size: 0.95rem; color: var(--slate-500); max-width: 500px; margin-bottom: 1rem; line-height: 1.5;">
                     @if (sttWrongSentences.length > 0) {
                       คุณมีประโยคที่ออกเสียงไม่สมบูรณ์อยู่ทั้งหมด <strong>{{ sttWrongSentences.length }} ประโยค</strong> คุณต้องการปรับปรุงและลองฝึกพูดเฉพาะประโยคที่ยังผิดอยู่หรือไม่?
                     } @else {
                       คุณออกเสียงได้ถูกต้องสมบูรณ์แบบ 100% ครบทุกประโยค! ยอดเยี่ยมมากค่ะพัฒนาต่อไปนะคะ
                     }
                   </p>
+
+                  <!-- ผลวิเคราะห์จาก AI ของทั้งรอบ (evaluateSttSession(), ยิงตอนครบ 5
+                       ประโยค) -- คนละอย่างกับคะแนนรายประโยคด้านบนที่คำนวณในเครื่องทันที -->
+                  @if (isEvaluatingSttSession) {
+                    <p style="font-size: 0.8rem; color: var(--slate-400); margin-bottom: 1rem;">⏳ AI กำลังวิเคราะห์ผลรอบนี้...</p>
+                  } @else if (sttSessionFeedback) {
+                    <p style="font-size: 0.85rem; color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 0.7rem 1rem; max-width: 500px; margin-bottom: 1rem; line-height: 1.5; text-align: left;">
+                      🤖 {{ sttSessionFeedback }}
+                    </p>
+                  }
 
                   <div style="display: flex; gap: 1rem; width: 100%; max-width: 420px; justify-content: center;">
                     @if (sttWrongSentences.length > 0) {
@@ -816,6 +826,16 @@
                       </div>
                     }
                   </div>
+
+                  <!-- ผลวิเคราะห์จาก AI ของทั้งรอบ (evaluateTtsDictationSession(), ยิงตอน
+                       จบรอบ) -- คนละอย่างกับคะแนนความไว/ความถูกต้องด้านบนที่คำนวณในเครื่อง -->
+                  @if (isEvaluatingTtsDictation) {
+                    <p style="font-size: 0.8rem; color: var(--slate-400); text-align: center;">⏳ AI กำลังวิเคราะห์ผลรอบนี้...</p>
+                  } @else if (ttsDictationFeedback) {
+                    <p style="font-size: 0.85rem; color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 0.85rem 1.1rem; line-height: 1.5;">
+                      🤖 {{ ttsDictationFeedback }}
+                    </p>
+                  }
 
                   <!-- Per-item breakdown -->
                   @if (ttsDictationResults.length > 0) {
