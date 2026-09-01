@@ -22,7 +22,11 @@ interface MockStudent {
   averageScoreByYear: { [year: number]: number };
   lessonsCompletedByYear: { [year: number]: number };
   scores: { unit: string; pre: number; post: number; game: number }[];
-  skills: { fluency: number; pronunciation: number; grammar: number; vocabulary: number };
+  /** ค่าเฉลี่ย % ของคะแนนย่อยการฝึกพูดทุกรอบที่ผ่าน evaluate-session จริง (คำนวณจาก
+   *  `activity` ใน computeSkillAverages() ด้านล่าง ไม่ใช่ค่าจาก backend ตรงๆ) — เดิมมี
+   *  fluency/vocabulary ด้วยแต่ AI ไม่เคยประเมิน 2 อย่างนี้จริงเลยทั้งระบบ (ดูคอมเมนต์ที่
+   *  computeSkillAverages()) เลยตัดออก เหลือแค่ 3 มิติที่มีข้อมูลจริงรองรับ */
+  skills: { pronunciation: number; speed: number; grammar: number };
   practiceLogs: { timestamp: string; sentence: string; score: number; attempt: number; feedback: string }[];
   gameLogs?: { unit: string; gameType: string; score: number; details: string; duration: string }[];
   /** ประวัติการทำกิจกรรมรายครั้ง (ทุกแถวจริงใน practice_sessions ไม่ใช่ค่าสรุป) พร้อม
@@ -77,6 +81,12 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
     this.yearChangedSub?.unsubscribe();
   }
 
+  // ให้การ์ด "ทักษะการพูด" แยกแยะ "0% เพราะยังไม่เคยฝึกพูดแบบมี AI ประเมินเลย" ออกจาก
+  // "0% เพราะข้อมูลพัง" (ปัญหาเดิม) — true ถ้ามีอย่างน้อย 1 รายการใน activity ที่แกะคะแนนย่อยได้
+  hasSpeakingEvaluations(st: MockStudent): boolean {
+    return st.activity.some((a) => a.pronunciation_score !== null);
+  }
+
   // แปล quiz_type/practice_mode ดิบจาก DB เป็นป้ายภาษาไทยให้อ่านง่ายในประวัติการทำ
   activityTypeLabel(a: { quiz_type: string | null; practice_mode: string | null }): string {
     const labels: { [key: string]: string } = {
@@ -104,10 +114,38 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
       next: (data: any) => {
         if (Array.isArray(data) && this.selectedStudent === st) {
           this.selectedStudent.activity = data;
+          this.selectedStudent.skills = this.computeSkillAverages(data);
         }
       },
       error: () => {}
     });
+  }
+
+  // "ทักษะการพูด (AI Evaluated Skills)" การ์ด — ค่าเฉลี่ย % ของทุกรอบฝึกพูดจริงที่ผ่าน
+  // evaluate-session (ai-speaking/evaluate-session, ดู routes/ai_speaking.py ฝั่ง backend)
+  // เดิม hardcode เป็น 0 เสมอสำหรับนักศึกษาจริงทุกคน (ไม่เคยต่อกับข้อมูลจริงเลย) และมี field
+  // fluency/vocabulary ที่ AI ไม่เคยประเมินจริงในระบบนี้ (evaluate_speaking_session() ให้แค่
+  // pronunciation_score/grammar_score, ai_speaking.py เพิ่ม speed_score จากเวลาตอบ) — ตัดสอง
+  // field ปลอมออก คำนวณ 3 มิติที่เหลือจาก a.pronunciation_score/.speed_score/.grammar_score
+  // ต่อรายการใน activity แทน (เพิ่งเพิ่มฝั่ง backend ให้ get_teacher_student_activity() แกะออก
+  // จาก ai_feedback prefix แล้ว — แถวที่เป็นแบบทดสอบ/เกม/ฝึกพูดโหมดเก่าจะเป็น null ทั้งสามค่า
+  // ไม่ถูกนับ)
+  private computeSkillAverages(
+    activity: MockStudent['activity']
+  ): { pronunciation: number; speed: number; grammar: number } {
+    const evaluated = activity.filter((a) => a.pronunciation_score !== null);
+    if (evaluated.length === 0) {
+      return { pronunciation: 0, speed: 0, grammar: 0 };
+    }
+    const avg = (pick: (a: (typeof evaluated)[number]) => number | null, max: number) =>
+      Math.round(
+        (evaluated.reduce((sum, a) => sum + (pick(a) ?? 0), 0) / evaluated.length / max) * 100
+      );
+    return {
+      pronunciation: avg((a) => a.pronunciation_score, 30),
+      speed: avg((a) => a.speed_score, 20),
+      grammar: avg((a) => a.grammar_score, 50),
+    };
   }
 
   // ── Load student reports ──
@@ -158,7 +196,8 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
               lessonsCompletedByYear,
               // รายละเอียดคะแนนต่อบทเรียน/สกิล/ประวัติจะโหลดจริงตอนกด "เปิดดูสถิติ" (ดู selectStudent())
               scores: [],
-              skills: { fluency: 0, pronunciation: 0, grammar: 0, vocabulary: 0 },
+              // ค่าจริงคำนวณตอนกด "เปิดดูสถิติ" (ดู selectStudent() -> computeSkillAverages())
+              skills: { pronunciation: 0, speed: 0, grammar: 0 },
               practiceLogs: [],
               gameLogs: [],
               activity: []
@@ -183,7 +222,7 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
               { unit: 'Unit 4: Teacher Meeting', pre: 85, post: 95, game: 95 },
               { unit: 'Unit 5: Giving Instruction', pre: 90, post: 100, game: 100 }
             ],
-            skills: { fluency: 92, pronunciation: 88, grammar: 95, vocabulary: 90 },
+            skills: { pronunciation: 88, speed: 92, grammar: 95 },
             practiceLogs: [
               { timestamp: '01/07/2026 15:30', sentence: 'Hello, good morning. My name is Sarah.', score: 95, attempt: 1, feedback: 'การออกเสียงสระและจังหวะพูดดีเยี่ยม' },
               { timestamp: '01/07/2026 15:40', sentence: 'Does anyone have any questions before we begin?', score: 100, attempt: 1, feedback: 'น้ำเสียงแสดงความมั่นใจสมบูรณ์แบบ' }
@@ -200,7 +239,7 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
               { unit: 'Unit 1: Welcoming', pre: 50, post: 70, game: 80 },
               { unit: 'Unit 2: Telephoning', pre: 40, post: 65, game: 70 }
             ],
-            skills: { fluency: 65, pronunciation: 62, grammar: 70, vocabulary: 60 },
+            skills: { pronunciation: 62, speed: 65, grammar: 70 },
             practiceLogs: [
               { timestamp: '01/07/2026 14:15', sentence: 'Hello morning Ms. Parker.', score: 60, attempt: 1, feedback: 'ควรพูดให้เต็มประโยค: "Hello, good morning Ms. Parker."' }
             ],
@@ -213,7 +252,7 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
               { unit: 'Unit 1: Welcoming', pre: 70, post: 85, game: 100 },
               { unit: 'Unit 2: Telephoning', pre: 65, post: 80, game: 90 }
             ],
-            skills: { fluency: 82, pronunciation: 85, grammar: 80, vocabulary: 88 },
+            skills: { pronunciation: 85, speed: 82, grammar: 80 },
             practiceLogs: [
               { timestamp: '01/07/2026 11:20', sentence: 'Good morning, Ms. Parker speaking.', score: 88, attempt: 1, feedback: 'น้ำเสียงเป็นธรรมชาติ ชัดถ้อยชัดคำดีมาก' }
             ],

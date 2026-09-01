@@ -134,16 +134,10 @@
             <h3>ทักษะการพูด (AI Evaluated Skills)</h3>
           </div>
 
-          <div class="server-metric-item">
-            <div class="metric-row-header">
-              <span>ความคล่องแคล่ว (Fluency)</span>
-              <strong>{{ selectedStudent.skills.fluency }}%</strong>
-            </div>
-            <div class="progress-bar-track">
-              <div class="progress-bar-fill purple" [style.width.%]="selectedStudent.skills.fluency"></div>
-            </div>
-          </div>
-
+          <!-- ค่าเฉลี่ย % จากทุกรอบฝึกพูดจริงที่ผ่าน evaluate-session (คำนวณใน
+               computeSkillAverages() ตอนกด "เปิดดูสถิติ") — เดิมมี Fluency/Vocabulary
+               ด้วยแต่ AI ไม่เคยประเมิน 2 อย่างนี้จริงในระบบนี้เลย เหลือแค่ 3 มิติที่มีข้อมูล
+               จริงรองรับ (เหมือนกับที่ขึ้นต่อรายการใน "ประวัติการทำ" ทางขวา) -->
           <div class="server-metric-item">
             <div class="metric-row-header">
               <span>การออกเสียง (Pronunciation)</span>
@@ -151,6 +145,16 @@
             </div>
             <div class="progress-bar-track">
               <div class="progress-bar-fill green" [style.width.%]="selectedStudent.skills.pronunciation"></div>
+            </div>
+          </div>
+
+          <div class="server-metric-item">
+            <div class="metric-row-header">
+              <span>ความเร็วในการตอบ (Response Speed)</span>
+              <strong>{{ selectedStudent.skills.speed }}%</strong>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill purple" [style.width.%]="selectedStudent.skills.speed"></div>
             </div>
           </div>
 
@@ -164,15 +168,12 @@
             </div>
           </div>
 
-          <div class="server-metric-item">
-            <div class="metric-row-header">
-              <span>คลังคำศัพท์ (Vocabulary)</span>
-              <strong>{{ selectedStudent.skills.vocabulary }}%</strong>
-            </div>
-            <div class="progress-bar-track">
-              <div class="progress-bar-fill purple" [style.width.%]="selectedStudent.skills.vocabulary"></div>
-            </div>
-          </div>
+          @if (selectedStudent.activity.length > 0 && !hasSpeakingEvaluations(selectedStudent)) {
+            <p class="empty-table-msg" style="margin-top: 0.75rem;">
+              นักศึกษาคนนี้ยังไม่เคยฝึกพูดแบบที่มีการประเมินของ AI (speech-to-speech ฯลฯ) —
+              ค่าเฉลี่ยด้านบนเป็น 0% เพราะยังไม่มีข้อมูลจริง ไม่ใช่ข้อผิดพลาด
+            </p>
+          }
 
           <div class="compact-log-item" style="margin-top: 1rem;">
             <div class="compact-log-msg">
