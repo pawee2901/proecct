@@ -714,11 +714,11 @@
             <span
               class="qfs-unit-badge"
               style="background: var(--pastel-green); color: var(--pastel-green-dark)"
-              >{{ lessonsData.currentUnit.number }}</span
+              >{{ lessonDetailUnit.number }}</span
             >
             <div>
               <h2 class="qfs-title">Word Scramble</h2>
-              <p class="qfs-subtitle">สลับตัวอักษร · {{ lessonsData.currentUnit.title }}</p>
+              <p class="qfs-subtitle">สลับตัวอักษร · {{ lessonDetailUnit.title }}</p>
             </div>
           </div>
           <button type="button" class="qfs-close-btn" (click)="closeStepOverlay()">
@@ -804,11 +804,11 @@
         <div class="qfs-header">
           <div class="qfs-title-group">
             <span class="qfs-unit-badge" style="background: var(--pastel-yellow); color: #92400e">{{
-              lessonsData.currentUnit.number
+              lessonDetailUnit.number
             }}</span>
             <div>
               <h2 class="qfs-title">เนื้อหาบทเรียน</h2>
-              <p class="qfs-subtitle">Lesson · {{ lessonsData.currentUnit.title }}</p>
+              <p class="qfs-subtitle">Lesson · {{ lessonDetailUnit.title }}</p>
             </div>
           </div>
           <div class="qfs-header-actions" style="display: flex; gap: 0.75rem">
@@ -1047,11 +1047,11 @@
             <span
               class="qfs-unit-badge"
               style="background: var(--pastel-purple); color: var(--pastel-purple-dark)"
-              >{{ lessonsData.currentUnit.number }}</span
+              >{{ lessonDetailUnit.number }}</span
             >
             <div>
               <h2 class="qfs-title">Dialogue Sequencer</h2>
-              <p class="qfs-subtitle">เรียงประโยค · {{ lessonsData.currentUnit.title }}</p>
+              <p class="qfs-subtitle">เรียงประโยค · {{ lessonDetailUnit.title }}</p>
             </div>
           </div>
           <button type="button" class="qfs-close-btn" (click)="closeStepOverlay()">
@@ -1129,11 +1129,11 @@
             <span
               class="qfs-unit-badge"
               style="background: var(--pastel-blue); color: var(--pastel-blue-dark)"
-              >{{ lessonsData.currentUnit.number }}</span
+              >{{ lessonDetailUnit.number }}</span
             >
             <div>
               <h2 class="qfs-title">Picture → Word</h2>
-              <p class="qfs-subtitle">ดูภาพทายคำ · {{ lessonsData.currentUnit.title }}</p>
+              <p class="qfs-subtitle">ดูภาพทายคำ · {{ lessonDetailUnit.title }}</p>
             </div>
           </div>
           <button type="button" class="qfs-close-btn" (click)="closeStepOverlay()">
@@ -1235,11 +1235,11 @@
             <span
               class="qfs-unit-badge"
               style="background: var(--pastel-yellow); color: #92400e"
-              >{{ lessonsData.currentUnit.number }}</span
+              >{{ lessonDetailUnit.number }}</span
             >
             <div>
               <h2 class="qfs-title">Fill in the Blank</h2>
-              <p class="qfs-subtitle">เติมคำในประโยค · {{ lessonsData.currentUnit.title }}</p>
+              <p class="qfs-subtitle">เติมคำในประโยค · {{ lessonDetailUnit.title }}</p>
             </div>
           </div>
           <button type="button" class="qfs-close-btn" (click)="closeStepOverlay()">
@@ -1313,12 +1313,12 @@
       <div class="quiz-fs-overlay animate-fade">
         <div class="qfs-header">
           <div class="qfs-title-group">
-            <span class="qfs-unit-badge">{{ lessonsData.currentUnit.number }}</span>
+            <span class="qfs-unit-badge">{{ lessonDetailUnit.number }}</span>
             <div>
               <h2 class="qfs-title">{{ currentStep === 'pre-test' ? 'Pre-Test' : 'Post-Test' }}</h2>
               <p class="qfs-subtitle">
                 แบบทดสอบ{{ currentStep === 'pre-test' ? 'ก่อน' : 'หลัง' }}เรียน ·
-                {{ lessonsData.currentUnit.title }}
+                {{ lessonDetailUnit.title }}
               </p>
             </div>
           </div>
