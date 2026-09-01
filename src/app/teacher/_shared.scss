@@ -670,6 +670,34 @@
 
 .log-level-chip.success { background: #dcfce7; color: #15803d; }
 
+// ── Per-session speaking-skill breakdown (Activity History, teacher-students) ──
+// One row of small chips per real evaluate-session row -- distinct from the
+// "ทักษะการพูด" card's all-time average, this is that one session's own score.
+.skill-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.skill-chip {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.skill-chip--pron {
+  background: #f0fdfa;
+  color: #0d9488;
+}
+.skill-chip--speed {
+  background: #fffbeb;
+  color: #b45309;
+}
+.skill-chip--grammar {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
 /* ── KEY CARD (ใช้กับ "เนื้อหาเกม" ใน Game Covers — เดิมไม่มีสไตล์นี้ในหน้าอาจารย์
    เลยขึ้นแบบไม่มีดีไซน์ เพิ่มให้ตรงนี้พร้อมปรับปรุงกล่องทั้งชุดไปด้วยกัน) ── */
 .key-card {

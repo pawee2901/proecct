@@ -35,6 +35,12 @@ interface MockStudent {
     total_score: number;
     ai_feedback: string | null;
     created_at_formatted: string;
+    /** คะแนนย่อยของรอบฝึกพูดนี้ (แกะจาก ai_feedback ฝั่ง backend, ดู
+     *  get_teacher_student_activity() ใน db/teacher.py) — null ทั้งสามถ้าแถวนี้เป็น
+     *  แบบทดสอบ/เกม หรือฝึกพูดโหมดที่ไม่เคยผ่าน evaluate-session (ไม่มีคะแนนย่อยให้แกะ) */
+    pronunciation_score: number | null;
+    speed_score: number | null;
+    grammar_score: number | null;
   }[];
 }
 

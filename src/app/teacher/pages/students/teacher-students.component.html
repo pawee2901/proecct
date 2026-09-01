@@ -218,6 +218,16 @@
                   <span class="log-level-chip" [class.success]="a.total_score >= 75">คะแนน {{ a.total_score }}%</span>
                 </div>
                 <p style="font-weight: 700; color: #0f172a; margin: 0;">{{ a.lesson_name }} — {{ activityTypeLabel(a) }}</p>
+                @if (a.pronunciation_score !== null) {
+                  <!-- คะแนนย่อยของรอบฝึกพูดนี้โดยเฉพาะ (แกะจาก ai_feedback ฝั่ง backend) —
+                       ต่างจากการ์ด "ทักษะการพูด" คอลัมน์ซ้ายซึ่งเป็นค่าเฉลี่ยรวมทั้งหมด อันนี้
+                       คือผลของรอบนี้รอบเดียว ให้เห็นพัฒนาการทีละครั้งที่ฝึก -->
+                  <div class="skill-chip-row">
+                    <span class="skill-chip skill-chip--pron">🗣️ ออกเสียง {{ a.pronunciation_score }}/30</span>
+                    <span class="skill-chip skill-chip--speed">⚡ ความเร็ว {{ a.speed_score }}/20</span>
+                    <span class="skill-chip skill-chip--grammar">✍️ ไวยากรณ์ {{ a.grammar_score }}/50</span>
+                  </div>
+                }
                 @if (a.ai_feedback) {
                   <p style="font-size: 0.76rem; color: #475569; margin: 0;">ผลวิเคราะห์ของ AI: {{ a.ai_feedback }}</p>
                 }
