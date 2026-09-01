@@ -161,12 +161,23 @@ export class StudentLessonsComponent implements OnDestroy {
     return raw ? parseInt(raw, 10) : null;
   }
 
-  // First not-yet-scored checkpoint in the roadmap, used to give the trail's
-  // "up next" node its glow. Lesson has no completion signal of its own (no
-  // score, nothing tracked), so it's deliberately left out of this sequence
-  // rather than guessed at — the highlight only ever lands on a step that
-  // genuinely has a done/not-done answer.
-  get currentRoadmapStep(): 'pre-test' | 'game-pre' | 'game-post' | 'post-test' | null {
+  // Step 3 (Lesson) has no score of its own, so "done" just means "clicked
+  // เสร็จสิ้นบทเรียน at least once" -- same localStorage-per-device pattern
+  // as getRoadmapGameScore above (this trail has never synced to the
+  // backend). markLessonViewed() is called from closeStepOverlay().
+  isLessonViewed(unitId: number): boolean {
+    if (!this.session.currentUser) return false;
+    return localStorage.getItem(`lesson_viewed_${this.session.currentUser.id}_unit${unitId}`) === '1';
+  }
+
+  private markLessonViewed(unitId: number): void {
+    if (!this.session.currentUser) return;
+    localStorage.setItem(`lesson_viewed_${this.session.currentUser.id}_unit${unitId}`, '1');
+  }
+
+  // First not-yet-done checkpoint in the roadmap, used to give the trail's
+  // "up next" node its glow.
+  get currentRoadmapStep(): 'pre-test' | 'game-pre' | 'lesson' | 'game-post' | 'post-test' | null {
     const u = this.lessonDetailUnit;
     if (!u) return null;
     const rep = this.progress.progressReport[u.id - 1];
@@ -174,6 +185,7 @@ export class StudentLessonsComponent implements OnDestroy {
     if (this.isRoadmapSlotEnabled(u.id, 'pre') && this.getRoadmapGameScore(u.id, 'pre') === null) {
       return 'game-pre';
     }
+    if (!this.isLessonViewed(u.id)) return 'lesson';
     if (this.isRoadmapSlotEnabled(u.id, 'post') && this.getRoadmapGameScore(u.id, 'post') === null) {
       return 'game-post';
     }
@@ -183,16 +195,19 @@ export class StudentLessonsComponent implements OnDestroy {
 
   // Progress-bar fraction above the trail. Only counts checkpoints that can
   // actually be scored (same set as currentRoadmapStep) — a teacher-disabled
-  // slot doesn't count against the student, and the untracked Lesson step
-  // isn't padded into the denominator just to make the bar move.
+  // slot doesn't count against the student. Lesson counts too now that
+  // isLessonViewed() gives it a real done/not-done answer (see
+  // markLessonViewed(), called from closeStepOverlay()) — it's always in
+  // the denominator since, unlike the game slots, a teacher can't disable it.
   get trailProgress(): { done: number; total: number; percent: number } {
     const u = this.lessonDetailUnit;
     if (!u) return { done: 0, total: 0, percent: 0 };
     const rep = this.progress.progressReport[u.id - 1];
-    let total = 2;
+    let total = 3;
     let done = 0;
     if (rep && rep.preScore !== null) done++;
     if (rep && rep.postScore !== null) done++;
+    if (this.isLessonViewed(u.id)) done++;
     if (this.isRoadmapSlotEnabled(u.id, 'pre')) {
       total++;
       if (this.getRoadmapGameScore(u.id, 'pre') !== null) done++;
@@ -307,6 +322,17 @@ export class StudentLessonsComponent implements OnDestroy {
     this.progress.submitQuizResultToBackend(type === 'pre' ? 'pre_test' : 'post_test', this.quizScore);
 
     this.progress.loadProgressHistory();
+  }
+
+  // Bound to the "เสร็จสิ้นบทเรียน" button specifically (only rendered on
+  // the slide deck's last page) rather than folded into closeStepOverlay()
+  // itself, so that the generic "✕ ปิด" header button (which can close the
+  // lesson from any page, including the first) doesn't also mark it viewed.
+  finishLessonStep(): void {
+    if (this.lessonsData.currentUnit) {
+      this.markLessonViewed(this.lessonsData.currentUnit.id);
+    }
+    this.closeStepOverlay();
   }
 
   closeStepOverlay(): void {

@@ -179,14 +179,25 @@
 
               <!-- Step 3: Lesson -->
               <div class="trail-row trail-row--left" (click)="startStep('lesson')">
-                <div class="trail-node tn-lesson">
+                <div
+                  class="trail-node tn-lesson"
+                  [class.tn-filled]="isLessonViewed(lessonDetailUnit.id)"
+                  [class.tn-current]="currentRoadmapStep === 'lesson'"
+                >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M2 4.5A2.5 2.5 0 0 1 4.5 2H9a2 2 0 0 1 2 2v16a1.5 1.5 0 0 0-1.5-1.5H2Z" />
                     <path d="M22 4.5A2.5 2.5 0 0 0 19.5 2H15a2 2 0 0 0-2 2v16a1.5 1.5 0 0 1 1.5-1.5H22Z" />
                   </svg>
+                  @if (isLessonViewed(lessonDetailUnit.id)) {
+                    <span class="trail-check-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </span>
+                  }
                 </div>
                 <div class="trail-label">
-                  <div class="trail-eyebrow">ขั้นตอนที่ 3</div>
+                  <div class="trail-eyebrow" [class.tn-current-tag]="currentRoadmapStep === 'lesson'">
+                    ขั้นตอนที่ 3{{ currentRoadmapStep === 'lesson' ? ' · ถัดไป' : '' }}
+                  </div>
                   <div class="trail-title">Lesson</div>
                   <div class="trail-sub">เนื้อหาบทเรียน</div>
                 </div>
@@ -923,7 +934,7 @@
                   type="button"
                   class="btn-slide-finish"
                   [disabled]="pdfLoading"
-                  (click)="closeStepOverlay()"
+                  (click)="finishLessonStep()"
                 >
                   <svg
                     viewBox="0 0 24 24"
