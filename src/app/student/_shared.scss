@@ -280,6 +280,15 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  // The trail's alternating left/right zigzag (.trail-row--left/--right,
+  // 10% inset from whichever edge) assumes a narrow-ish column -- on a
+  // wide desktop viewport with no cap, that 10% is measured against the
+  // full window width, so steps end up hugging the far left/right edges
+  // with a huge dead gap in between instead of a readable zigzag. Same
+  // centered-column treatment as .scramble-card/.qfs-body elsewhere.
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
 }
 .detail-header {
   display: flex;
