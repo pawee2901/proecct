@@ -286,6 +286,13 @@
   align-items: flex-start;
   gap: 1.2rem;
 }
+.detail-cover-img {
+  width: 88px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
 .btn-back-detail {
   display: flex;
   align-items: center;
@@ -1202,8 +1209,33 @@
   .detail-title {
     font-size: 1.25rem;
   }
+  // The cover thumbnail is purely decorative (title/desc already identify
+  // the unit) -- dropping it reclaims a full row's worth of height. Part of
+  // compacting the whole roadmap to fit one screen without scrolling, see
+  // .lesson-detail/.trail-progress/.trail-connector below.
+  .detail-cover-img {
+    display: none;
+  }
   .step-panel {
     padding: 1rem;
+  }
+  // Compact the Learning Path trail so a 5-step unit fits one mobile
+  // screen without scrolling -- iOS Safari's touch scrolling inside this
+  // nested position:fixed/height-locked layout has proven unreliable even
+  // with -webkit-overflow-scrolling/overscroll-behavior/100svh (see
+  // .main-content and .dashboard-wrap comments), so the more robust fix is
+  // to not need to scroll here in the first place. The dashed connectors
+  // are purely decorative and by far the biggest lever (4 of them between
+  // 5 steps), so they shrink the most.
+  .lesson-detail {
+    gap: 0.75rem;
+  }
+  .trail-progress {
+    padding: 0.6rem 0.85rem;
+    margin-bottom: 0.75rem;
+  }
+  .trail-row {
+    gap: 0.6rem;
   }
   .trail-row--left {
     padding-right: 4%;
@@ -1213,18 +1245,18 @@
   }
   .trail-node,
   .trail-node.tn-locked {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     svg {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
     }
   }
   .trail-node.tn-locked {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
   .trail-connector {
-    height: 40px;
+    height: 20px;
   }
   .trail-title {
     font-size: 0.85rem;
