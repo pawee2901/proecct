@@ -284,6 +284,15 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/ai-speaking/evaluate-session`, data);
   }
 
+  // Save-only counterpart to postSpeakingEvaluation() -- for a mode that already
+  // computed its own pronunciation/speed/grammar scores via a different AI call
+  // (text-to-text's end-of-chat summary) and just needs them persisted in the
+  // same shape the teacher's Activity History parses, without triggering a
+  // second, possibly-differently-scored AI evaluation of the same session.
+  saveSpeakingSessionScores(data: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/ai-speaking/save-session-scores`, data);
+  }
+
   getSpeakingHistory(userId: number): Observable<any> {
     return this.http.get(`${this.baseUrl}/ai-speaking/history/${userId}`);
   }

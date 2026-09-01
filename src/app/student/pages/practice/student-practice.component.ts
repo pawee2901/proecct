@@ -1509,6 +1509,15 @@ Start the conversation naturally and in character with a short opening line (1-2
           }
           this.gameFx.awardGameXp(20);
           this.logChatSession();
+          // ส่งคะแนนที่ AI เพิ่งให้ (grammar/pronunciation/speed ตามรูบริกเดียวกับ
+          // evaluate-session -- ดูคอมเมนต์ที่ persistTextToTextEvaluation()) ไปบันทึกลง
+          // practice_sessions ด้วย เพื่อให้อาจารย์เห็นในหน้า "ประวัติการทำ" ได้ (เดิมมีแต่
+          // logChatSession() ซึ่งเก็บแค่ฝั่ง localStorage ของนักศึกษาเองเท่านั้น). เฉพาะ
+          // เคสสำเร็จจริง -- ไม่ส่งคะแนน fallback/heuristic ของ buildFallbackChatSummary()
+          // (error branch ด้านล่าง) เพราะไม่ใช่ผลประเมินจริงจาก AI
+          if (this.chatSummaryReport?.scores) {
+            this.persistTextToTextEvaluation(this.chatSummaryReport.scores, this.chatSummaryReport.overall);
+          }
         },
         error: () => {
           this.chatSummaryLoading = false;
@@ -1553,6 +1562,37 @@ Start the conversation naturally and in character with a short opening line (1-2
       report,
     });
     this.learningLog.saveLearningLogs();
+  }
+
+  // Text-to-Text's end-of-chat summary (above) already asks the AI to grade the
+  // student on the exact same rubric evaluate-session uses server-side for
+  // speech-to-speech (grammar /50, pronunciation /30, speed /20 -- see
+  // SPEAKING_EVALUATION_PROMPT in backend/ai/core.py, which explicitly handles
+  // mode: 'text_to_text' too) -- just via its own richer prompt (also returns
+  // corrections/tips for the on-screen summary card, which evaluate-session's
+  // response doesn't). Re-running evaluate-session here would mean a second AI
+  // call per chat *and* risk it scoring differently from what the student just
+  // saw on screen, so instead this posts the scores already in hand to a small
+  // save-only endpoint that stores them in the identical format
+  // get_teacher_student_activity() (db/teacher.py) already knows how to parse
+  // back out for the teacher's Activity History / skills-average card.
+  private persistTextToTextEvaluation(
+    scores: { grammar: number; pronunciation: number; speed: number },
+    feedbackTh: string
+  ): void {
+    const userId = this.session.currentUser?.id;
+    if (!userId) return;
+    this.apiService
+      .saveSpeakingSessionScores({
+        user_id: userId,
+        mode: 'text_to_text',
+        pronunciation_score: scores.pronunciation,
+        speed_score: scores.speed,
+        grammar_score: scores.grammar,
+        feedback_th: feedbackTh,
+        messages: this.practiceMessages.map((m) => ({ sender: m.sender, text: m.text })),
+      })
+      .subscribe({ error: () => {} }); // best-effort -- student's own summary already shown either way
   }
 
   toggleLogTranscript(index: number): void {
