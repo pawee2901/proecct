@@ -1143,10 +1143,9 @@
                           <button
                             type="button"
                             (click)="getSuggestedReplies()"
-                            [disabled]="loadingSuggestedReplies"
                             style="font-size: 0.72rem; font-weight: 700; padding: 0.3rem 0.65rem; border-radius: 9999px; border: 1px solid rgba(217, 119, 6, 0.3); background: rgba(217, 119, 6, 0.08); color: #b45309; cursor: pointer;"
                           >
-                            {{ loadingSuggestedReplies ? 'กำลังคิด...' : ((suggestionsForText === getLastAiMessage() && suggestedReplies.length > 0) ? '✕ ซ่อนตัวอย่าง' : '💡 ตัวอย่างคำตอบ') }}
+                            {{ (suggestionsForText === getLastAiMessage() && suggestedReplies.length > 0) ? '✕ ซ่อนตัวอย่าง' : '💡 ตัวอย่างคำตอบ' }}
                           </button>
                         </div>
 

@@ -295,7 +295,24 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   translatingLastAi = false;
   suggestedReplies: string[] = [];
   suggestionsForText: string | null = null;
-  loadingSuggestedReplies = false;
+
+  // "ตัวอย่างคำตอบ" ใช้ bank คงที่ในเครื่อง (ดูเหตุผลที่ getSuggestedReplies() ด้านล่าง)
+  // -- ประโยคตั้งต้นทั่วไป ใช้ตอบได้เกือบทุกคำถามในบทสนทนาฝึกพูดจริง ไม่ผูกกับเนื้อหา
+  // เฉพาะเจาะจงของคำถามใดคำถามหนึ่ง
+  private readonly suggestedReplyBank: string[] = [
+    "That's a good question, let me think for a moment.",
+    "I think so, yes, but I'm not completely sure.",
+    "Honestly, I haven't thought about that before.",
+    "In my opinion, it really depends on the situation.",
+    "Sure, I'd be happy to talk about that.",
+    "That's interesting, can you tell me more about it?",
+    "I'm not sure, but I'll try my best to explain.",
+    "Yes, definitely. I feel the same way about it.",
+    "Well, it's a bit complicated, but I'll try to answer.",
+    "I see what you mean, let me give you an example.",
+    "That reminds me of something similar that happened to me.",
+    "To be honest, I'm still learning about this topic.",
+  ];
 
   // Text-to-Text Sub-Modes Control
   textPracticeSubMode: 'menu' | 'chat' | 'qa' = 'menu';
@@ -1766,27 +1783,27 @@ Start the conversation naturally and in character with a short opening line (1-2
     });
   }
 
-  // ปุ่ม "ตัวอย่างคำตอบ" — เช่นเดียวกับปุ่มแปล toggle ปิดได้ถ้ากดซ้ำข้อความเดิม
+  // ปุ่ม "ตัวอย่างคำตอบ" — เดิมเรียก AI (apiService.suggestReplies) ทุกครั้งที่กด
+  // ทำให้ต้องรอ round-trip ไป Gemini 2-5 วิ ต่างจากปุ่ม "แปล" ที่ต้องแปลข้อความ
+  // เฉพาะเจาะจงของ AI จึงพึ่ง AI จริงไม่ได้, "ตัวอย่างคำตอบ" เป็นแค่ประโยคตั้งต้น
+  // ทั่วไปให้นักศึกษาไม่รู้จะตอบอะไรได้ดูเป็นไอเดีย จึงฟิกเป็น bank คงที่ในเครื่อง
+  // (suggestedReplyBank ด้านบน) แสดงผลทันทีไม่มีดีเลย์ — toggle ปิดได้ถ้ากดซ้ำข้อความเดิม
   getSuggestedReplies(): void {
     const text = this.getLastAiMessage();
-    if (!text || this.loadingSuggestedReplies) return;
+    if (!text) return;
     if (this.suggestionsForText === text && this.suggestedReplies.length > 0) {
       this.suggestionsForText = null;
       this.suggestedReplies = [];
       return;
     }
-    this.loadingSuggestedReplies = true;
-    this.apiService.suggestReplies(text).subscribe({
-      next: (res: any) => {
-        this.loadingSuggestedReplies = false;
-        this.suggestionsForText = text;
-        this.suggestedReplies = Array.isArray(res?.suggestions) ? res.suggestions : [];
-      },
-      error: () => {
-        this.loadingSuggestedReplies = false;
-        this.suggestedReplies = [];
-      },
-    });
+    // สุ่มหยิบ 3 ประโยคแบบไม่ซ้ำกันจาก bank ให้ดูมีความหลากหลายทุกครั้งที่กด
+    const pool = [...this.suggestedReplyBank];
+    const picks: string[] = [];
+    while (picks.length < 3 && pool.length > 0) {
+      picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    }
+    this.suggestionsForText = text;
+    this.suggestedReplies = picks;
   }
 
   // --- Live transcript (Web Speech API): shows text on screen as the
