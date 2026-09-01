@@ -358,6 +358,10 @@
   max-width: 100% !important;
   height: 100vh;
   height: 100dvh;
+  // See student-shell.component.scss's .dashboard-wrap for why: 100svh
+  // keeps this fixed overlay's height stable through an in-progress scroll
+  // gesture instead of resizing under it as the mobile toolbar hides/shows.
+  height: 100svh;
   margin: 0;
   border: none;
   border-radius: 0;

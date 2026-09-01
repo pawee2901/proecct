@@ -80,6 +80,17 @@
 .dashboard-wrap {
   height: 100vh;
   height: 100dvh;
+  // 100dvh recalculates mid-gesture as the mobile browser's address bar
+  // hides/shows while scrolling, which grows .main-content's clientHeight
+  // out from under an in-progress touch scroll. On a tab that's only
+  // slightly taller than one screen (e.g. the lesson roadmap), that shrinks
+  // the remaining scrollable distance while the user is mid-swipe, so the
+  // browser clamps scrollTop and it snaps back toward the top instead of
+  // settling at the bottom. 100svh (small viewport height = the height
+  // with toolbars fully expanded) keeps this layout's height stable through
+  // the whole gesture instead -- browsers without svh support just ignore
+  // this line and keep using 100dvh above.
+  height: 100svh;
   display: flex;
   flex-direction: column;
   position: relative;

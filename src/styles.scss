@@ -108,6 +108,16 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  // Nothing sets html/body height, so on mobile the document itself is a
+  // second, independent scroll container sitting behind the app shell's own
+  // internal one (.main-content etc., each already overscroll-behavior-y:
+  // contain). If the document ever gets even a few px of scrollable slack
+  // (sub-pixel rounding, a mid-gesture toolbar resize), an inner scroll that
+  // hits its edge can hand off to this outer one, which then rubber-bands
+  // and springs back to 0 -- reads as the whole page "jumping back to the
+  // top" for no reason. This closes that off at the source: the document
+  // itself never bounces, regardless of what's nested inside it.
+  overscroll-behavior-y: none;
 }
 
 button, input, select, textarea {
