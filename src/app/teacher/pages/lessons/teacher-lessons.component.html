@@ -1,17 +1,15 @@
-<!-- Academic-year toggle now lives in the shell's top tab row (same row as
-     the 3 main tabs) — see TeacherShellComponent. Switching year there fires
-     session.yearChanged$, which ngOnInit below listens to and resets
-     editingLesson, same as this page's own switchYearLevel() used to do
-     inline before it was removed. -->
+<!-- ชั้นปี & ห้องเรียนอยู่ในแถบด้านข้างของ shell แล้ว (TeacherShellComponent) — สลับห้อง
+     ที่นั่นจะยิง session.yearChanged$ ซึ่ง ngOnInit ด้านล่างฟังอยู่แล้วเคลียร์
+     editingLesson ให้เอง -->
 <div class="tab-panel animate-fade">
 
   <!-- Prompt AI ประจำชั้นปี — ต่างจาก "เกณฑ์คะแนน & คำสั่งให้ AI" ด้านล่างตรงไม่ผูกกับ
        บทเรียนเดียว มีผลกับนักศึกษาทุกคนของชั้นปีที่กำลังเลือกอยู่ (แท็บด้านบน) ตอนฝึกพูด
        อิสระ (ai/core.py:get_year_grading_instruction ดึงจาก year_of_study ของนักศึกษาเอง) -->
-  @if (editingLesson === null) {
+  @if (editingLesson === null && session.activeYearLevel; as activeYear) {
     <div class="section-container">
-      <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">Prompt AI ประจำชั้นปีที่ {{ session.activeYearLevel }} (Year-level AI Instruction)</h4>
-      <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.75rem;">คำสั่งเพิ่มเติมนี้จะมีผลกับนักศึกษาชั้นปีที่ {{ session.activeYearLevel }} ทุกคนตอนฝึกพูดอิสระ (หน้า "ฝึกพูดกับ AI" ของนักศึกษา) ไม่ว่าจะกำลังฝึกหัวข้อไหนก็ตาม — เหมาะกับเรื่องที่ควรต่างกันตามชั้นปี เช่น "ปี 1 เน้นคำศัพท์พื้นฐาน พูดช้าๆ ให้กำลังใจเยอะๆ" หรือ "ปี 2 เข้มงวดเรื่อง grammar และคำศัพท์วิชาชีพครูมากขึ้น" ถ้าไม่ตั้งค่า AI จะใช้บุคลิก/กฎกลางของระบบตามปกติ</p>
+      <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">Prompt AI ประจำชั้นปีที่ {{ activeYear }} (Year-level AI Instruction)</h4>
+      <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.75rem;">คำสั่งเพิ่มเติมนี้จะมีผลกับนักศึกษาชั้นปีที่ {{ activeYear }} ทุกคนตอนฝึกพูดอิสระ (หน้า "ฝึกพูดกับ AI" ของนักศึกษา) ไม่ว่าจะกำลังฝึกหัวข้อไหนก็ตาม — เหมาะกับเรื่องที่ควรต่างกันตามชั้นปี เช่น "ปี 1 เน้นคำศัพท์พื้นฐาน พูดช้าๆ ให้กำลังใจเยอะๆ" หรือ "ปี 2 เข้มงวดเรื่อง grammar และคำศัพท์วิชาชีพครูมากขึ้น" ถ้าไม่ตั้งค่า AI จะใช้บุคลิก/กฎกลางของระบบตามปกติ</p>
 
       @if (systemSpeakingPromptDefault) {
         <div style="margin-bottom: 0.85rem; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden;">
@@ -29,10 +27,10 @@
         </div>
       }
 
-      <textarea class="filter-input" style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.65rem 0.9rem; width: 100%; min-height: 90px; box-sizing: border-box; background: #ffffff;" [(ngModel)]="yearAiInstructions[session.activeYearLevel]" name="yearAiInstruction" placeholder="เช่น เน้นคำศัพท์พื้นฐานในชีวิตประจำวัน พูดช้าๆ ชัดๆ และให้กำลังใจบ่อยๆ เพราะเป็นนักศึกษาปีแรก"></textarea>
+      <textarea class="filter-input" style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.65rem 0.9rem; width: 100%; min-height: 90px; box-sizing: border-box; background: #ffffff;" [(ngModel)]="yearAiInstructions[activeYear]" name="yearAiInstruction" placeholder="เช่น เน้นคำศัพท์พื้นฐานในชีวิตประจำวัน พูดช้าๆ ชัดๆ และให้กำลังใจบ่อยๆ เพราะเป็นนักศึกษาปีแรก"></textarea>
 
-      <button type="button" class="btn-primary-action" style="margin-top: 0.85rem;" [disabled]="yearAiInstructionsSaving[session.activeYearLevel]" (click)="saveYearAiInstruction()">
-        {{ yearAiInstructionsSaving[session.activeYearLevel] ? 'กำลังบันทึก...' : 'บันทึก Prompt ประจำชั้นปี / Save' }}
+      <button type="button" class="btn-primary-action" style="margin-top: 0.85rem;" [disabled]="yearAiInstructionsSaving[activeYear]" (click)="saveYearAiInstruction()">
+        {{ yearAiInstructionsSaving[activeYear] ? 'กำลังบันทึก...' : 'บันทึก Prompt ประจำชั้นปี / Save' }}
       </button>
     </div>
   }
@@ -43,12 +41,18 @@
       <div class="section-header-row">
         <div>
           <h3 class="section-title">บทเรียนทั้งหมดในวิชาฝึกพูดภาษาอังกฤษ</h3>
-          <p class="section-desc">สร้าง แก้ไข กำหนดสิทธิ์เกม อัปโหลดสไลด์ และจัดการข้อสอบภาษาอังกฤษ</p>
+          <p class="section-desc">สร้าง แก้ไข กำหนดสิทธิ์เกม อัปโหลดสไลด์ และจัดการข้อสอบภาษาอังกฤษ — เนื้อหาแยกตามห้องเรียนที่เลือกไว้ในแถบด้านข้าง</p>
         </div>
-        <button type="button" class="btn-primary-action" (click)="startNewLesson()">
+        <button type="button" class="btn-primary-action" (click)="startNewLesson()" [disabled]="!session.activeClassroomId">
           เพิ่มบทเรียนใหม่ / Add Lesson
         </button>
       </div>
+
+      @if (!session.activeClassroomId) {
+        <div style="padding: 1.5rem; border: 1.5px dashed #e2e8f0; border-radius: 14px; text-align: center; color: #94a3b8; font-size: 0.85rem; font-weight: 600;">
+          ยังไม่มีห้องเรียนให้เลือก — เพิ่มชั้นปีและห้องเรียนจากแถบด้านข้างก่อน แล้วค่อยกลับมาสร้างบทเรียน
+        </div>
+      }
 
       <div class="courses-grid">
         @for (les of filteredLessons; track les.id) {
@@ -127,6 +131,84 @@
           </div>
         </div>
 
+        <!-- รายละเอียดหลักสูตร (Syllabus Details) — หัวข้อเนื้อหา/คำสำคัญ/วัตถุประสงค์/
+             การประเมินผล/คาบเรียน/สัปดาห์ ที่หน้านักศึกษาแสดงอยู่แล้ว (รายละเอียดหลักสูตร
+             ประจำยูนิต) แต่ก่อนหน้านี้หน้าอาจารย์ไม่มีฟอร์มให้กรอกเลยสักช่อง ทั้งที่ TS
+             (addTopic()/addKeyword()/addObjective()/addAssessment() ฯลฯ) มีพร้อมอยู่แล้ว -->
+        <div class="section-container">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">รายละเอียดหลักสูตร (Syllabus Details)</h4>
+          <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">ข้อมูลชุดนี้แสดงในหน้า "รายละเอียดหลักสูตรประจำยูนิต" ของนักศึกษา</p>
+
+          <div class="form-group-flat field-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+            <div>
+              <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">จำนวนคาบเรียน (Class Hours)</label>
+              <input type="text" class="filter-input" style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.65rem 0.9rem; width: 100%; box-sizing: border-box; background: #ffffff;" [(ngModel)]="editingLesson.classHours" name="classHours" placeholder="เช่น 4 คาบเรียน" />
+            </div>
+            <div>
+              <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">ช่วงสัปดาห์ (Week Range)</label>
+              <input type="text" class="filter-input" style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.65rem 0.9rem; width: 100%; box-sizing: border-box; background: #ffffff;" [(ngModel)]="editingLesson.weekRange" name="weekRange" placeholder="เช่น สัปดาห์ที่ 1" />
+            </div>
+          </div>
+
+          <div class="overview-split-row" style="margin-bottom: 1.25rem;">
+            <!-- หัวข้อเนื้อหา -->
+            <div>
+              <label style="font-size: 0.82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.5rem;">หัวข้อเนื้อหา (Topics)</label>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                @for (t of editingLesson.topics; track $index; let i = $index) {
+                  <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <input type="text" class="filter-input" [(ngModel)]="editingLesson.topics[i]" name="topic_{{i}}" placeholder="เช่น การกล่าวทักทาย" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.5rem 0.8rem; background: #ffffff;" />
+                    <button type="button" class="btn-reject" (click)="removeTopic(i)">ลบ</button>
+                  </div>
+                }
+                <button type="button" class="btn-primary-action outline" (click)="addTopic()">เพิ่มหัวข้อ / Add Topic</button>
+              </div>
+            </div>
+
+            <!-- คำสำคัญ -->
+            <div>
+              <label style="font-size: 0.82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.5rem;">คำสำคัญ (Keywords)</label>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                @for (k of editingLesson.keywords; track $index; let i = $index) {
+                  <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <input type="text" class="filter-input" [(ngModel)]="editingLesson.keywords[i]" name="keyword_{{i}}" placeholder="เช่น Welcoming people" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.5rem 0.8rem; background: #ffffff;" />
+                    <button type="button" class="btn-reject" (click)="removeKeyword(i)">ลบ</button>
+                  </div>
+                }
+                <button type="button" class="btn-primary-action outline" (click)="addKeyword()">เพิ่มคำสำคัญ / Add Keyword</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- วัตถุประสงค์เชิงพฤติกรรม -->
+          <div style="margin-bottom: 1.25rem;">
+            <label style="font-size: 0.82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.5rem;">วัตถุประสงค์เชิงพฤติกรรม (Objectives) — "เมื่อศึกษาบทเรียนนี้แล้ว ผู้เรียนสามารถ..."</label>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              @for (o of editingLesson.objectives; track $index; let i = $index) {
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <input type="text" class="filter-input" [(ngModel)]="editingLesson.objectives[i]" name="objective_{{i}}" placeholder="เช่น อธิบายลักษณะการทักทายต่างๆ ได้" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.5rem 0.8rem; background: #ffffff;" />
+                  <button type="button" class="btn-reject" (click)="removeObjective(i)">ลบ</button>
+                </div>
+              }
+              <button type="button" class="btn-primary-action outline" (click)="addObjective()">เพิ่มวัตถุประสงค์ / Add Objective</button>
+            </div>
+          </div>
+
+          <!-- การประเมินผล -->
+          <div>
+            <label style="font-size: 0.82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.5rem;">การประเมินผล (Assessments)</label>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              @for (a of editingLesson.assessments; track $index; let i = $index) {
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <input type="text" class="filter-input" [(ngModel)]="editingLesson.assessments[i]" name="assessment_{{i}}" placeholder="เช่น แบบทดสอบก่อน-หลังเรียน" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.5rem 0.8rem; background: #ffffff;" />
+                  <button type="button" class="btn-reject" (click)="removeAssessment(i)">ลบ</button>
+                </div>
+              }
+              <button type="button" class="btn-primary-action outline" (click)="addAssessment()">เพิ่มการประเมินผล / Add Assessment</button>
+            </div>
+          </div>
+        </div>
+
         <!-- การเปิดใช้งานเกม (Allowed Games Selector) -->
         <div class="section-container" style="background: #f8fafc; border: 1px solid #f1f5f9; padding: 1.25rem;">
           <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">การกำหนดสิทธิ์การเล่นเกม (Allowed Games Manager)</h4>
@@ -200,7 +282,14 @@
 
           <div style="display: flex; flex-direction: column; gap: 1.5rem;">
 
-            <!-- 1. Word Scramble Builder -->
+            @if (getPreGame() === 'none' && getPostGame() === 'none') {
+              <div style="padding: 1.5rem; border: 1.5px dashed #e2e8f0; border-radius: 14px; text-align: center; color: #94a3b8; font-size: 0.85rem; font-weight: 600;">
+                เลือกเกมในหัวข้อ "การกำหนดสิทธิ์การเล่นเกม" ด้านบนก่อน แบบฟอร์มใส่คำศัพท์ของเกมนั้นจะโผล่มาที่นี่ให้เอง
+              </div>
+            }
+
+            <!-- 1. Word Scramble Builder — โชว์เฉพาะตอนเลือก "เรียงประโยคสะกดคำ" ไว้ในรอบก่อน/หลังเรียนจริงเท่านั้น -->
+            @if (getPreGame() === 'scramble' || getPostGame() === 'scramble') {
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.1rem;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
                 <h5 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #0f172a;">1. สร้างคำศัพท์สำหรับเกมเรียงสะกดคำ (Word Scramble Builder)</h5>
@@ -218,8 +307,10 @@
                 <button type="button" class="btn-primary-action outline" (click)="addScrambleWord()" style="margin-top: 0.5rem;">เพิ่มคำศัพท์เรียงสะกดคำ / Add Scramble Word</button>
               </div>
             </div>
+            }
 
-            <!-- 2. Dialogue Sequencer Builder -->
+            <!-- 2. Dialogue Sequencer Builder — โชว์เฉพาะตอนเลือก "เรียงบทสนทนา" ไว้จริงเท่านั้น -->
+            @if (getPreGame() === 'dialogue' || getPostGame() === 'dialogue') {
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.1rem;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
                 <h5 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #0f172a;">2. สร้างคู่บทสนทนาสำหรับเกมบทบาทสมมติ (Dialogue Sequencer Builder)</h5>
@@ -240,8 +331,10 @@
                 <button type="button" class="btn-primary-action outline" (click)="addDialoguePair()" style="margin-top: 0.3rem;">เพิ่มคู่บทสนทนาใหม่ / Add Dialogue Pair</button>
               </div>
             </div>
+            }
 
-            <!-- 3. Picture -> Word Builder -->
+            <!-- 3. Picture -> Word Builder — โชว์เฉพาะตอนเลือก "ดูภาพทายคำศัพท์" ไว้จริงเท่านั้น -->
+            @if (getPreGame() === 'picture-word' || getPostGame() === 'picture-word') {
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.1rem;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
                 <h5 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #0f172a;">3. สร้างโจทย์เกมดูภาพทายคำศัพท์ (Picture → Word Builder)</h5>
@@ -271,8 +364,10 @@
                 <button type="button" class="btn-primary-action outline" (click)="addPictureWord()" style="margin-top: 0.3rem;">เพิ่มโจทย์ทายภาพใหม่ / Add Picture Item</button>
               </div>
             </div>
+            }
 
-            <!-- 4. Fill in the Blank Builder -->
+            <!-- 4. Fill in the Blank Builder — โชว์เฉพาะตอนเลือก "เติมคำในประโยค" ไว้จริงเท่านั้น -->
+            @if (getPreGame() === 'fill-blank' || getPostGame() === 'fill-blank') {
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.1rem;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
                 <h5 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #0f172a;">4. สร้างโจทย์เกมเติมคำในประโยค (Fill in the Blank Builder)</h5>
@@ -293,6 +388,7 @@
                 <button type="button" class="btn-primary-action outline" (click)="addFillBlank()" style="margin-top: 0.3rem;">เพิ่มโจทย์เติมคำใหม่ / Add Fill in Blank Item</button>
               </div>
             </div>
+            }
 
           </div>
         </div>

@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import Swal from 'sweetalert2';
 
 import { ApiService } from '../../../services/api.service';
 import { TeacherSessionService } from '../../services/teacher-session.service';
@@ -15,6 +16,14 @@ interface MockStudent {
   lessons_completed: number;
   need_support: boolean;
   year_level?: number;
+  /** ห้องเรียนที่นักศึกษาคนนี้สังกัดอยู่จริง (users.classroom_id, ตั้งค่าตอนสมัคร หรือย้าย
+   *  ทีหลังผ่าน "ย้ายเข้าห้อง") — null ถ้าสมัครไว้ก่อนมีฟีเจอร์ห้องเรียน (ดู unassignedStudents) */
+  classroom_id: number | null;
+  /** ห้องเรียนที่นักศึกษาคนนี้ "มีคะแนนจริง" อยู่ (จาก practice_sessions → lessons.classroom_id)
+   *  — อาจไม่ตรงกับ classroom_id ด้านบนเลยก็ได้ (เช่น สมัครไว้ก่อนมีฟีเจอร์ห้องเรียน ระบบเลย
+   *  backfill classroom_id ไปที่ "ห้องเริ่มต้น" ห้องเดียว ทั้งที่จริงเคยฝึกทั้งปี 1 และปี 2) —
+   *  filteredStudents union ค่านี้เข้ากับ classroom_id กันคะแนนจริงหายไปจากทุกห้อง */
+  practicedClassrooms: number[];
   /** ปีการศึกษาที่นักศึกษาคนนี้ "มีคะแนนจริง" อยู่ (จาก practice_sessions → lessons.year_level)
    *  — อาจมีมากกว่า 1 ปีถ้าเคยทำทั้งบทปี 1 และปี 2, ใช้จัดกลุ่มเข้าแท็บแทน year_level อย่างเดียว
    *  (ดู backend db/teacher.py: get_teacher_students() สำหรับที่มาของบั๊กที่แก้) */
@@ -173,6 +182,13 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
               .map((y: string) => Number(y))
               .filter((y: number) => y === 1 || y === 2);
 
+            // ห้องเรียนที่มีคะแนนจริง (จาก practice_sessions → lessons.classroom_id) — ดู
+            // คอมเมนต์ practicedClassrooms ใน MockStudent ด้านบน
+            const practicedClassrooms: number[] = String(st.practiced_classrooms || '')
+              .split(',')
+              .map((c: string) => Number(c))
+              .filter((c: number) => Number.isFinite(c) && c > 0);
+
             const averageScoreByYear: { [year: number]: number } = {
               1: Number(st.average_score_y1) || 0,
               2: Number(st.average_score_y2) || 0,
@@ -191,6 +207,8 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
               lessons_completed: lessonsCompleted,
               need_support: needSupport,
               year_level: Number(st.year_of_study || st.year_level) || 1,
+              classroom_id: st.classroom_id != null ? Number(st.classroom_id) : null,
+              practicedClassrooms,
               practicedYears,
               averageScoreByYear,
               lessonsCompletedByYear,
@@ -213,7 +231,7 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
         this.students = [
           // ── ชั้นปีที่ 1 (Year 1 Students) ──
           {
-            id: 1, name: 'Sarah Johnson', student_code: '651202201', email: 'sarah.j@school.ac.th', average_score: 92, lessons_completed: 5, need_support: false, year_level: 1,
+            id: 1, name: 'Sarah Johnson', student_code: '651202201', email: 'sarah.j@school.ac.th', average_score: 92, lessons_completed: 5, need_support: false, year_level: 1, classroom_id: null, practicedClassrooms: [],
             practicedYears: [1], averageScoreByYear: { 1: 92, 2: 0 }, lessonsCompletedByYear: { 1: 5, 2: 0 },
             scores: [
               { unit: 'Unit 1: Welcoming', pre: 80, post: 100, game: 100 },
@@ -233,7 +251,7 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
             activity: []
           },
           {
-            id: 2, name: 'สมชาย ดีดี (Somchai DeeDee)', student_code: '651202202', email: 'somchai.d@school.ac.th', average_score: 68, lessons_completed: 2, need_support: true, year_level: 1,
+            id: 2, name: 'สมชาย ดีดี (Somchai DeeDee)', student_code: '651202202', email: 'somchai.d@school.ac.th', average_score: 68, lessons_completed: 2, need_support: true, year_level: 1, classroom_id: null, practicedClassrooms: [],
             practicedYears: [1], averageScoreByYear: { 1: 68, 2: 0 }, lessonsCompletedByYear: { 1: 2, 2: 0 },
             scores: [
               { unit: 'Unit 1: Welcoming', pre: 50, post: 70, game: 80 },
@@ -246,7 +264,7 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
             activity: []
           },
           {
-            id: 3, name: 'ปวีณา แสนสวย (Paweena Sansuay)', student_code: '651202203', email: 'paweena.s@school.ac.th', average_score: 84, lessons_completed: 4, need_support: false, year_level: 1,
+            id: 3, name: 'ปวีณา แสนสวย (Paweena Sansuay)', student_code: '651202203', email: 'paweena.s@school.ac.th', average_score: 84, lessons_completed: 4, need_support: false, year_level: 1, classroom_id: null, practicedClassrooms: [],
             practicedYears: [1], averageScoreByYear: { 1: 84, 2: 0 }, lessonsCompletedByYear: { 1: 4, 2: 0 },
             scores: [
               { unit: 'Unit 1: Welcoming', pre: 70, post: 85, game: 100 },
@@ -264,36 +282,49 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Filter Helper — จัดกลุ่มนักศึกษาเข้าแท็บปีตาม "ปีที่มีคะแนนจริง" (practicedYears) ก่อน
-  // เสมอ ไม่ใช่แค่โปรไฟล์ year_level/year_of_study เฉยๆ เพราะ field นั้นอาจเป็น NULL หรือไม่
-  // ตรงกับบทที่นักศึกษาทำจริง ทำให้คะแนนที่บันทึกลง DB แล้วดูเหมือน "ไม่ส่งถึงอาจารย์" (เห็นแค่
-  // ในแท็บผิดปี) — นักศึกษาที่ยังไม่เคยทำอะไรเลย (practicedYears ว่าง) จะ fallback ไปโชว์ตาม
-  // year_level/year_of_study เพื่อให้อาจารย์ยังเห็นรายชื่อครบตั้งแต่แรก
-  //
-  // แก้บั๊ก (พบจริงจาก DB — มีนักศึกษา year_of_study 3 และ 4 อยู่จริง): ระบบมีแค่ 2 แท็บ (ปี 1/ปี 2)
-  // ค่า fallback เดิม `(st.year_level || 1) === year` ไม่เคยตรงกับปี 1 หรือ 2 เลยถ้า year_level
-  // เป็น 3/4/ค่าอื่น ทำให้นักศึกษากลุ่มนี้หายไปจากทั้งสองแท็บเลยถ้ายังไม่เคยฝึกอะไร (ไม่ใช่แค่
-  // "จำนวนนักศึกษาไม่ตรง" แต่หายจริง) — clamp ให้เหลือแค่ 1 หรือ 2 เสมอ (ค่าอื่นทั้งหมด fallback
-  // ไปปี 1) เพื่อให้ทุกคนโผล่อย่างน้อย 1 แท็บแน่นอน
-  private normalizeYear(rawYear: number | undefined): 1 | 2 {
-    return rawYear === 2 ? 2 : 1;
-  }
-
+  // Filter Helper — กรองด้วยห้องเรียนที่สังกัดจริง (classroom_id) "หรือ" ห้องที่มีคะแนนจริงอยู่
+  // (practicedClassrooms) เพราะ classroom_id เดียวไม่พอ: นักศึกษาที่สมัครไว้ก่อนมีฟีเจอร์
+  // ห้องเรียนถูก backfill ไปที่ "ห้องเริ่มต้น" ห้องเดียว ทั้งที่อาจมีคะแนนจริงอยู่หลายห้อง/ปี
+  // (เช่น เคยฝึกทั้งบทปี 1 และปี 2) — union ทั้งสองค่ากันคะแนนจริงหายไปจากห้องที่ควรเห็น
+  // (สืบทอดเจตนาเดียวกับ practicedYears ของระบบเดิม แค่ย้ายมาเป็นระดับห้องแทนระดับปี)
   get filteredStudents(): MockStudent[] {
-    const year = this.session.activeYearLevel;
-    const yearList = this.students
-      .filter(st => (st.practicedYears.length > 0 ? st.practicedYears.includes(year) : this.normalizeYear(st.year_level) === year))
-      .map(st => {
-        const hasYearData = st.practicedYears.includes(year);
-        const average_score = hasYearData ? (st.averageScoreByYear[year] || 0) : st.average_score;
-        const lessons_completed = hasYearData ? (st.lessonsCompletedByYear[year] || 0) : st.lessons_completed;
-        return { ...st, average_score, lessons_completed, need_support: lessons_completed > 0 && average_score < 75 };
-      });
-    if (!this.searchQuery.trim()) return yearList;
+    const activeId = this.session.activeClassroomId;
+    const list = this.students.filter(
+      (st) => st.classroom_id === activeId || st.practicedClassrooms.includes(activeId!)
+    );
+    if (!this.searchQuery.trim()) return list;
     const query = this.searchQuery.toLowerCase();
-    return yearList.filter(
+    return list.filter(
       st => st.name.toLowerCase().includes(query) || st.student_code.includes(query)
     );
+  }
+
+  // นักศึกษาที่ยังไม่มีห้องเรียน (สมัครไว้ก่อนมีฟีเจอร์นี้) — ไม่โผล่ในแท็บไหนเลยจนกว่าอาจารย์
+  // จะกด "ย้ายเข้าห้อง" ให้ กันไม่ให้คนกลุ่มนี้หายไปเงียบๆ
+  get unassignedStudents(): MockStudent[] {
+    return this.students.filter((st) => st.classroom_id === null);
+  }
+
+  assignClassroom(student: MockStudent, classroomId: number): void {
+    if (!classroomId) return;
+    this.apiService.assignStudentClassroom(student.id, classroomId).subscribe({
+      next: () => {
+        student.classroom_id = classroomId;
+        Swal.fire({
+          icon: 'success',
+          title: 'ย้ายห้องเรียนสำเร็จ',
+          confirmButtonColor: '#0f766e',
+          timer: 1500,
+        });
+      },
+      error: () => {
+        Swal.fire({
+          icon: 'error',
+          title: 'ย้ายห้องเรียนไม่สำเร็จ',
+          confirmButtonColor: '#0f766e',
+        });
+      },
+    });
   }
 
   // สถิติ 3 ใบบนสุด — คำนวณจาก filteredStudents (แท็บที่กำลังดูอยู่) เสมอ แทนที่จะเป็นค่ารวม

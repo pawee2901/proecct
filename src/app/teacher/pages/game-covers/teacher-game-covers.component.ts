@@ -366,11 +366,36 @@ export class TeacherGameCoversComponent implements OnInit {
   // จนกว่าจะแยกงานทำให้ fullQuiz ย้ายเข้า DB เหมือนคำศัพท์ (เป็นงานแยกที่ใหญ่กว่าหน้า Game Covers)
   readonly dynamicOnlyGameKeys = ['open-reply'];
 
+  // ชั้นปีที่มีอยู่จริง (จาก year_levels ฝั่งฟีเจอร์ห้องเรียน) — ให้เลือกดู/แก้เนื้อหาเกม
+  // builtin แยกเป็นรายปีได้ (game_contents_by_year) นอกเหนือจากชุดกลางเดิม (game_contents)
+  yearLevels: { year_level: number; label: string }[] = [];
+  // ปีที่กำลังดู/แก้อยู่ในพาเนล "จัดการเนื้อหา" ของเกม builtin หนึ่งตัว — null = "ทุกชั้นปี
+  // (ค่ากลาง)" คือตาราง game_contents เดิม เลือกปีใดปีหนึ่ง = game_contents_by_year ของปีนั้น
+  selectedContentYear: number | null = null;
+  // เก็บผลดิบจาก GET /game-contents (ชุดกลาง) ไว้ต่างหาก เพื่อสลับกลับมาที่มุมมอง "ทุกชั้นปี"
+  // ได้โดยไม่ต้องยิง request ซ้ำ (gameContentItems ด้านล่างคือ "มุมมองที่กำลังแก้อยู่ตอนนี้"
+  // ของปีใดปีหนึ่ง/ชุดกลาง สลับไปมาระหว่างปีจะ query ใหม่จากเซิร์ฟเวอร์เสมอ ไม่ cache ต่อปี
+  // — ถ้ายังไม่กดบันทึกแล้วสลับปี ค่าที่พิมพ์ไว้จะหายไป เหมือนสลับไปเกมอื่นแล้วไม่ได้บันทึก)
+  private globalGameContentsRaw: { [gameKey: string]: any[] } = {};
+
+  // ── AI ช่วยสร้างเนื้อหาเกมจากไฟล์ (Word/PDF/TXT) — ครูอัปโหลดไฟล์ที่มีคำศัพท์/เนื้อหา
+  // ที่ต้องการ บอกจำนวนข้อ แล้ว AI สร้างรายการให้ตาม field schema ของเกมที่กำลังแก้อยู่
+  // (ต่อท้ายรายการเดิม ให้ครูตรวจทาน/แก้ก่อนกด "บันทึกเนื้อหาเกม" เสมอ — ไม่บันทึกอัตโนมัติ)
+  aiGameFile: File | null = null;
+  aiGameCount = 10;
+  aiGameGenerating = false;
+
   constructor(private apiService: ApiService) {}
 
   ngOnInit(): void {
     this.loadGames();
     this.loadVocabPoolThenContents();
+    this.apiService.getYearLevels().subscribe({
+      next: (data: any) => {
+        if (Array.isArray(data)) this.yearLevels = data;
+      },
+      error: () => {},
+    });
   }
 
   // โหลดคลังคำศัพท์รวมทุกบทเรียนก่อน (เดียวกับ GameEngineService.buildGameVocabPool())
@@ -562,6 +587,9 @@ export class TeacherGameCoversComponent implements OnInit {
     }
     // เกม builtin ทั้ง 21 เกมมีฟอร์มใน gameContentConfigs ครบทุกตัวอยู่แล้ว
     this.managingBuiltinGame = game;
+    // เริ่มที่มุมมอง "ทุกชั้นปี" เสมอ (ตรงกับ gameContentItems ที่โหลดไว้แล้วจาก ngOnInit)
+    this.selectedContentYear = null;
+    this.aiGameFile = null;
   }
 
   closeContentManager(): void {
@@ -570,6 +598,7 @@ export class TeacherGameCoversComponent implements OnInit {
 
   closeBuiltinContentManager(): void {
     this.managingBuiltinGame = null;
+    this.aiGameFile = null;
   }
 
   get managingBuiltinConfig() {
@@ -582,26 +611,90 @@ export class TeacherGameCoversComponent implements OnInit {
   }
 
   // ── Game Content (เกม builtin ที่มีฟอร์มแก้ทีละ field) ──
+  // เติม gameContentItems[key]/gameContentSavedFlag[key] จากรายการที่บันทึกไว้จริง (ถ้ามี)
+  // ไม่งั้น fallback ไปพรีฟิลด้วยค่าเริ่มต้น — ใช้ร่วมกันทั้งมุมมอง "ทุกชั้นปี" (ชุดกลาง) และ
+  // มุมมองรายปี (game_contents_by_year) ผ่าน onContentYearChange() ด้านล่าง
+  private applyContentForKey(cfg: (typeof this.gameContentConfigs)[number], savedItemsRaw: any): void {
+    const savedItems = Array.isArray(savedItemsRaw) ? savedItemsRaw : null;
+    this.gameContentSavedFlag[cfg.key] = !!(savedItems && savedItems.length > 0);
+    this.gameContentItems[cfg.key] = savedItems && savedItems.length > 0
+      ? savedItems.map((item: any) => this.itemToEditable(cfg, item))
+      : this.resolveDefaultItems(cfg).map((item: any) => this.itemToEditable(cfg, item));
+  }
+
   loadGameContents(): void {
     this.apiService.getGameContents().subscribe({
       next: (data: any) => {
-        const saved = data && typeof data === 'object' ? data : {};
+        this.globalGameContentsRaw = data && typeof data === 'object' ? data : {};
         this.gameContentItems = {};
         this.gameContentSavedFlag = {};
-        this.gameContentConfigs.forEach((cfg) => {
-          const savedItems = saved[cfg.key];
-          this.gameContentSavedFlag[cfg.key] = Array.isArray(savedItems) && savedItems.length > 0;
-          this.gameContentItems[cfg.key] = Array.isArray(savedItems) && savedItems.length > 0
-            ? savedItems.map((item: any) => this.itemToEditable(cfg, item))
-            : this.resolveDefaultItems(cfg).map((item: any) => this.itemToEditable(cfg, item));
-        });
+        this.gameContentConfigs.forEach((cfg) => this.applyContentForKey(cfg, this.globalGameContentsRaw[cfg.key]));
       },
       error: () => {
+        this.globalGameContentsRaw = {};
         this.gameContentItems = {};
-        this.gameContentConfigs.forEach((cfg) => {
-          this.gameContentItems[cfg.key] = this.resolveDefaultItems(cfg).map((item: any) => this.itemToEditable(cfg, item));
-        });
+        this.gameContentConfigs.forEach((cfg) => this.applyContentForKey(cfg, null));
       }
+    });
+  }
+
+  // สลับ "ชั้นปี" ที่กำลังดู/แก้อยู่ในพาเนล "จัดการเนื้อหา" ของเกม builtin หนึ่งตัว — null =
+  // กลับไปมุมมองชุดกลาง (ใช้ข้อมูลที่แคชไว้แล้ว ไม่ยิง request ซ้ำ), เลือกปี = ดึงจาก
+  // game_contents_by_year ของปีนั้นสดๆ ทุกครั้ง (ถ้ายังไม่เคยแก้ของปีนี้ พรีฟิลด้วยค่าเริ่มต้น
+  // เดียวกับที่ใช้เล่นจริงตอนนี้ เหมือนมุมมองชุดกลาง)
+  onContentYearChange(): void {
+    const cfg = this.managingBuiltinConfig;
+    if (!cfg) return;
+    if (this.selectedContentYear === null) {
+      this.applyContentForKey(cfg, this.globalGameContentsRaw[cfg.key]);
+      return;
+    }
+    const year = this.selectedContentYear;
+    this.apiService.getGameContentsForYear(year).subscribe({
+      next: (data: any) => this.applyContentForKey(cfg, data && typeof data === 'object' ? data[cfg.key] : null),
+      error: () => this.applyContentForKey(cfg, null),
+    });
+  }
+
+  // ── AI ช่วยสร้างเนื้อหาเกมจากไฟล์ ──
+  onAiGameFileSelected(event: any): void {
+    this.aiGameFile = event.target.files?.[0] || null;
+  }
+
+  generateGameContentWithAi(): void {
+    const cfg = this.managingBuiltinConfig;
+    if (!cfg || !this.aiGameFile) return;
+
+    this.aiGameGenerating = true;
+    this.apiService.generateGameContentFromFile(cfg.label, cfg.fields, this.aiGameCount, this.aiGameFile).subscribe({
+      next: (res: any) => {
+        this.aiGameGenerating = false;
+        const items = Array.isArray(res?.items) ? res.items : [];
+        if (items.length === 0) {
+          Swal.fire({ icon: 'warning', title: 'AI ไม่ได้สร้างข้อมูลกลับมา', text: 'กรุณาลองไฟล์อื่นหรือลองใหม่อีกครั้ง', confirmButtonColor: '#0f766e' });
+          return;
+        }
+        // ต่อท้ายรายการเดิม (ไม่แทนที่) แปลงผ่าน itemToEditable() เดียวกับที่ใช้ตอนโหลดจาก
+        // DB ปกติ เพราะ AI คืนค่ามาในรูปแบบเก็บจริงเป๊ะๆ (tags/lines เป็น array จริง)
+        const editable = items.map((item: any) => this.itemToEditable(cfg, item));
+        this.gameContentItems[cfg.key] = [...(this.gameContentItems[cfg.key] || []), ...editable];
+        this.aiGameFile = null;
+        Swal.fire({
+          icon: 'success',
+          title: `AI สร้างให้ ${items.length} ข้อ`,
+          text: 'ตรวจทาน/แก้ไขรายการด้านล่างได้ตามต้องการ แล้วกด "บันทึกเนื้อหาเกม" เพื่อให้มีผลจริง',
+          confirmButtonColor: '#0f766e',
+        });
+      },
+      error: (err: any) => {
+        this.aiGameGenerating = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'AI สร้างเนื้อหาไม่สำเร็จ',
+          text: err?.error?.error || 'กรุณาลองใหม่อีกครั้ง',
+          confirmButtonColor: '#0f766e',
+        });
+      },
     });
   }
 
@@ -703,15 +796,27 @@ export class TeacherGameCoversComponent implements OnInit {
     }
 
     this.gameContentSaving[gameKey] = true;
-    this.apiService.saveGameContent(gameKey, payload).subscribe({
+    const year = this.selectedContentYear;
+    const request = year === null
+      ? this.apiService.saveGameContent(gameKey, payload)
+      : this.apiService.saveGameContentForYear(gameKey, year, payload);
+
+    request.subscribe({
       next: () => {
         this.gameContentSaving[gameKey] = false;
         this.gameContentSavedFlag[gameKey] = true;
+        // ชุดกลางที่แคชไว้ (globalGameContentsRaw) ต้องอัปเดตตามด้วย ไม่งั้นถ้าสลับไปปีอื่น
+        // แล้วกลับมา "ทุกชั้นปี" จะยังเห็นค่าเก่าก่อนบันทึกอยู่ (onContentYearChange อ่านจาก
+        // แคชนี้ ไม่ยิง request ซ้ำตอนกลับมาชุดกลาง)
+        if (year === null) {
+          this.globalGameContentsRaw[gameKey] = payload;
+        }
         Swal.fire({
           icon: 'success',
           title: 'บันทึกเนื้อหาเกมสำเร็จ',
+          text: year === null ? undefined : `มีผลกับนักศึกษาชั้นปีที่ ${year} เท่านั้น`,
           confirmButtonColor: '#0f766e',
-          timer: 1500
+          timer: 1800
         });
       },
       error: () => {

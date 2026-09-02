@@ -225,15 +225,23 @@
               </div>
             </div>
 
-            <div class="field-row field-row-3">
+            <div class="field-row field-row-4">
               <div class="field-group">
                 <label class="field-label">ชั้นปี</label>
-                <select class="field-select" [(ngModel)]="registerData.yearOfStudy" name="yearOfStudy" title="ชั้นปีการศึกษา">
+                <select class="field-select" [(ngModel)]="registerData.yearOfStudy" name="yearOfStudy" title="ชั้นปีการศึกษา" (ngModelChange)="onRegisterYearChange()">
                   <option value="">ชั้นปี</option>
-                  <option value="1">ปี 1</option>
-                  <option value="2">ปี 2</option>
-                  <option value="3">ปี 3</option>
-                  <option value="4">ปี 4</option>
+                  @for (yl of yearLevels; track yl.year_level) {
+                    <option [value]="yl.year_level">{{ yl.label }}</option>
+                  }
+                </select>
+              </div>
+              <div class="field-group">
+                <label class="field-label">ห้องเรียน</label>
+                <select class="field-select" [(ngModel)]="registerData.classroomId" name="classroomId" title="ห้องเรียน" [disabled]="!registerData.yearOfStudy">
+                  <option value="">{{ registerData.yearOfStudy ? 'ห้องเรียน' : 'เลือกชั้นปีก่อน' }}</option>
+                  @for (c of classroomsForYear; track c.classroom_id) {
+                    <option [value]="c.classroom_id">{{ c.name }}</option>
+                  }
                 </select>
               </div>
               <div class="field-group">

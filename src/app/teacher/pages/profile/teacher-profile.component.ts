@@ -35,6 +35,10 @@ export class TeacherProfileComponent {
     this.editLastName = this.session.currentUser?.lastName || '';
   }
 
+  initial(): string {
+    return (this.session.currentUser?.firstName || 'T')[0].toUpperCase();
+  }
+
   saveName(): void {
     const userId = this.session.currentUser?.id;
     const firstName = this.editFirstName.trim();

@@ -49,68 +49,195 @@
     </div>
   </header>
 
-  <!-- ── MAIN CONTAINER ── -->
-  <div class="body-flat">
+  <!-- ── ชั้นปี & ห้องเรียน — เนื้อหาส่วนนี้ใช้ซ้ำทั้งในแถบด้านข้าง (desktop) และแผง
+       เลือกห้องแบบย่อ (mobile) ผ่าน ngTemplateOutlet เดียวกัน กันไม่ให้ต้องแก้ตรรกะ
+       เพิ่ม/ลบชั้นปี/ห้องเรียนซ้ำสองที่ ── -->
+  <ng-template #classroomPickerBody>
+    @for (yl of session.yearLevels; track yl.year_level) {
+      <div class="year-group">
+        <button type="button" class="year-group-header" (click)="toggleYearExpanded(yl.year_level)">
+          <svg class="year-caret" [class.open]="expandedYears.has(yl.year_level)" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+          <span class="year-label">{{ yl.label }}</span>
+          <span class="year-actions">
+            <span class="icon-btn" title="เพิ่มห้องเรียน" (click)="startAddClassroom(yl.year_level); $event.stopPropagation()">+</span>
+            <span class="icon-btn danger" title="ลบชั้นปีนี้" (click)="deleteYearLevel(yl.year_level, yl.label); $event.stopPropagation()">×</span>
+          </span>
+        </button>
 
-    <!-- ── SECONDARY TAB BAR ── -->
-    <!-- Mobile-only toggle: the tab list is collapsible below 768px so it
-         doesn't permanently eat screen space on a phone. Desktop ignores
-         navExpanded entirely (see media query) and always shows the row. -->
-    <button type="button" class="nav-collapse-toggle" (click)="navExpanded = !navExpanded">
-      <span>เมนู / Menu</span>
-      <svg
-        viewBox="0 0 24 24"
-        width="16"
-        height="16"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.2"
-        [class.rotated]="navExpanded"
-      >
-        <polyline points="6 9 12 15 18 9"></polyline>
-      </svg>
-    </button>
-    <nav class="secondary-tabs" [class.mobile-collapsed]="!navExpanded" aria-label="Teacher Sections">
-      <button class="sub-tab-btn" routerLink="students" routerLinkActive="active">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
-        รายงานสถิตินักศึกษา / Student Stats
-      </button>
-      <button class="sub-tab-btn" routerLink="lessons" routerLinkActive="active">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M12 20h9"></path>
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-        </svg>
-        จัดการบทเรียนและข้อสอบ / Manage Course
-      </button>
-      <button class="sub-tab-btn" routerLink="game-covers" routerLinkActive="active">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
-          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-          <path d="M21 15l-5-5L5 21"></path>
-        </svg>
-        เกม / Game
-      </button>
+        @if (expandedYears.has(yl.year_level)) {
+          <div class="classroom-list">
+            @for (c of classroomsForYear(yl.year_level); track c.classroom_id) {
+              @if (renamingClassroomId === c.classroom_id) {
+                <div class="inline-add-form">
+                  <input
+                    type="text"
+                    [(ngModel)]="renameClassroomNameValue"
+                    name="renameClassroomName_{{c.classroom_id}}"
+                    placeholder="ชื่อห้อง"
+                    (keyup.enter)="confirmRenameClassroom()"
+                    (keyup.escape)="cancelRenameClassroom()"
+                    autofocus
+                  />
+                  <button type="button" class="icon-btn confirm" (click)="confirmRenameClassroom()">✓</button>
+                  <button type="button" class="icon-btn" (click)="cancelRenameClassroom()">✕</button>
+                </div>
+              } @else {
+                <button
+                  type="button"
+                  class="classroom-chip"
+                  [class.active]="c.classroom_id === session.activeClassroomId"
+                  (click)="selectClassroom(c.classroom_id)"
+                >
+                  <span>{{ c.name }}</span>
+                  <span class="chip-actions">
+                    <span class="icon-btn small" title="เปลี่ยนชื่อห้อง" (click)="startRenameClassroom(c); $event.stopPropagation()">✎</span>
+                    <span class="icon-btn danger small" title="ลบห้องนี้" (click)="deleteClassroom(c); $event.stopPropagation()">×</span>
+                  </span>
+                </button>
+              }
+            } @empty {
+              <p class="empty-hint">ยังไม่มีห้องเรียนในชั้นปีนี้</p>
+            }
 
-      @if (showYearToggle) {
-        <div class="year-toggle-group">
-          <button type="button" class="sub-tab-btn year-tab-btn" [class.active]="session.activeYearLevel === 1" (click)="switchYearLevel(1)">
-            ชั้นปีที่ 1 (Year 1)
-          </button>
-          <button type="button" class="sub-tab-btn year-tab-btn" [class.active]="session.activeYearLevel === 2" (click)="switchYearLevel(2)">
-            ชั้นปีที่ 2 (Year 2)
-          </button>
+            @if (addingClassroomForYear === yl.year_level) {
+              <div class="inline-add-form">
+                <input
+                  type="text"
+                  [(ngModel)]="newClassroomName"
+                  name="newClassroomName"
+                  placeholder="ชื่อห้อง เช่น ห้อง A"
+                  (keyup.enter)="confirmAddClassroom()"
+                  (keyup.escape)="cancelAddClassroom()"
+                  autofocus
+                />
+                <button type="button" class="icon-btn confirm" (click)="confirmAddClassroom()">✓</button>
+                <button type="button" class="icon-btn" (click)="cancelAddClassroom()">✕</button>
+              </div>
+            } @else {
+              <button type="button" class="add-row-btn" (click)="startAddClassroom(yl.year_level)">+ เพิ่มห้องเรียน</button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (addingYearLevel) {
+      <div class="inline-add-form top-level">
+        <input
+          type="text"
+          [(ngModel)]="newYearLabel"
+          name="newYearLabel"
+          placeholder="ชื่อชั้นปี เช่น ชั้นปีที่ 3"
+          (keyup.enter)="confirmAddYearLevel()"
+          (keyup.escape)="cancelAddYearLevel()"
+          autofocus
+        />
+        <button type="button" class="icon-btn confirm" (click)="confirmAddYearLevel()">✓</button>
+        <button type="button" class="icon-btn" (click)="cancelAddYearLevel()">✕</button>
+      </div>
+    } @else {
+      <button type="button" class="add-row-btn top-level" (click)="startAddYearLevel()">+ เพิ่มชั้นปีใหม่</button>
+    }
+  </ng-template>
+
+  <!-- ── MAIN CONTAINER (sidebar + content) ── -->
+  <div class="body-shell">
+
+    <!-- ── SIDE NAV (desktop) ── -->
+    <aside class="side-nav">
+      <nav class="side-nav-links" aria-label="Teacher Sections">
+        <button class="side-nav-btn" routerLink="students" routerLinkActive="active">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          รายงานสถิตินักศึกษา / Student Stats
+        </button>
+        <button class="side-nav-btn" routerLink="lessons" routerLinkActive="active">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          จัดการบทเรียนและข้อสอบ / Manage Course
+        </button>
+        <button class="side-nav-btn" routerLink="game-covers" routerLinkActive="active">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <path d="M21 15l-5-5L5 21"></path>
+          </svg>
+          เกม / Game
+        </button>
+      </nav>
+
+      @if (showClassroomPicker) {
+        <div class="side-nav-divider"></div>
+        <div class="classroom-picker">
+          <h5 class="classroom-picker-title">ชั้นปี &amp; ห้องเรียน</h5>
+          <ng-container [ngTemplateOutlet]="classroomPickerBody"></ng-container>
         </div>
       }
-    </nav>
+    </aside>
 
     <!-- ── ROUTED TAB CONTENT ── -->
     <div class="main-content-flat">
+
+      <!-- ── Classroom picker (mobile-only compact control) ── -->
+      @if (showClassroomPicker) {
+        <div class="mobile-classroom-picker">
+          <button type="button" class="mobile-picker-toggle" (click)="mobilePickerOpen = !mobilePickerOpen; $event.stopPropagation()">
+            <span>
+              @if (session.activeYearLevel && session.activeClassroomId) {
+                ปี {{ session.activeYearLevel }} · {{ activeClassroomName() }}
+              } @else {
+                เลือกชั้นปี / ห้องเรียน
+              }
+            </span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" [class.rotated]="mobilePickerOpen">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          @if (mobilePickerOpen) {
+            <div class="mobile-picker-panel animate-fade" (click)="$event.stopPropagation()">
+              <ng-container [ngTemplateOutlet]="classroomPickerBody"></ng-container>
+            </div>
+          }
+        </div>
+      }
+
       <router-outlet></router-outlet>
     </div>
   </div>
+
+  <!-- ── BOTTOM TAB BAR (mobile-only) ── -->
+  <nav class="bottom-tab-bar" aria-label="Teacher Sections (mobile)">
+    <button class="bottom-tab-btn" routerLink="students" routerLinkActive="active">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+      <span>สถิติ</span>
+    </button>
+    <button class="bottom-tab-btn" routerLink="lessons" routerLinkActive="active">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M12 20h9"></path>
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+      </svg>
+      <span>บทเรียน</span>
+    </button>
+    <button class="bottom-tab-btn" routerLink="game-covers" routerLinkActive="active">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
+        <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <path d="M21 15l-5-5L5 21"></path>
+      </svg>
+      <span>เกม</span>
+    </button>
+  </nav>
 </div>

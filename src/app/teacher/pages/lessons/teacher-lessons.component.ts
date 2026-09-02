@@ -76,15 +76,17 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
         }
       },
       error: () => {
+        // isFallback: ข้อมูลตัวอย่างตอน API ล่ม ไม่มี classroom_id จริงผูกกับห้องไหนเลย —
+        // ให้ filteredLessons ด้านล่างแสดงชุดนี้เสมอไม่ว่าจะเลือกห้องไหนอยู่ (ดีกว่าว่างเปล่า)
         this.lessonsList = [
           // ── หลักสูตรปี 1 (Year 1 Curriculum) ──
-          { id: 1, year_level: 1, name: 'Welcoming Students', titleEn: 'Unit 1: Welcoming Students', description: 'กล่าวทักทายนักศึกษา แนะนำตนเอง และเรียนรู้วัฒนธรรมการสื่อสาร' },
-          { id: 2, year_level: 1, name: 'Telephoning & Office Calls', titleEn: 'Unit 2: Telephoning & Office Calls', description: 'รับสายโทรศัพท์ โอนสาย และการบันทึกข้อความในองค์กร' },
-          { id: 3, year_level: 1, name: 'Giving Academic Presentation', titleEn: 'Unit 3: Giving Academic Presentation', description: 'การนำเสนอเชิงวิชาการ การใช้สไลด์ และการตอบคำถามอาจารย์' },
-          { id: 4, year_level: 1, name: 'Teacher & Student Consultations', titleEn: 'Unit 4: Teacher & Student Consultations', description: 'การขอคำปรึกษาอาจารย์และการสนทนาโต้ตอบในชั้นเรียน' },
-          { id: 5, year_level: 1, name: 'Giving Instructions & Directions', titleEn: 'Unit 5: Giving Instructions & Directions', description: 'การอธิบายขั้นตอนการทำงาน การบอกทิศทาง และข้อปฏิบัติ' },
+          { id: 1, year_level: 1, isFallback: true, name: 'Welcoming Students', titleEn: 'Unit 1: Welcoming Students', description: 'กล่าวทักทายนักศึกษา แนะนำตนเอง และเรียนรู้วัฒนธรรมการสื่อสาร' },
+          { id: 2, year_level: 1, isFallback: true, name: 'Telephoning & Office Calls', titleEn: 'Unit 2: Telephoning & Office Calls', description: 'รับสายโทรศัพท์ โอนสาย และการบันทึกข้อความในองค์กร' },
+          { id: 3, year_level: 1, isFallback: true, name: 'Giving Academic Presentation', titleEn: 'Unit 3: Giving Academic Presentation', description: 'การนำเสนอเชิงวิชาการ การใช้สไลด์ และการตอบคำถามอาจารย์' },
+          { id: 4, year_level: 1, isFallback: true, name: 'Teacher & Student Consultations', titleEn: 'Unit 4: Teacher & Student Consultations', description: 'การขอคำปรึกษาอาจารย์และการสนทนาโต้ตอบในชั้นเรียน' },
+          { id: 5, year_level: 1, isFallback: true, name: 'Giving Instructions & Directions', titleEn: 'Unit 5: Giving Instructions & Directions', description: 'การอธิบายขั้นตอนการทำงาน การบอกทิศทาง และข้อปฏิบัติ' },
 
-          { id: 6, year_level: 1, name: 'Job Interview & Career Profile', titleEn: 'Unit 6: Job Interview & Career Profile', description: 'การสัมภาษณ์งานภาษาอังกฤษมืออาชีพ การนำเสนอพอร์ตโฟลิโอ และเรซูเม่' }
+          { id: 6, year_level: 1, isFallback: true, name: 'Job Interview & Career Profile', titleEn: 'Unit 6: Job Interview & Career Profile', description: 'การสัมภาษณ์งานภาษาอังกฤษมืออาชีพ การนำเสนอพอร์ตโฟลิโอ และเรซูเม่' }
         ];
       }
     });
@@ -168,6 +170,7 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
       titleEn: '',
       description: '',
       year_level: this.session.activeYearLevel,
+      classroom_id: this.session.activeClassroomId,
       vocabularies: [],
       speakingQuestions: [],
       allowedGames: ['scramble', 'dialogue'],
@@ -267,6 +270,7 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
 
   saveYearAiInstruction(): void {
     const year = this.session.activeYearLevel;
+    if (!year) return; // ยังไม่มีห้องเรียนให้เลือกเลย (ดู empty state ในฟอร์มบทเรียน)
     const text = (this.yearAiInstructions[year] || '').trim();
     this.yearAiInstructionsSaving[year] = true;
     this.apiService.saveYearAiInstruction(year, text).subscribe({
@@ -554,9 +558,12 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Filter Helper
+  // Filter Helper — กรองตามห้องเรียนที่กำลังเลือกอยู่ในแถบด้านข้าง (ไม่ใช่แค่ปีเหมือนเดิม)
+  // isFallback: true (ชุดข้อมูลตัวอย่างตอน API ล่ม) แสดงเสมอไม่ว่าจะเลือกห้องไหนอยู่
   get filteredLessons(): any[] {
-    return this.lessonsList.filter(les => (les.year_level || 1) === this.session.activeYearLevel);
+    return this.lessonsList.filter(
+      (les) => les.isFallback || les.classroom_id === this.session.activeClassroomId
+    );
   }
 
   onSlideUpload(event: any): void {

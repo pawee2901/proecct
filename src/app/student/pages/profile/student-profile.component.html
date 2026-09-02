@@ -178,6 +178,10 @@
               <span class="profile-info-lbl">ชั้นปี</span>
               <span class="profile-info-val">{{ profileDetail?.year_of_study ? ('ปี ' + profileDetail.year_of_study) : 'ไม่ระบุ' }}</span>
             </div>
+            <div class="profile-info-row">
+              <span class="profile-info-lbl">ห้องเรียน</span>
+              <span class="profile-info-val">{{ profileDetail?.classroom_name || 'ไม่ระบุ' }}</span>
+            </div>
           </div>
         }
       </div>

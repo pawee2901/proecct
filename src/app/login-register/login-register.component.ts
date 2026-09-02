@@ -20,6 +20,7 @@ interface RegisterForm {
   faculty: string;
   department: string;
   yearOfStudy: string;
+  classroomId: string;
   role: 'student' | 'teacher' | 'admin';
 }
 
@@ -75,13 +76,38 @@ export class LoginRegisterComponent implements OnInit {
     faculty: '',
     department: '',
     yearOfStudy: '',
+    classroomId: '',
     role: 'student',
   };
+
+  // ชั้นปีที่อาจารย์เพิ่ม/ลบเองได้ (ดู TeacherSessionService) — แทนที่ตัวเลือก "ปี 1-4" ตายตัว
+  // เดิม ห้องเรียนกรองตามปีที่เลือกไว้ (cascading select) โหลดใหม่ทุกครั้งที่เปลี่ยนปี
+  yearLevels: { year_level: number; label: string }[] = [];
+  classroomsForYear: { classroom_id: number; name: string }[] = [];
 
   constructor(private router: Router, private apiService: ApiService) {}
 
   ngOnInit(): void {
     localStorage.removeItem('currentUser');
+    this.apiService.getYearLevels().subscribe({
+      next: (data: any) => {
+        if (Array.isArray(data)) this.yearLevels = data;
+      },
+      error: () => {},
+    });
+  }
+
+  onRegisterYearChange(): void {
+    this.registerData.classroomId = '';
+    this.classroomsForYear = [];
+    const year = Number(this.registerData.yearOfStudy);
+    if (!year) return;
+    this.apiService.getClassrooms(year).subscribe({
+      next: (data: any) => {
+        if (Array.isArray(data)) this.classroomsForYear = data;
+      },
+      error: () => {},
+    });
   }
 
   switchTab(tab: 'login' | 'register' | 'forgot'): void {
@@ -192,6 +218,10 @@ export class LoginRegisterComponent implements OnInit {
             department: user.department_name || '',
             yearOfStudy: Number(yearOfStudy),
             avatarUrl: user.avatar_url || '',
+            // ห้องเรียน (classrooms.classroom_id) ที่นักศึกษาสังกัดอยู่จริง — ใช้กรอง
+            // รายการบทเรียนให้เห็นเฉพาะห้องตัวเอง (ดู LessonsDataService.loadLessonsFromDb())
+            // null ถ้าสมัครไว้ก่อนมีฟีเจอร์ห้องเรียน หรือสมัครโดยไม่ได้เลือกห้อง
+            classroomId: user.classroom_id != null ? Number(user.classroom_id) : null,
           };
           localStorage.setItem('currentUser', JSON.stringify(sessionUser));
           this.showSuccess(`เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับ ${user.first_name || user.username}`);
@@ -261,6 +291,7 @@ export class LoginRegisterComponent implements OnInit {
       email: d.email,
       student_code: d.role === 'student' && d.studentId?.trim() ? d.studentId.trim() : null,
       year_of_study: d.role === 'student' && d.yearOfStudy ? d.yearOfStudy : null,
+      classroom_id: d.role === 'student' && d.classroomId ? d.classroomId : null,
       faculty_name: d.faculty,
       department_name: d.department,
       university_name: 'มหาวิทยาลัยราชภัฏ',

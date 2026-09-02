@@ -85,10 +85,30 @@ export class GameEngineService {
     private apiService: ApiService,
   ) {}
 
+  // โหลดชุดกลาง (game_contents) ก่อนเหมือนเดิม แล้วถ้านักศึกษามีปีที่รู้จัก (session.
+  // activeYearLevel) เอาชุดเฉพาะปีนั้น (game_contents_by_year) มาทับอีกที — เกมไหนยังไม่ได้
+  // ตั้งค่าเฉพาะปีนี้ก็ยังใช้ชุดกลางไปก่อน (ไม่มีวันเจอเกมว่างเปล่า) เกมทั้ง ~21 แบบด้านล่างนี้
+  // ไม่ต้องรู้เรื่องปีเลย เพราะทุกตัวอ่านจาก customGameContent[key] เหมือนเดิมทุกประการ
   loadCustomGameContent(): void {
     this.apiService.getGameContents().subscribe({
-      next: (data: any) => {
-        this.customGameContent = data && typeof data === 'object' ? data : {};
+      next: (globalData: any) => {
+        const merged = globalData && typeof globalData === 'object' ? { ...globalData } : {};
+        const year = this.session.activeYearLevel;
+        if (!year) {
+          this.customGameContent = merged;
+          return;
+        }
+        this.apiService.getGameContentsForYear(year).subscribe({
+          next: (yearData: any) => {
+            if (yearData && typeof yearData === 'object') {
+              Object.assign(merged, yearData);
+            }
+            this.customGameContent = merged;
+          },
+          error: () => {
+            this.customGameContent = merged;
+          }
+        });
       },
       error: () => {
         this.customGameContent = {};

@@ -123,6 +123,42 @@ export class ApiService {
     return this.http.put(`${this.baseUrl}/teacher/year-ai-instructions/${yearLevel}`, { ai_instruction: aiInstruction });
   }
 
+  // ── ชั้นปีการศึกษา (year_levels) & ห้องเรียน (classrooms) ──
+  // แทนที่ปุ่มสลับ "ปี 1 / ปี 2" ตายตัวเดิม — อาจารย์เพิ่ม/ลบชั้นปีและห้องเรียนได้เอง
+  // (endpoint อ่านเป็น public เพราะหน้าสมัครสมาชิกก็ต้องเรียกใช้ด้วย ดู routes/classrooms.py)
+  getYearLevels(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/year-levels`);
+  }
+
+  addYearLevel(label: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/year-levels`, { label });
+  }
+
+  deleteYearLevel(yearLevel: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/year-levels/${yearLevel}`);
+  }
+
+  getClassrooms(yearLevel?: number | null): Observable<any> {
+    const url = yearLevel ? `${this.baseUrl}/classrooms?year_level=${yearLevel}` : `${this.baseUrl}/classrooms`;
+    return this.http.get(url);
+  }
+
+  addClassroom(yearLevel: number, name: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/classrooms`, { year_level: yearLevel, name });
+  }
+
+  renameClassroom(classroomId: number, name: string): Observable<any> {
+    return this.http.put(`${this.baseUrl}/classrooms/${classroomId}`, { name });
+  }
+
+  deleteClassroom(classroomId: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/classrooms/${classroomId}`);
+  }
+
+  assignStudentClassroom(userId: number, classroomId: number | null): Observable<any> {
+    return this.http.patch(`${this.baseUrl}/classrooms/students/${userId}`, { classroom_id: classroomId });
+  }
+
   // ── Admin-Specific ──
   getAdminUsers(): Observable<any> {
     return this.http.get(`${this.baseUrl}/admin/users`);
@@ -349,6 +385,26 @@ export class ApiService {
 
   saveGameContent(gameKey: string, items: any[]): Observable<any> {
     return this.http.put(`${this.baseUrl}/game-contents/${gameKey}`, { items });
+  }
+
+  // ให้ AI อ่านไฟล์ (Word/PDF/TXT) ที่ครูอัปโหลด แล้วสร้างเนื้อหาเกมให้ตาม field schema ของ
+  // เกมนั้น (ส่ง gameContentConfigs.fields ไปตรงๆ backend เลยไม่ต้องรู้จัก schema ของ 21 เกมเอง)
+  generateGameContentFromFile(gameLabel: string, fields: any[], count: number, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('game_label', gameLabel);
+    formData.append('count', String(count));
+    formData.append('fields', JSON.stringify(fields));
+    return this.http.post(`${this.baseUrl}/api/ai/generate-game-content`, formData);
+  }
+
+  // ── เนื้อหาเกมเฉพาะชั้นปี (แยกจากชุดกลางด้านบน — game_contents_by_year) ──
+  getGameContentsForYear(yearLevel: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/game-contents/by-year/${yearLevel}`);
+  }
+
+  saveGameContentForYear(gameKey: string, yearLevel: number, items: any[]): Observable<any> {
+    return this.http.put(`${this.baseUrl}/game-contents/by-year/${yearLevel}/${gameKey}`, { items });
   }
 
   // ── Games (Dynamic Game Management — Game Covers + Content ที่ผูกกับ

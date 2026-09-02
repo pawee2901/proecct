@@ -38,10 +38,12 @@
               <h4 class="course-title">{{ g.title }}</h4>
               <p class="teacher-info">{{ g.description || 'ยังไม่มีคำอธิบาย' }}</p>
 
+              <!-- ตัดปุ่ม "แก้ไขเกม"/"เปลี่ยนรูปปก" ออก — ทั้งคู่เปิดฟอร์มเดียวกันเป๊ะ
+                   (openEditGameModal ตัวเดียวกัน) ซ้ำซ้อนกันเอง ตามที่คุยกันไว้ เหลือแค่
+                   จัดการเนื้อหา + ลบเกม พอ (แก้ชื่อ/รูปปก/คำอธิบายยังทำได้ตอนสร้างเกมใหม่
+                   ผ่าน "+ เพิ่มเกมใหม่" เหมือนเดิม แค่ตัดทางแก้ของเกมที่มีอยู่แล้วออก) -->
               <div class="course-card-footer" style="flex-wrap: wrap;">
-                <button type="button" class="btn-test-action" (click)="openEditGameModal(g)">แก้ไขเกม</button>
                 <button type="button" class="btn-test-action" (click)="openContentManager(g)">จัดการเนื้อหา</button>
-                <button type="button" class="btn-test-action" (click)="openEditGameModal(g)">เปลี่ยนรูปปก</button>
                 <button type="button" class="btn-reject" (click)="confirmDeleteGame(g)">ลบเกม</button>
               </div>
             </div>
@@ -140,8 +142,53 @@
         <button type="button" class="btn-primary-action outline" (click)="closeBuiltinContentManager()">← กลับไปที่รายการเกม</button>
       </div>
 
+      <!-- เลือกชั้นปีที่จะดู/แก้เนื้อหา — "ทุกชั้นปี" = ชุดกลางเดิม, เลือกปีใดปีหนึ่ง = ตั้ง
+           คำศัพท์/โจทย์เฉพาะปีนั้น (ไม่กระทบปีอื่น) เพราะเนื้อหาที่เหมาะสมมักต่างกันตามชั้นปี -->
+      <div class="form-field" style="max-width: 280px; margin-bottom: 1rem;">
+        <label>ชั้นปีที่จะแก้เนื้อหา</label>
+        <select
+          class="filter-input"
+          style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.8rem; width: 100%; box-sizing: border-box; background: #ffffff;"
+          [(ngModel)]="selectedContentYear"
+          name="contentYear"
+          (ngModelChange)="onContentYearChange()"
+        >
+          <option [ngValue]="null">ทุกชั้นปี (ค่ากลาง)</option>
+          @for (yl of yearLevels; track yl.year_level) {
+            <option [ngValue]="yl.year_level">{{ yl.label }}</option>
+          }
+        </select>
+        @if (selectedContentYear !== null) {
+          <p style="margin: 0.35rem 0 0; font-size: 0.72rem; color: #94a3b8; font-weight: 600;">
+            กำลังแก้เนื้อหาเฉพาะชั้นปีที่ {{ selectedContentYear }} — นักศึกษาปีอื่นจะยังเห็นชุดกลางเหมือนเดิม
+          </p>
+        }
+      </div>
+
+      <!-- AI ช่วยสร้างเนื้อหาจากไฟล์ — อัปโหลด Word/PDF/TXT บอกจำนวนข้อ ให้ AI สร้างแทนพิมพ์
+           เองทีละข้อ (ต่อท้ายรายการด้านล่าง ยังต้องตรวจทาน/กดบันทึกเองเสมอ ไม่บันทึกอัตโนมัติ) -->
+      <div style="background: #f0fdfa; border: 1.5px dashed #5eead4; border-radius: 16px; padding: 1.1rem; margin-bottom: 1rem;">
+        <h5 style="margin: 0 0 0.35rem; font-size: 0.86rem; font-weight: 800; color: #0d9488;">✨ ให้ AI ช่วยสร้างจากไฟล์ (Word / PDF / TXT)</h5>
+        <p style="margin: 0 0 0.75rem; font-size: 0.74rem; color: #64748b;">อัปโหลดเอกสารที่มีคำศัพท์/เนื้อหาที่ต้องการ บอกจำนวนข้อ AI จะสร้างให้ตามรูปแบบของเกมนี้อัตโนมัติ ต่อท้ายรายการด้านล่าง — ตรวจทาน/แก้ไขก่อนกด "บันทึกเนื้อหาเกม" ได้เสมอ</p>
+        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+          <label class="btn-primary-action purple" style="cursor: pointer; font-size: 0.78rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ aiGameFile ? aiGameFile.name : '📎 เลือกไฟล์' }}
+            <input type="file" accept=".txt,.docx,.pdf,application/pdf,text/plain" (change)="onAiGameFileSelected($event)" style="display: none;" />
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; font-weight: 700; color: #334155;">
+            จำนวนข้อ
+            <input type="number" min="1" max="40" [(ngModel)]="aiGameCount" name="aiGameCount" style="width: 70px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.4rem 0.6rem;" />
+          </label>
+          <button type="button" class="btn-primary-action" [disabled]="!aiGameFile || aiGameGenerating" (click)="generateGameContentWithAi()">
+            {{ aiGameGenerating ? 'กำลังสร้าง...' : '✨ สร้างด้วย AI' }}
+          </button>
+        </div>
+      </div>
+
       @if (gameContentSavedFlag[managingBuiltinConfig.key]) {
-        <span class="status-toggle-pill active" style="margin-bottom: 0.75rem; display: inline-block;">แก้ไขแล้ว (บันทึกใน DB)</span>
+        <span class="status-toggle-pill active" style="margin-bottom: 0.75rem; display: inline-block;">
+          แก้ไขแล้ว ({{ selectedContentYear === null ? 'ชุดกลาง' : 'เฉพาะปีที่ ' + selectedContentYear }})
+        </span>
       } @else if (isVocabPoolGame(managingBuiltinConfig.key)) {
         <span class="status-toggle-pill" style="margin-bottom: 0.75rem; display: inline-block;">คลังคำศัพท์รวมของทุกบทเรียน (ยังไม่เคยแก้)</span>
       } @else if (!dynamicOnlyGameKeys.includes(managingBuiltinConfig.key)) {

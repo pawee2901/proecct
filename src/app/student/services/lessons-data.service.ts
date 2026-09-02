@@ -1667,7 +1667,14 @@ export class LessonsDataService {
     this.apiService.getLessons().subscribe({
       next: (data: any[]) => {
         if (Array.isArray(data) && data.length > 0) {
-          const yearData = data.filter((les: any) => (les.year_level || 1) === this.sessionService.activeYearLevel);
+          // กรองด้วยห้องเรียนที่นักศึกษาสังกัดจริง (classroom_id) แทนแค่ปี — นักศึกษาห้อง A
+          // จะเห็นเฉพาะบทเรียนของห้อง A เท่านั้น ไม่เห็นของห้อง B แม้ปีเดียวกัน ถ้ายังไม่มีห้อง
+          // สังกัดเลย (สมัครไว้ก่อนมีฟีเจอร์นี้/สมัครโดยไม่เลือกห้อง) fallback กลับไปกรองด้วย
+          // ปีเหมือนเดิม กันไม่ให้เห็นรายการบทเรียนว่างเปล่าไปเฉยๆ
+          const classroomId = this.sessionService.classroomId;
+          const yearData = classroomId
+            ? data.filter((les: any) => Number(les.classroom_id) === classroomId)
+            : data.filter((les: any) => (les.year_level || 1) === this.sessionService.activeYearLevel);
           if (yearData.length > 0) {
             this.units = yearData.map((les: any, index: number) => {
               const fallbackUnit = staticUnitsFallback.find(u => u.id === les.id) || staticUnitsFallback[index];
@@ -1806,7 +1813,7 @@ export class LessonsDataService {
   }
 
 
-  getYearFallbackUnits(year: 1 | 2): Unit[] {
+  getYearFallbackUnits(year: number): Unit[] {
     if (year === 2) {
       return [
         {

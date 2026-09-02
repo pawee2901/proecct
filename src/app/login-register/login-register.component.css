@@ -206,21 +206,29 @@
 .field-row-3 {
   grid-template-columns: 0.8fr 1.6fr 1.6fr;
 }
+/* ชั้นปี/ห้องเรียน/คณะ/สาขา — 4 ช่อง (เพิ่ม "ห้องเรียน" คู่กับ "ชั้นปี" ที่มีอยู่เดิม) */
+.field-row-4 {
+  grid-template-columns: 0.85fr 1.05fr 1.3fr 1.3fr;
+}
 /* มือถือทั่วไป (375-430px) ยังคงเป็น 2 คอลัมน์อยู่ ไม่ยืดยาวเป็นแถวเดียว —
-   field-row-3 (ชั้นปี/คณะ/สาขา) ยุบเหลือ 2 คอลัมน์ แล้วให้ "สาขา" กว้างเต็มแถวถัดไป */
+   field-row-3/4 ยุบเหลือ 2 คอลัมน์ แล้วให้ช่องสุดท้าย (สาขา) กว้างเต็มแถวถัดไป */
 @media (max-width: 520px) {
-  .field-row-3 {
+  .field-row-3,
+  .field-row-4 {
     grid-template-columns: 1fr 1fr;
   }
-  .field-row-3 .field-group:last-child {
+  .field-row-3 .field-group:last-child,
+  .field-row-4 .field-group:last-child {
     grid-column: 1 / -1;
   }
 }
 /* จอแคบจริงๆ เท่านั้นถึงยุบเหลือคอลัมน์เดียวทั้งหมด */
 @media (max-width: 360px) {
   .field-row,
-  .field-row-3 { grid-template-columns: 1fr; }
-  .field-row-3 .field-group:last-child { grid-column: auto; }
+  .field-row-3,
+  .field-row-4 { grid-template-columns: 1fr; }
+  .field-row-3 .field-group:last-child,
+  .field-row-4 .field-group:last-child { grid-column: auto; }
 }
 
 /* ── Form Fields ───────────────────────────────────────────── */
