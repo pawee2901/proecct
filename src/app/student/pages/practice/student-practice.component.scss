@@ -1680,61 +1680,28 @@
     letter-spacing: 0.2px !important;
   }
 
-  /* Topic picker (step 1) + avatar picker (step 3): 2-per-row instead of
-     1. Both lists/cards are inline-styled in the template (flex-column /
-     auto-fit-220px, neither of which fits 2-up on a phone), so these need
-     !important to win over the inline style attribute. */
+  /* Topic picker (step 1) + avatar picker (step 3): forcing these 2-per-row
+     produced uneven card heights once every card carried a description
+     (same problem as the practice menu above), so both just stack to 1
+     column and reuse the desktop icon+text row layout, narrowed to the
+     phone width instead of restyled into centered squares. */
   .duo-options-list,
   .duo-avatar-grid {
     display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: 1fr !important;
     gap: 0.6rem !important;
-  }
-  /* Square icon-grid boxes (icon centered on top, label below) instead of
-     the horizontal icon+text row the desktop layout uses. Description
-     text is hidden here -- it doesn't fit a square box, and the title
-     (which already includes the English name) carries enough meaning. */
-  .duo-option-card,
-  .duo-avatar-card {
-    aspect-ratio: 1 / 1;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    padding: 0.75rem 0.5rem !important;
-    gap: 0.35rem !important;
   }
   .duo-option-card .opt-icon,
   .duo-avatar-card .duo-avatar-face {
-    font-size: 2rem !important;
-  }
-  .duo-option-card .opt-info,
-  .duo-avatar-card > div:last-child {
-    align-items: center !important;
-    text-align: center !important;
-    flex: none !important;
+    font-size: 1.75rem !important;
   }
   .duo-option-card .opt-info h4,
   .duo-avatar-card h4 {
-    font-size: 0.72rem !important;
-    line-height: 1.25 !important;
-    text-align: center !important;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: 0.82rem !important;
   }
   .duo-option-card .opt-info p,
   .duo-avatar-card p {
-    display: none !important;
-  }
-  .opt-badge.recommend {
-    top: -8px !important;
-    right: 50% !important;
-    transform: translateX(50%);
-    font-size: 0.56rem !important;
-    padding: 2px 7px !important;
-    white-space: nowrap;
+    font-size: 0.72rem !important;
   }
 
   /* Live call screen: smaller avatar so the panel fits without scrolling */
@@ -1751,37 +1718,28 @@
   }
 
   /* Practice menu (the 5 mode cards shown before entering any wizard):
-     same auto-fill-280px story as the lesson/game grids -- never fits
-     2-up on a phone, so it always stacked to 1 column. Square icon
-     boxes like the other pickers, matching the app's icon-grid style. */
+     2-up squares (even with heights fixed) still looked cramped once the
+     description was added back in, so this now just stacks to 1 column
+     and reuses the desktop icon+title+description row layout as-is,
+     narrowed to the phone width instead of restyled. */
   .practice-utils-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 0.75rem;
   }
   .util-card {
-    aspect-ratio: 1 / 1;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 0.75rem 0.5rem;
-    gap: 0.35rem;
+    padding: 1rem 1.1rem;
   }
   .util-icon-wrapper {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.15rem;
   }
   .util-info {
     h4 {
-      font-size: 0.76rem;
-      line-height: 1.25;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      font-size: 0.88rem;
     }
     p {
-      display: none;
+      font-size: 0.74rem;
     }
   }
 }

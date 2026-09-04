@@ -74,11 +74,4 @@ export class SharedUiStateService {
     }
   }
 
-  openBadges(): void {
-    this.showBadgesModal = true;
-  }
-
-  closeBadges(): void {
-    this.showBadgesModal = false;
-  }
 }

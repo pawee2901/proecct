@@ -1,5 +1,65 @@
 @use '../../shared' as *;
 
-// Student Stats tab — all rules it needs (kpi-grid, section-container,
+// Student Stats tab — most rules it needs (kpi-grid, section-container,
 // table, overview-split-row detail layout, etc.) come from the shared
-// partial above; nothing unique to this page remains.
+// partial above. The activity-category picker below (คอลัมน์ที่ 3 ของหน้า
+// รายละเอียดนักศึกษา) is unique to this page, mirroring the category-card
+// grid on the student's own profile (student-profile.component.html) so
+// teachers browse the same 6 practice modes instead of one long mixed list.
+
+// เดิม overview-split-row (มาจาก shared partial ด้านบน) เป็น 3 คอลัมน์เสมอ (1.1fr 1fr 1fr)
+// เพราะหน้านี้เคยมี "ทักษะการพูด" เป็นคอลัมน์แรก -- ตอนนี้เหลือ 2 คอลัมน์ (คะแนนสอบ/เกม +
+// ประวัติการทำ) override เฉพาะหน้านี้หน้าเดียว ไม่แตะ partial กลางที่ teacher-lessons ใช้ร่วมด้วย
+.overview-split-row {
+  grid-template-columns: 1fr 1fr;
+}
+
+.activity-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.activity-category-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f0fdfa;
+    border-color: #99f6e4;
+  }
+}
+
+.activity-category-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.activity-category-label {
+  flex: 1;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.back-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--tchr-accent);
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

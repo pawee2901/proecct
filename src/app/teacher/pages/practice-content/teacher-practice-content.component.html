@@ -1,0 +1,203 @@
+<div class="section-container animate-fade">
+  <div class="section-header-row">
+    <div>
+      <h3 class="section-title">จัดการเนื้อหาฝึกฝน (Practice Content Manager)</h3>
+      <p class="section-desc">สถานการณ์สนทนา Speech-to-Speech และหัวข้อแชท Text-to-Text ของนักศึกษา — แยกตามชั้นปีที่เลือกไว้ด้านข้าง แก้ไขได้เอง หรือให้ AI ช่วยแต่งให้ก่อนแล้วค่อยตรวจแก้</p>
+    </div>
+  </div>
+
+  @if (!session.activeClassroomId) {
+    <div class="section-container" style="margin-top: 1rem; text-align: center; color: #94a3b8;">
+      <p style="font-size: 0.85rem;">กรุณาเลือกชั้นปี/ห้องเรียนที่แถบด้านข้างก่อน</p>
+    </div>
+  } @else {
+
+    <!-- แท็บหมวดหมู่ -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-top: 1.25rem;">
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          (click)="switchTab(tab.key)"
+          [style.border]="activeTab === tab.key ? '2px solid #0d9488' : '1.5px solid #e2e8f0'"
+          [style.background]="activeTab === tab.key ? 'rgba(13, 148, 136, 0.06)' : '#ffffff'"
+          style="display: flex; align-items: center; gap: 0.6rem; padding: 0.85rem 1rem; border-radius: 16px; cursor: pointer; text-align: left; transition: all 0.15s;"
+        >
+          <span style="font-size: 1.4rem;">{{ tab.icon }}</span>
+          <span style="font-size: 0.82rem; font-weight: 800; color: #0f172a;">{{ tab.label }}</span>
+        </button>
+      }
+    </div>
+
+    <p style="font-size: 0.78rem; color: #94a3b8; margin: 1rem 0 0;">
+      กำลังแก้ไขเนื้อหาของ <strong style="color: #0d9488;">ปีที่ {{ yearLevel }}</strong>
+    </p>
+
+    <!-- ให้ AI ช่วยแต่ง -->
+    <div class="section-container" style="margin-top: 1rem; background: #f0fdfa; border: 1.5px solid #99f6e4;">
+      <h4 style="font-size: 0.9rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">✨ ให้ AI ช่วยแต่ง</h4>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <input
+          type="text"
+          class="filter-input"
+          style="flex: 1; min-width: 240px; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.6rem 0.9rem; background: #ffffff;"
+          [(ngModel)]="draftTopicHint"
+          name="draftTopicHint"
+          [placeholder]="activeTab === 'chat' ? 'เช่น พูดคุยเรื่องแผนวันหยุดกับเพื่อน' : 'เช่น ครูอธิบายการบ้านให้นักเรียนที่ขาดเรียน'"
+        />
+        <button type="button" class="btn-primary-action" [disabled]="drafting" (click)="draftWithAi()">
+          {{ drafting ? 'กำลังร่าง...' : '✨ ให้ AI ช่วยแต่ง' }}
+        </button>
+      </div>
+      <p style="font-size: 0.72rem; color: #0d9488; margin: 0.5rem 0 0;">พิมพ์หัวข้อสั้นๆ แล้ว AI จะร่างชื่อ/คำอธิบาย/บริบทสำหรับ AI ให้ลงในฟอร์มด้านล่างทันที — ตรวจ/แก้ก่อนกด "บันทึก" เสมอ ยังไม่บันทึกอัตโนมัติ</p>
+    </div>
+
+    <!-- ═══════ Scenario edit form — ตั้งใจวางไว้ตรงนี้ (เหนือรายการ) เสมอ ไม่ใช่ท้าย
+         หน้า เพราะรายการอาจมีหลายสิบแถว ถ้าฟอร์มโผล่ท้ายหน้าคนกดแก้ไขแล้วมองไม่เห็นว่า
+         มันเปิดขึ้นมาแล้ว (เข้าใจผิดว่ากดแก้ไขไม่ได้) ═══════ -->
+    @if (editingScenario) {
+      <div class="section-container" style="margin-top: 1rem; border: 1.5px solid #0d9488;">
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 1rem;">
+          {{ editingScenario.scenario_id ? 'แก้ไขสถานการณ์' : 'เพิ่มสถานการณ์ใหม่' }}
+        </h4>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.85rem; margin-bottom: 0.85rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.3rem;">ชื่อไทย</label>
+            <input type="text" class="filter-input" style="width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff;" [(ngModel)]="editingScenario.titleTh" name="scTitleTh" placeholder="เช่น ต้อนรับนักเรียนหน้าชั้นเรียน" />
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.3rem;">ชื่ออังกฤษ</label>
+            <input type="text" class="filter-input" style="width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff;" [(ngModel)]="editingScenario.titleEn" name="scTitleEn" placeholder="e.g. Welcoming Students" />
+          </div>
+        </div>
+
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.3rem;">คำอธิบาย (แสดงให้นักศึกษาดูก่อนเริ่ม)</label>
+          <textarea class="filter-input" style="width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff; min-height: 60px;" [(ngModel)]="editingScenario.description" name="scDescription" placeholder="อธิบายสถานการณ์สั้นๆ เป็นภาษาไทย"></textarea>
+        </div>
+
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.3rem;">บริบทสำหรับ AI (ใช้เป็นคำสั่งสวมบทบาทตอนฝึกจริง)</label>
+          <textarea class="filter-input" style="width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff; min-height: 110px;" [(ngModel)]="editingScenario.article" name="scArticle" placeholder="เขียนเป็นภาษาอังกฤษ อธิบายว่า AI จะสวมบทบาทเป็นใคร สถานการณ์คืออะไร นักศึกษาควรฝึกพูดอะไร"></textarea>
+        </div>
+
+        <label style="font-size: 0.78rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.3rem;">คำศัพท์ที่เกี่ยวข้อง</label>
+        @for (v of editingScenario.vocab; track $index; let vi = $index) {
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <input type="text" class="filter-input" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.4rem 0.7rem; background: #ffffff;" [(ngModel)]="v.en" name="scVocabEn_{{vi}}" placeholder="English" />
+            <input type="text" class="filter-input" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.4rem 0.7rem; background: #ffffff;" [(ngModel)]="v.th" name="scVocabTh_{{vi}}" placeholder="ความหมายไทย" />
+            <button type="button" class="btn-reject" style="padding: 0.2rem 0.55rem;" (click)="removeScenarioVocab(vi)">✕</button>
+          </div>
+        }
+        <button type="button" class="btn-primary-action outline" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; margin-bottom: 1rem;" (click)="addScenarioVocab()">+ เพิ่มคำศัพท์</button>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn-primary-action" [disabled]="saving" (click)="saveScenario()">{{ saving ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
+          <button type="button" class="btn-primary-action outline" (click)="cancelScenarioEdit()">ยกเลิก</button>
+        </div>
+      </div>
+    }
+
+    <!-- ═══════ Chat topic edit form — เหนือรายการเช่นกัน ═══════ -->
+    @if (editingChatTopic) {
+      <div class="section-container" style="margin-top: 1rem; border: 1.5px solid #0d9488;">
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 1rem;">
+          {{ editingChatTopic.topic_id ? 'แก้ไขหัวข้อแชท' : 'เพิ่มหัวข้อแชทใหม่' }}
+        </h4>
+
+        <div style="display: grid; grid-template-columns: 90px repeat(2, 1fr); gap: 0.85rem; margin-bottom: 0.85rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.3rem;">ไอคอน</label>
+            <input type="text" class="filter-input" style="width: 100%; box-sizing: border-box; text-align: center; font-size: 1.3rem; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.4rem; background: #ffffff;" [(ngModel)]="editingChatTopic.icon" name="ctIcon" placeholder="💬" />
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.3rem;">ชื่อไทย</label>
+            <input type="text" class="filter-input" style="width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff;" [(ngModel)]="editingChatTopic.titleTh" name="ctTitleTh" placeholder="เช่น ทักทายและแนะนำตัว" />
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.3rem;">ชื่ออังกฤษ</label>
+            <input type="text" class="filter-input" style="width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff;" [(ngModel)]="editingChatTopic.titleEn" name="ctTitleEn" placeholder="e.g. Greetings & Introductions" />
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: #475569; display: block; margin-bottom: 0.3rem;">บริบทสำหรับ AI (ใช้เป็นคำสั่งสวมบทบาทตอนแชทจริง)</label>
+          <textarea class="filter-input" style="width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff; min-height: 90px;" [(ngModel)]="editingChatTopic.scenario" name="ctScenario" placeholder="เขียนเป็นภาษาอังกฤษ อธิบายว่า AI จะสวมบทบาทเป็นใคร นักศึกษาควรฝึกพิมพ์อะไร"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn-primary-action" [disabled]="saving" (click)="saveChatTopic()">{{ saving ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
+          <button type="button" class="btn-primary-action outline" (click)="cancelChatTopicEdit()">ยกเลิก</button>
+        </div>
+      </div>
+    }
+
+    @if (loading) {
+      <p style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin-top: 1.5rem;">กำลังโหลด...</p>
+    } @else {
+
+      <!-- ═══════ Scenario categories (teaching/daily/interview) — การ์ดสไตล์เดียวกับ
+           .courses-grid/.course-card ใน Game Covers เพื่อให้หน้าตาสอดคล้องกันทั้งฝั่งอาจารย์ ═══════ -->
+      @if (activeTab !== 'chat') {
+        @if (scenarios.length === 0) {
+          <div style="text-align: center; padding: 2.5rem 1.5rem; margin-top: 1.25rem; background: #f8fafc; border: 1.5px dashed #e2e8f0; border-radius: 20px;">
+            <p style="font-size: 2rem; margin: 0 0 0.5rem;">📭</p>
+            <p style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin: 0;">ยังไม่มีสถานการณ์ในหมวดนี้สำหรับปีที่ {{ yearLevel }}</p>
+            <p style="font-size: 0.78rem; color: #cbd5e1; margin: 0.3rem 0 0;">เพิ่มเองด้านล่าง หรือให้ AI ช่วยแต่งจากกล่องด้านบนได้เลย</p>
+          </div>
+        } @else {
+          <div class="courses-grid" style="margin-top: 1.25rem;">
+            @for (s of scenarios; track s.scenario_id) {
+              <div class="course-card">
+                <div class="course-card-top">
+                  <span class="level-badge">{{ s.titleEn }}</span>
+                </div>
+                <h4 class="course-title">{{ s.titleTh }}</h4>
+                <p class="teacher-info">{{ s.description || 'ยังไม่มีคำอธิบาย' }}</p>
+                <div class="course-card-footer">
+                  <button type="button" class="btn-test-action" (click)="editScenario(s)">แก้ไข</button>
+                  <button type="button" class="btn-reject" (click)="deleteScenario(s)">ลบ</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <button type="button" class="btn-primary-action outline" style="margin-top: 1.25rem;" (click)="startNewScenario()">
+          + เพิ่มสถานการณ์ใหม่
+        </button>
+      }
+
+      <!-- ═══════ Chat topics (Text-to-Text) ═══════ -->
+      @if (activeTab === 'chat') {
+        @if (chatTopics.length === 0) {
+          <div style="text-align: center; padding: 2.5rem 1.5rem; margin-top: 1.25rem; background: #f8fafc; border: 1.5px dashed #e2e8f0; border-radius: 20px;">
+            <p style="font-size: 2rem; margin: 0 0 0.5rem;">📭</p>
+            <p style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin: 0;">ยังไม่มีหัวข้อแชทสำหรับปีที่ {{ yearLevel }}</p>
+            <p style="font-size: 0.78rem; color: #cbd5e1; margin: 0.3rem 0 0;">เพิ่มเองด้านล่าง หรือให้ AI ช่วยแต่งจากกล่องด้านบนได้เลย</p>
+          </div>
+        } @else {
+          <div class="courses-grid" style="margin-top: 1.25rem;">
+            @for (t of chatTopics; track t.topic_id) {
+              <div class="course-card">
+                <div class="course-card-top">
+                  <span style="font-size: 1.75rem; line-height: 1;">{{ t.icon }}</span>
+                  <span class="level-badge">{{ t.titleEn }}</span>
+                </div>
+                <h4 class="course-title">{{ t.titleTh }}</h4>
+                <div class="course-card-footer">
+                  <button type="button" class="btn-test-action" (click)="editChatTopic(t)">แก้ไข</button>
+                  <button type="button" class="btn-reject" (click)="deleteChatTopic(t)">ลบ</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <button type="button" class="btn-primary-action outline" style="margin-top: 1.25rem;" (click)="startNewChatTopic()">
+          + เพิ่มหัวข้อแชทใหม่
+        </button>
+      }
+    }
+  }
+</div>

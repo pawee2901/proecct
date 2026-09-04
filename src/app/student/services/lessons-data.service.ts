@@ -1779,7 +1779,7 @@ export class LessonsDataService {
                 unscrambleDialogue,
                 pictureWords: customPictureWords.length > 0 ? customPictureWords : undefined,
                 fillBlankItems: customFillBlanks.length > 0 ? customFillBlanks : undefined,
-                fullQuiz: fallbackUnit?.fullQuiz,
+                fullQuiz: les.fullQuiz || fallbackUnit?.fullQuiz,
                 allowedGames: allowed,
                 speakingQuestions: sentences,
                 classHours: les.classHours || '⏱ 4 คาบเรียน',

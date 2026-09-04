@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import Swal from 'sweetalert2';
 import { ApiService } from '../../services/api.service';
 import { AdminMonitorService } from './admin-monitor.service';
+import { escapeHtml } from '../utils/escape-html';
 
 export interface AdminUser {
   id: number;
@@ -66,7 +67,22 @@ export class AdminUsersService {
   }
 
   // ── Add User Modal (Overview quick action + Users page header button) ──
+  // ห้องเรียนกรองตามชั้นปีที่เลือก (cascading select) เหมือนหน้าสมัครสมาชิกของนักศึกษาเอง —
+  // โหลดรายการชั้นปีจริง (getYearLevels(), ปีที่อาจารย์เพิ่ม/ลบเองได้ ไม่ใช่ 1-4 ตายตัว) ก่อน
+  // เปิด modal แล้วค่อยโหลดห้องเรียนใหม่ทุกครั้งที่เปลี่ยนปีในฟอร์ม (onChange ในตัวจริง เพราะ
+  // ส่วนนี้เป็น raw HTML ของ SweetAlert2 ไม่ใช่ Angular template ผูก ngModel ไม่ได้)
   openAddUserModal(): void {
+    this.apiService.getYearLevels().subscribe({
+      next: (data: any) => this.renderAddUserModal(Array.isArray(data) ? data : []),
+      error: () => this.renderAddUserModal([]),
+    });
+  }
+
+  private renderAddUserModal(yearLevels: { year_level: number; label: string }[]): void {
+    const yearOptions = yearLevels
+      .map((yl) => `<option value="${yl.year_level}">${escapeHtml(yl.label)}</option>`)
+      .join('');
+
     Swal.fire({
       title: 'เพิ่มผู้ใช้ใหม่ / Add New User',
       width: 620,
@@ -131,10 +147,15 @@ export class AdminUsersService {
                 <span class="au-label">ชั้นปีการศึกษา</span>
                 <select id="au-year" class="au-select">
                   <option value="">เลือกชั้นปี</option>
-                  <option value="1">ปี 1</option>
-                  <option value="2">ปี 2</option>
-                  <option value="3">ปี 3</option>
-                  <option value="4">ปี 4</option>
+                  ${yearOptions}
+                </select>
+              </div>
+            </div>
+            <div class="au-row">
+              <div class="au-group">
+                <span class="au-label">ห้องเรียน / Classroom</span>
+                <select id="au-classroom" class="au-select" disabled>
+                  <option value="">เลือกชั้นปีก่อน</option>
                 </select>
               </div>
             </div>
@@ -170,6 +191,33 @@ export class AdminUsersService {
             studentFields?.classList.toggle('hidden', role !== 'student');
           });
         });
+
+        const yearSelect = document.getElementById('au-year') as HTMLSelectElement;
+        const classroomSelect = document.getElementById('au-classroom') as HTMLSelectElement;
+        yearSelect?.addEventListener('change', () => {
+          const year = Number(yearSelect.value);
+          if (!classroomSelect) return;
+          if (!year) {
+            classroomSelect.innerHTML = '<option value="">เลือกชั้นปีก่อน</option>';
+            classroomSelect.disabled = true;
+            return;
+          }
+          classroomSelect.innerHTML = '<option value="">กำลังโหลด...</option>';
+          classroomSelect.disabled = true;
+          this.apiService.getClassrooms(year).subscribe({
+            next: (data: any) => {
+              const rows = Array.isArray(data) ? data : [];
+              const options = rows
+                .map((c: any) => `<option value="${c.classroom_id}">${escapeHtml(c.name)}</option>`)
+                .join('');
+              classroomSelect.innerHTML = '<option value="">ไม่ระบุห้องเรียน</option>' + options;
+              classroomSelect.disabled = false;
+            },
+            error: () => {
+              classroomSelect.innerHTML = '<option value="">โหลดห้องเรียนไม่สำเร็จ</option>';
+            },
+          });
+        });
       },
       preConfirm: () => {
         const role = (document.getElementById('au-role') as HTMLInputElement)?.value || 'student';
@@ -179,6 +227,10 @@ export class AdminUsersService {
         const email = (document.getElementById('au-email') as HTMLInputElement)?.value.trim();
         const password = (document.getElementById('au-password') as HTMLInputElement)?.value;
         const confirmPassword = (document.getElementById('au-confirm-password') as HTMLInputElement)?.value;
+        // เดิม 3 ช่องนี้มีอยู่ในฟอร์มให้กรอกแต่ไม่เคยถูกอ่านค่าเลย ข้อมูลที่กรอกไปหายไปเงียบๆ
+        const studentId = (document.getElementById('au-student-id') as HTMLInputElement)?.value.trim();
+        const yearOfStudy = (document.getElementById('au-year') as HTMLSelectElement)?.value;
+        const classroomId = (document.getElementById('au-classroom') as HTMLSelectElement)?.value;
 
         if (!firstName || !lastName || !username || !email || !password) {
           Swal.showValidationMessage('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน');
@@ -196,7 +248,10 @@ export class AdminUsersService {
           first_name: firstName,
           last_name: lastName,
           email,
-          name: `${firstName} ${lastName}`
+          name: `${firstName} ${lastName}`,
+          student_code: role === 'student' && studentId ? studentId : null,
+          year_of_study: role === 'student' && yearOfStudy ? Number(yearOfStudy) : null,
+          classroom_id: role === 'student' && classroomId ? Number(classroomId) : null,
         };
       }
     }).then((result) => {

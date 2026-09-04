@@ -56,7 +56,6 @@ export class StudentLessonsComponent implements OnDestroy {
 
   quizFullscreen = false;
   fullQuizPartAAnswers: number[] = [];
-  fullQuizPartBSelected: number | null = null;
   fullQuizPartBAnswers: string[] = [];
   draggedPartBKey = '';
   selectedPartBKey = '';
@@ -569,7 +568,6 @@ export class StudentLessonsComponent implements OnDestroy {
     const fq = this.lessonsData.currentUnit.fullQuiz!;
     this.fullQuizPartAAnswers = new Array(fq.partA.length).fill(-1);
     this.fullQuizPartBAnswers = new Array(fq.partB.expressions.length).fill('');
-    this.fullQuizPartBSelected = null;
     this.partCOrderItems = fq.partCOrder
       ? [...fq.partCOrder.items].sort(() => Math.random() - 0.5)
       : [];
@@ -587,24 +585,9 @@ export class StudentLessonsComponent implements OnDestroy {
     this.fullQuizPartAAnswers[qIdx] = optIdx;
   }
 
-  clickPartBExpression(idx: number): void {
-    if (this.fullQuizSubmitted) return;
-    this.fullQuizPartBSelected = this.fullQuizPartBSelected === idx ? null : idx;
-  }
-
-  clickPartBReply(key: string): void {
-    if (this.fullQuizSubmitted || this.fullQuizPartBSelected === null) return;
-    this.fullQuizPartBAnswers[this.fullQuizPartBSelected] = key;
-    this.fullQuizPartBSelected = null;
-  }
-
   getReplyText(key: string): string {
     if (!this.lessonsData.currentUnit.fullQuiz) return '';
     return this.lessonsData.currentUnit.fullQuiz.partB.replies.find((r) => r.key === key)?.text || '';
-  }
-
-  isReplySelectedElsewhere(key: string, rowIndex: number): boolean {
-    return this.fullQuizPartBAnswers.some((ans, i) => i !== rowIndex && ans === key);
   }
 
   onPartBDragStart(event: DragEvent, key: string): void {

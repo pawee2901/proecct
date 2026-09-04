@@ -94,6 +94,9 @@
           </svg>
           <input type="text" class="filter-input" placeholder="ค้นหาชื่อหรือรหัสนักศึกษา..." [(ngModel)]="searchQuery" />
         </div>
+        <button type="button" class="btn-primary-action" (click)="openAddStudentModal()">
+          เพิ่มนักศึกษา / Add Student
+        </button>
       </div>
 
       <div class="table-responsive">
@@ -125,9 +128,14 @@
                   </span>
                 </td>
                 <td style="text-align: center;">
-                  <button type="button" class="btn-test-action" (click)="selectStudent(st)">
-                    เปิดดูสถิติ / View Stats
-                  </button>
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                    <button type="button" class="btn-test-action" (click)="selectStudent(st)">
+                      เปิดดูสถิติ / View Stats
+                    </button>
+                    <button type="button" class="btn-test-action" title="แก้ไขข้อมูล" (click)="openEditStudentModal(st)">
+                      ✏️ แก้ไข
+                    </button>
+                  </div>
                 </td>
               </tr>
             } @empty {
@@ -161,70 +169,21 @@
           </button>
           <div>
             <h3 class="section-title">ผลการเรียนรายบุคคล: {{ selectedStudent.name }}</h3>
-            <p class="section-desc">รหัสประจำตัว: {{ selectedStudent.student_code }} | บทเรียนสำเร็จ: {{ selectedStudent.lessons_completed }}/5 บทเรียน</p>
+            <p class="section-desc">
+              รหัสประจำตัว: {{ selectedStudent.student_code }} | บทเรียนสำเร็จ: {{ selectedStudent.lessons_completed }}/5 บทเรียน |
+              อีเมล: {{ selectedStudent.email }} | คะแนนเฉลี่ยรวม: {{ selectedStudent.average_score }}%
+            </p>
           </div>
         </div>
       </div>
 
-      <!-- เลย์เอาต์ 3 คอลัมน์ -->
+      <!-- เลย์เอาต์ 2 คอลัมน์ -- เดิมมีคอลัมน์ "ทักษะการพูด (AI Evaluated Skills)" นำหน้าด้วย
+           แต่ต้องผ่าน evaluate-session (speech-to-speech ฯลฯ) จริงเท่านั้นถึงจะมีค่า นักศึกษา
+           ส่วนใหญ่ที่ฝึกแค่ควิซ/เกมเลยเห็น 0% ตลอดจนดูเหมือนเสีย -- เอาออกตามที่ขอ อีเมล/
+           คะแนนเฉลี่ยรวมที่เคยอยู่ท้ายคอลัมน์นั้นย้ายขึ้นไปรวมกับหัวรายงานด้านบนแทน -->
       <div class="overview-split-row margin-top-lg">
 
-        <!-- คอลัมน์ที่ 1: ทักษะการพูด (AI Evaluated Skills) -->
-        <div class="status-summary-card">
-          <div class="card-heading-between">
-            <h3>ทักษะการพูด (AI Evaluated Skills)</h3>
-          </div>
-
-          <!-- ค่าเฉลี่ย % จากทุกรอบฝึกพูดจริงที่ผ่าน evaluate-session (คำนวณใน
-               computeSkillAverages() ตอนกด "เปิดดูสถิติ") — เดิมมี Fluency/Vocabulary
-               ด้วยแต่ AI ไม่เคยประเมิน 2 อย่างนี้จริงในระบบนี้เลย เหลือแค่ 3 มิติที่มีข้อมูล
-               จริงรองรับ (เหมือนกับที่ขึ้นต่อรายการใน "ประวัติการทำ" ทางขวา) -->
-          <div class="server-metric-item">
-            <div class="metric-row-header">
-              <span>การออกเสียง (Pronunciation)</span>
-              <strong>{{ selectedStudent.skills.pronunciation }}%</strong>
-            </div>
-            <div class="progress-bar-track">
-              <div class="progress-bar-fill green" [style.width.%]="selectedStudent.skills.pronunciation"></div>
-            </div>
-          </div>
-
-          <div class="server-metric-item">
-            <div class="metric-row-header">
-              <span>ความเร็วในการตอบ (Response Speed)</span>
-              <strong>{{ selectedStudent.skills.speed }}%</strong>
-            </div>
-            <div class="progress-bar-track">
-              <div class="progress-bar-fill purple" [style.width.%]="selectedStudent.skills.speed"></div>
-            </div>
-          </div>
-
-          <div class="server-metric-item">
-            <div class="metric-row-header">
-              <span>ความถูกต้องไวยากรณ์ (Grammar)</span>
-              <strong>{{ selectedStudent.skills.grammar }}%</strong>
-            </div>
-            <div class="progress-bar-track">
-              <div class="progress-bar-fill blue" [style.width.%]="selectedStudent.skills.grammar"></div>
-            </div>
-          </div>
-
-          @if (selectedStudent.activity.length > 0 && !hasSpeakingEvaluations(selectedStudent)) {
-            <p class="empty-table-msg" style="margin-top: 0.75rem;">
-              นักศึกษาคนนี้ยังไม่เคยฝึกพูดแบบที่มีการประเมินของ AI (speech-to-speech ฯลฯ) —
-              ค่าเฉลี่ยด้านบนเป็น 0% เพราะยังไม่มีข้อมูลจริง ไม่ใช่ข้อผิดพลาด
-            </p>
-          }
-
-          <div class="compact-log-item" style="margin-top: 1rem;">
-            <div class="compact-log-msg">
-              อีเมล: <strong>{{ selectedStudent.email }}</strong><br>
-              คะแนนเฉลี่ยรวม: <strong>{{ selectedStudent.average_score }}%</strong>
-            </div>
-          </div>
-        </div>
-
-        <!-- คอลัมน์ที่ 2: คะแนนสอบและเกม -->
+        <!-- คอลัมน์ที่ 1: คะแนนสอบและเกม -->
         <div class="recent-logs-card">
           <div class="card-heading-between">
             <h3>ผลคะแนนสอบ & แบบฝึกหัด (Quizzes)</h3>
@@ -232,13 +191,28 @@
 
           <div class="compact-logs-list">
             @for (score of selectedStudent.scores; track score.unit) {
-              <div class="compact-log-item">
+              <div class="compact-log-item" style="flex-direction: column; align-items: flex-start; gap: 0.3rem;">
                 <div class="compact-log-msg">
                   <strong>{{ score.unit }}</strong><br>
                   <span style="font-size: 0.76rem; color: #64748b;">
                     ก่อนเรียน: {{ score.pre }}% | หลังเรียน: {{ score.post }}% | เกม: {{ score.game }}%
                   </span>
                 </div>
+                @if (score.overall !== null && score.overall !== undefined) {
+                  <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.76rem;">
+                    <span style="font-weight: 800; color: #0f172a;">รวม: {{ score.overall }}%</span>
+                    <span
+                      style="font-weight: 800; padding: 1px 8px; border-radius: 10px;"
+                      [style.background]="score.passed ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'"
+                      [style.color]="score.passed ? '#059669' : '#dc2626'"
+                    >
+                      {{ score.passed ? 'ผ่าน ✅' : 'ไม่ผ่าน ❌' }}
+                    </span>
+                  </div>
+                  @if (score.reasoning) {
+                    <p style="margin: 0; font-size: 0.7rem; color: #94a3b8; font-style: italic;">{{ score.reasoning }}</p>
+                  }
+                }
               </div>
             } @empty {
               <p class="empty-table-msg">ยังไม่ได้ทำแบบทดสอบก่อน/หลังเรียน</p>
@@ -246,38 +220,61 @@
           </div>
         </div>
 
-        <!-- คอลัมน์ที่ 3: ประวัติการทำกิจกรรม + ผลการคำนวณของ AI (รายครั้งจริงจาก practice_sessions) -->
+        <!-- คอลัมน์ที่ 2: ประวัติการทำกิจกรรม + ผลการคำนวณของ AI (รายครั้งจริงจาก practice_sessions)
+             แยกเป็นหมวดหมู่แบบเดียวกับหน้าโปรไฟล์ของนักศึกษาเอง (ดู
+             student-profile.component.html: profileSubView 'history-categories') แทนลิสต์ยาว
+             รวมทุกโหมดปนกัน — เลือกหมวดก่อนค่อยเห็นรายการของหมวดนั้น -->
         <div class="recent-logs-card">
-          <div class="card-heading-between">
-            <h3>ประวัติการทำ & ผลการคำนวณของ AI (Activity History)</h3>
-          </div>
+          @if (!selectedActivityCategory) {
+            <div class="card-heading-between">
+              <h3>ประวัติการทำ & ผลการคำนวณของ AI (Activity History)</h3>
+            </div>
+            <p class="sub-table-desc" style="margin-bottom: 0.85rem;">เลือกหมวดหมู่เพื่อดูประวัติ คะแนน และผลวิเคราะห์ของ AI</p>
 
-          <div class="compact-logs-list">
-            @for (a of selectedStudent.activity; track a.session_id) {
-              <div class="compact-log-item" style="flex-direction: column; align-items: flex-start; gap: 0.3rem;">
-                <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.72rem; color: #94a3b8;">
-                  <span>{{ a.created_at_formatted }}</span>
-                  <span class="log-level-chip" [class.success]="a.total_score >= 75">คะแนน {{ a.total_score }}%</span>
-                </div>
-                <p style="font-weight: 700; color: #0f172a; margin: 0;">{{ a.lesson_name }} — {{ activityTypeLabel(a) }}</p>
-                @if (a.pronunciation_score !== null) {
-                  <!-- คะแนนย่อยของรอบฝึกพูดนี้โดยเฉพาะ (แกะจาก ai_feedback ฝั่ง backend) —
-                       ต่างจากการ์ด "ทักษะการพูด" คอลัมน์ซ้ายซึ่งเป็นค่าเฉลี่ยรวมทั้งหมด อันนี้
-                       คือผลของรอบนี้รอบเดียว ให้เห็นพัฒนาการทีละครั้งที่ฝึก -->
-                  <div class="skill-chip-row">
-                    <span class="skill-chip skill-chip--pron">🗣️ ออกเสียง {{ a.pronunciation_score }}/30</span>
-                    <span class="skill-chip skill-chip--speed">⚡ ความเร็ว {{ a.speed_score }}/20</span>
-                    <span class="skill-chip skill-chip--grammar">✍️ ไวยากรณ์ {{ a.grammar_score }}/50</span>
+            <div class="activity-category-list">
+              @for (cat of activityCategories; track cat.id) {
+                <button type="button" class="activity-category-item" (click)="openActivityCategory(cat.id)">
+                  <span class="activity-category-icon">{{ cat.icon }}</span>
+                  <span class="activity-category-label">{{ cat.label }}</span>
+                  <span class="status-indicator-pill" [class.active]="activityCountForCategory(cat.id) > 0">
+                    {{ activityCountForCategory(cat.id) }} ครั้ง
+                  </span>
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="card-heading-between">
+              <button type="button" class="back-link-btn" (click)="backToActivityCategories()">⬅ กลับ</button>
+              <h3>{{ activityCategoryLabel(selectedActivityCategory) }}</h3>
+            </div>
+
+            <div class="compact-logs-list">
+              @for (a of filteredActivity(selectedActivityCategory); track a.session_id) {
+                <div class="compact-log-item" style="flex-direction: column; align-items: flex-start; gap: 0.3rem;">
+                  <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.72rem; color: #94a3b8;">
+                    <span>{{ a.created_at_formatted }}</span>
+                    <span class="log-level-chip" [class.success]="a.total_score >= 75">คะแนน {{ a.total_score }}%</span>
                   </div>
-                }
-                @if (a.ai_feedback) {
-                  <p style="font-size: 0.76rem; color: #475569; margin: 0;">ผลวิเคราะห์ของ AI: {{ a.ai_feedback }}</p>
-                }
-              </div>
-            } @empty {
-              <p class="empty-table-msg">ยังไม่มีประวัติการทำกิจกรรมบันทึกไว้</p>
-            }
-          </div>
+                  <p style="font-weight: 700; color: #0f172a; margin: 0;">{{ a.lesson_name }} — {{ activityTypeLabel(a) }}</p>
+                  @if (a.pronunciation_score !== null) {
+                    <!-- คะแนนย่อยของรอบฝึกพูดนี้โดยเฉพาะ (แกะจาก ai_feedback ฝั่ง backend) —
+                         ต่างจากการ์ด "ทักษะการพูด" คอลัมน์ซ้ายซึ่งเป็นค่าเฉลี่ยรวมทั้งหมด อันนี้
+                         คือผลของรอบนี้รอบเดียว ให้เห็นพัฒนาการทีละครั้งที่ฝึก -->
+                    <div class="skill-chip-row">
+                      <span class="skill-chip skill-chip--pron">🗣️ ออกเสียง {{ a.pronunciation_score }}/30</span>
+                      <span class="skill-chip skill-chip--speed">⚡ ความเร็ว {{ a.speed_score }}/20</span>
+                      <span class="skill-chip skill-chip--grammar">✍️ ไวยากรณ์ {{ a.grammar_score }}/50</span>
+                    </div>
+                  }
+                  @if (a.ai_feedback) {
+                    <p style="font-size: 0.76rem; color: #475569; margin: 0;">ผลวิเคราะห์ของ AI: {{ a.ai_feedback }}</p>
+                  }
+                </div>
+              } @empty {
+                <p class="empty-table-msg">ยังไม่มีประวัติการทำกิจกรรมในหมวดนี้</p>
+              }
+            </div>
+          }
         </div>
 
       </div>

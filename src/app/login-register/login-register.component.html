@@ -168,7 +168,7 @@
               <div class="field-group">
                 <label class="field-label">รหัสผ่านใหม่ / New Password</label>
                 <input class="field-input" type="password"
-                  placeholder="อย่างน้อย 4 ตัวอักษร"
+                  placeholder="อย่างน้อย 6 ตัวอักษร"
                   [(ngModel)]="forgotData.newPassword" name="forgotNewPassword" />
               </div>
 
@@ -225,7 +225,35 @@
               </div>
             </div>
 
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label">มหาวิทยาลัย / University</label>
+                <input class="field-input" type="text" list="university-options" placeholder="พิมพ์เพื่อค้นหามหาวิทยาลัย"
+                  [(ngModel)]="registerData.university" name="university" autocomplete="off" />
+                <datalist id="university-options">
+                  @for (u of universityOptions; track u) {
+                    <option [value]="u"></option>
+                  }
+                </datalist>
+              </div>
+              <div class="field-group">
+                <label class="field-label">อีเมล / Email</label>
+                <input class="field-input" type="email" placeholder="example@email.com"
+                  [(ngModel)]="registerData.email" name="email" />
+              </div>
+            </div>
+
             <div class="field-row field-row-4">
+              <div class="field-group">
+                <label class="field-label">คณะ / Faculty</label>
+                <input class="field-input" type="text" placeholder="ชื่อคณะ"
+                  [(ngModel)]="registerData.faculty" name="faculty" />
+              </div>
+              <div class="field-group">
+                <label class="field-label">สาขา / Dept.</label>
+                <input class="field-input" type="text" placeholder="ชื่อสาขา"
+                  [(ngModel)]="registerData.department" name="department" />
+              </div>
               <div class="field-group">
                 <label class="field-label">ชั้นปี</label>
                 <select class="field-select" [(ngModel)]="registerData.yearOfStudy" name="yearOfStudy" title="ชั้นปีการศึกษา" (ngModelChange)="onRegisterYearChange()">
@@ -244,28 +272,12 @@
                   }
                 </select>
               </div>
-              <div class="field-group">
-                <label class="field-label">คณะ / Faculty</label>
-                <input class="field-input" type="text" placeholder="ชื่อคณะ"
-                  [(ngModel)]="registerData.faculty" name="faculty" />
-              </div>
-              <div class="field-group">
-                <label class="field-label">สาขา / Dept.</label>
-                <input class="field-input" type="text" placeholder="ชื่อสาขา"
-                  [(ngModel)]="registerData.department" name="department" />
-              </div>
-            </div>
-
-            <div class="field-group">
-              <label class="field-label">อีเมล / Email</label>
-              <input class="field-input" type="email" placeholder="example@email.com"
-                [(ngModel)]="registerData.email" name="email" />
             </div>
 
             <div class="field-row">
               <div class="field-group">
                 <label class="field-label">รหัสผ่าน / Password</label>
-                <input class="field-input" type="password" placeholder="อย่างน้อย 4 ตัว"
+                <input class="field-input" type="password" placeholder="อย่างน้อย 6 ตัว"
                   [(ngModel)]="registerData.password" name="regPassword" />
               </div>
               <div class="field-group">

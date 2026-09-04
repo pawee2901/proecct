@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ApiService } from '../services/api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { UNIVERSITY_OPTIONS } from '../shared/university-options';
 
 interface LoginForm {
   username: string;
@@ -17,6 +18,7 @@ interface RegisterForm {
   password: string;
   confirmPassword: string;
   studentId: string;
+  university: string;
   faculty: string;
   department: string;
   yearOfStudy: string;
@@ -65,6 +67,12 @@ export class LoginRegisterComponent implements OnInit {
     password: '',
   };
 
+  // Datalist options for the University field on the register form -- lets
+  // the browser's native <input list> filter-as-you-type instead of a plain
+  // free-text box, while still accepting any typed value (not every school
+  // is on this list, and it's a free-text column in the DB, not an FK).
+  readonly universityOptions: string[] = UNIVERSITY_OPTIONS;
+
   registerData: RegisterForm = {
     firstName: '',
     lastName: '',
@@ -73,6 +81,7 @@ export class LoginRegisterComponent implements OnInit {
     password: '',
     confirmPassword: '',
     studentId: '',
+    university: '',
     faculty: '',
     department: '',
     yearOfStudy: '',
@@ -274,8 +283,8 @@ export class LoginRegisterComponent implements OnInit {
       this.showError('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
       return;
     }
-    if (d.password.length < 4) {
-      this.showError('รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร');
+    if (d.password.length < 6) {
+      this.showError('รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร');
       return;
     }
     this.loading = true;
@@ -294,7 +303,7 @@ export class LoginRegisterComponent implements OnInit {
       classroom_id: d.role === 'student' && d.classroomId ? d.classroomId : null,
       faculty_name: d.faculty,
       department_name: d.department,
-      university_name: 'มหาวิทยาลัยราชภัฏ',
+      university_name: d.university,
     };
 
     this.apiService.register(payload).subscribe({
@@ -381,8 +390,8 @@ export class LoginRegisterComponent implements OnInit {
       return;
     }
 
-    if (newPassword.length < 4) {
-      this.showError('รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร');
+    if (newPassword.length < 6) {
+      this.showError('รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร');
       return;
     }
 

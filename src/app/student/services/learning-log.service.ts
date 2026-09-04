@@ -29,6 +29,9 @@ export class LearningLogService {
     } catch {
       this.learningLogs = [];
     }
+    if (this.backfillPracticeModes()) {
+      this.saveLearningLogs();
+    }
 
     if (this.session.currentUser && this.session.currentUser.id) {
       this.apiService.getSpeakingHistory(this.session.currentUser.id).subscribe({
@@ -52,6 +55,7 @@ export class LearningLogService {
 
             if (filteredDbLogs.length > 0) {
               this.learningLogs = [...filteredDbLogs, ...this.learningLogs];
+              this.backfillPracticeModes();
               this.learningLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
               this.logsChanged$.next();
             }
@@ -62,6 +66,34 @@ export class LearningLogService {
         },
       });
     }
+  }
+
+  // Entries logged before LearningLogEntry.practiceMode existed (plus the
+  // db-merged ones above, which never set it either) would otherwise never
+  // match any of the 4 per-mode "ประวัติ (ชื่อโหมด)" filters (Practice tab's
+  // own history buttons + Profile's history categories both filter on this
+  // field now) and silently vanish from every one of them. Their title text
+  // has always encoded which mode logged them, so infer it from that once --
+  // returns whether anything changed, so callers know whether to persist.
+  private backfillPracticeModes(): boolean {
+    let changed = false;
+    for (const log of this.learningLogs) {
+      if (log.practiceMode) continue;
+      const title = (log.title || '').toLowerCase();
+      if (title.includes('speech-to-speech') || title.includes('video call')) {
+        log.practiceMode = 'speech-to-speech';
+      } else if (title.includes('text-to-text')) {
+        log.practiceMode = 'text-to-text';
+      } else if (title.includes('speech-to-text')) {
+        log.practiceMode = 'speech-to-text';
+      } else if (title.includes('text-to-speech')) {
+        log.practiceMode = 'text-to-speech';
+      } else {
+        continue; // Games/Lessons/Review entries -- correctly leave untagged
+      }
+      changed = true;
+    }
+    return changed;
   }
 
   saveLearningLogs(): void {

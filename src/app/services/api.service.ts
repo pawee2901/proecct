@@ -39,22 +39,9 @@ export class ApiService {
   }
 
 
-  // ── Student Stats & Details ──
-  getStudents(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/students`);
-  }
-
-  getLeaderboard(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/leaderboard`);
-  }
-
   // ── Lessons & Units ──
   getLessons(): Observable<any> {
     return this.http.get(`${this.baseUrl}/lessons`);
-  }
-
-  getLessonDetail(lessonId: number): Observable<any> {
-    return this.http.get(`${this.baseUrl}/lesson/${lessonId}`);
   }
 
   saveLesson(lessonData: any): Observable<any> {
@@ -65,28 +52,21 @@ export class ApiService {
     return this.http.delete(`${this.baseUrl}/lesson/${lessonId}`);
   }
 
-  saveLessonMaterials(lessonId: number, materials: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/teacher/lesson-materials`, {
-      lesson_id: lessonId,
-      ...materials
-    });
-  }
-
   submitQuizResult(payload: { userId: number; lessonId: number; quizType: string; score: number }): Observable<any> {
     return this.http.post(`${this.baseUrl}/student/quiz-result`, payload);
   }
 
   // ── Teacher-Specific ──
-  getTeacherClasses(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/teacher/classes`);
-  }
-
-  getTeacherAssignments(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/teacher/assignments`);
-  }
-
   getTeacherStudents(): Observable<any> {
     return this.http.get(`${this.baseUrl}/teacher/students`);
+  }
+
+  createTeacherStudent(data: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/teacher/students`, data);
+  }
+
+  updateTeacherStudent(userId: number, data: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/teacher/students/${userId}`, data);
   }
 
   getTeacherStudentScores(userId: number): Observable<any> {
@@ -256,6 +236,57 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/student/progress/${userId}`);
   }
 
+  // เหมือน getTeacherStudentScores() ทุกประการ (backend endpoint เดียวกันแค่คนละ path) —
+  // ให้นักศึกษาดูคะแนน pre/post/game + คะแนนรวม/ผ่านหรือไม่ (AI) ของตัวเองได้โดยตรง
+  getStudentLessonScores(userId: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/student/lesson-scores/${userId}`);
+  }
+
+  // ── Practice Content (สถานการณ์สนทนา Speech-to-Speech + หัวข้อแชท Text-to-Text) ──
+  // แยกตามชั้นปี, อาจารย์แก้ไขเองได้จากหน้า Teacher > จัดการเนื้อหาฝึกฝน (ดู
+  // teacher-practice-content.component.ts) — student-practice.component.ts โหลดมาใช้
+  // แทน teachingLessons/dailyLessons/interviewLessons/practiceChatTopics เดิมที่เคย hardcode
+  getPracticeScenarios(yearLevel: number, category?: string): Observable<any> {
+    let url = `${this.baseUrl}/practice-scenarios?year_level=${yearLevel}`;
+    if (category) url += `&category=${category}`;
+    return this.http.get(url);
+  }
+
+  createPracticeScenario(data: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/practice-scenarios`, data);
+  }
+
+  updatePracticeScenario(scenarioId: number, data: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/practice-scenarios/${scenarioId}`, data);
+  }
+
+  deletePracticeScenario(scenarioId: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/practice-scenarios/${scenarioId}`);
+  }
+
+  getPracticeChatTopics(yearLevel: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/practice-chat-topics?year_level=${yearLevel}`);
+  }
+
+  createPracticeChatTopic(data: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/practice-chat-topics`, data);
+  }
+
+  updatePracticeChatTopic(topicId: number, data: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/practice-chat-topics/${topicId}`, data);
+  }
+
+  deletePracticeChatTopic(topicId: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/practice-chat-topics/${topicId}`);
+  }
+
+  // kind: 'scenario' (ต้องมี category) | 'chat_topic'
+  draftPracticeContent(kind: 'scenario' | 'chat_topic', topicHint: string, yearLevel: number, category?: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/ai/draft-practice-content`, {
+      kind, topic_hint: topicHint, year_level: yearLevel, category,
+    });
+  }
+
   saveVideoProgress(userId: number, videoId: number, xp: number): Observable<any> {
     return this.http.post(`${this.baseUrl}/student/video-progress`, { user_id: userId, video_id: videoId, xp });
   }
@@ -302,20 +333,6 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/ai-speaking/${modeRoute}`, data);
   }
 
-  postLessonAiSpeaking(lessonId: number, modeRoute: string, data: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/lesson/${lessonId}/ai-speaking/${modeRoute}`, data);
-  }
-
-  postAiSpeakingGeneral(data: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/ai-speaking`, data);
-  }
-
-  // Live Speech recording upload (for speech_to_text/speech_to_speech)
-  // Expects FormData containing 'audio', and other options
-  postAudioSpeaking(formData: FormData): Observable<any> {
-    return this.http.post(`${this.baseUrl}/ai-speaking`, formData);
-  }
-
   postSpeakingEvaluation(data: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/ai-speaking/evaluate-session`, data);
   }
@@ -342,17 +359,6 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/ai-speaking/suggest-replies`, { ai_message: aiMessage, context });
   }
 
-  postLessonAudioSpeaking(lessonId: number, modeRoute: string, formData: FormData): Observable<any> {
-    return this.http.post(`${this.baseUrl}/lesson/${lessonId}/ai-speaking/${modeRoute}`, formData);
-  }
-
-  postAiAssistantFile(file: File, prompt: string): Observable<any> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('prompt', prompt);
-    return this.http.post(`${this.baseUrl}/ai-assistant-file`, formData);
-  }
-
   uploadSlidePdf(file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
@@ -367,15 +373,6 @@ export class ApiService {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post(`${this.baseUrl}/upload`, formData);
-  }
-
-  // ── Game Covers ──
-  getGameCovers(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/game-covers`);
-  }
-
-  saveGameCover(gameKey: string, imageUrl: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/game-covers`, { game_key: gameKey, image_url: imageUrl });
   }
 
   // ── Game Contents (เนื้อหา/ชุดคำถามของแต่ละเกม ที่อาจารย์แก้เองได้) ──
@@ -411,10 +408,6 @@ export class ApiService {
   // games.game_id จริง ไม่จำกัดจำนวนเกม, ดู backend/routes/games.py) ──
   getGames(): Observable<any> {
     return this.http.get(`${this.baseUrl}/games`);
-  }
-
-  getGame(gameId: number): Observable<any> {
-    return this.http.get(`${this.baseUrl}/games/${gameId}`);
   }
 
   createGame(data: any): Observable<any> {
@@ -455,18 +448,5 @@ export class ApiService {
 
   deleteVocabHistory(historyId: number): Observable<any> {
     return this.http.delete(`${this.baseUrl}/api/ai/vocab-history/${historyId}`);
-  }
-
-  draftTeacherLesson(title: string, targetLevel: string, sectionCount: number, referenceText?: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/api/ai/draft-teacher-lesson`, {
-      title,
-      targetLevel,
-      sectionCount,
-      referenceText
-    });
-  }
-
-  generatePageImage(prompt: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/api/ai/generate-page-image`, { prompt });
   }
 }

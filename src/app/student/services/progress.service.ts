@@ -21,8 +21,6 @@ export class ProgressService {
   progressReport: ProgressReportEntry[] = [];
   averageScore = 84;
   practiceCount = 12;
-  /** Static placeholder in the original code too — never recalculated. */
-  totalTime = 180;
 
   // Gamification stats (Profile tab)
   dailyStreak = 5;
@@ -133,6 +131,34 @@ export class ProgressService {
       },
       error: () => {
         // เชื่อม backend ไม่ได้ — ใช้ค่าจาก localStorage ที่คำนวณไว้แล้วต่อไป
+      },
+    });
+
+    this.syncOverallScoresFromBackend();
+  }
+
+  /** เติม overallScore/passed/reasoning ต่อบทเรียน (ai/lesson_grading.py รวม pre/post/game
+   *  เป็นคะแนนเดียว + ผ่านหรือไม่ ตามเกณฑ์ที่อาจารย์ตั้งไว้) ให้หน้า Profile ▸ ความก้าวหน้า
+   *  เห็นเหมือนที่อาจารย์เห็นในหน้าคะแนนของนักศึกษาคนนี้ทุกประการ (endpoint เดียวกัน) —
+   *  แยก request จาก syncProgressFromBackend() ด้านบนเพราะคนละ endpoint/shape กัน (นี่คืน
+   *  array ที่มี lesson_id ในตัว ไม่ใช่ dict คีย์ด้วย lesson_id) และไม่อยากให้ endpoint หนึ่ง
+   *  ล้มแล้วบล็อกอีกอันไม่ให้ทำงาน */
+  private syncOverallScoresFromBackend(): void {
+    if (!this.session.currentUser?.id) return;
+    this.apiService.getStudentLessonScores(this.session.currentUser.id).subscribe({
+      next: (rows: { lesson_id: number; overall?: number | null; passed?: boolean | null; reasoning?: string }[]) => {
+        if (!Array.isArray(rows)) return;
+        const byLessonId = new Map(rows.map((r) => [r.lesson_id, r]));
+        this.progressReport.forEach((p) => {
+          const row = byLessonId.get(p.unitId);
+          if (!row) return;
+          p.overallScore = row.overall ?? null;
+          p.passed = row.passed ?? null;
+          p.reasoning = row.reasoning || '';
+        });
+      },
+      error: () => {
+        // เชื่อม backend ไม่ได้ — แสดงแค่ pre/post-test เหมือนเดิม ไม่มีคะแนนรวม/ผ่านหรือไม่
       },
     });
   }

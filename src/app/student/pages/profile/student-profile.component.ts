@@ -32,7 +32,7 @@ export class StudentProfileComponent {
   // ความก้าวหน้า/ทบทวนคำที่เคยผิด — เดิมทุกอันจากเมนู dropdown ของ shell พาเข้ามาที่
   // หน้านี้เหมือนกันหมดแบบไม่แยก sub-view เลย ทำให้เจอทุกอย่างปนกันในหน้าเดียว ยาวจนงง)
   profileSubView: 'main' | 'info' | 'progress' | 'history-categories' | 'category-detail' = 'main';
-  selectedHistoryCategory = 'practice';
+  selectedHistoryCategory = 'speech-to-speech';
   expandedProfileLogIndex: number | null = null;
 
   // ── ข้อมูลโปรไฟล์เต็ม (Profile ▸ ข้อมูลโปรไฟล์) ──
@@ -242,19 +242,21 @@ export class StudentProfileComponent {
 
   getFilteredProfileLogs(category: string): any[] {
     if (!this.learningLog.learningLogs) return [];
-    return this.learningLog.learningLogs.filter((log) => {
-      const typeLower = (log.type || '').toLowerCase();
-      if (category === 'practice') {
-        return typeLower.includes('practice') || typeLower.includes('roleplay') || typeLower.includes('call') || typeLower.includes('speaking');
-      } else if (category === 'test') {
-        return typeLower.includes('test');
-      } else if (category === 'game') {
-        return typeLower.includes('game');
-      } else if (category === 'speaking') {
-        return typeLower.includes('speech-to-text') || typeLower.includes('pronunciation');
-      }
-      return true;
-    });
+    // 'test'/'game' still key off log.type -- Lessons/Games never tag
+    // practiceMode (that's a Practice-tab-only concept). The 4 conversation
+    // modes now filter on the exact practiceMode tag Practice writes on every
+    // entry it logs, instead of the old loose type-string matching, which
+    // lumped Speech-to-Speech/Text-to-Speech/Speech-to-Text together under
+    // "practice" (they're all type: 'Speaking') and left the old "speaking"
+    // category matching nothing at all (it checked log.type for the string
+    // "speech-to-text", which only ever appears in log.title, never .type).
+    if (category === 'test') {
+      return this.learningLog.learningLogs.filter((log) => (log.type || '').toLowerCase().includes('test'));
+    }
+    if (category === 'game') {
+      return this.learningLog.learningLogs.filter((log) => (log.type || '').toLowerCase().includes('game'));
+    }
+    return this.learningLog.learningLogs.filter((log) => log.practiceMode === category);
   }
 
   stripMarkdown(text: string): string {

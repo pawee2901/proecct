@@ -37,6 +37,16 @@ import { LearningLogEntry } from '../../models/unit.model';
 // feature (its modal, SharedUiStateService.showVideoCallModal, and every
 // videoCall*/vcall-* symbol) was removed entirely per product decision —
 // see git history for the prior implementation if it's ever needed again.
+// Also dropped (2026-09 unused-code sweep, confirmed dead the same way):
+// minimalPairsPool/mpPool/mpIndex/mpSelectedAnswer/mpFeedback/mpScore (an
+// unfinished Minimal Pairs game whose state nothing ever read or wrote);
+// showMoreSheet and this component's own showBadgesModal (both stray
+// duplicates of flags SharedUiStateService already owns); stsPendingText/
+// showStsConfirm (an unfinished "confirm before submit" step); closePracticeChat()
+// (no caller); and expandedLogIndex/toggleLogTranscript() (an inline
+// transcript-expand panel in Learning History that nothing could ever
+// trigger — handleHistoryClick opens loadPastChatSession() or a SweetAlert
+// summary instead, never sets expandedLogIndex).
 @Component({
   selector: 'app-student-practice',
   standalone: true,
@@ -46,8 +56,6 @@ import { LearningLogEntry } from '../../models/unit.model';
 })
 export class StudentPracticeComponent implements OnInit, OnDestroy {
   @ViewChild('chatScroll') private chatScrollContainer!: ElementRef;
-
-  expandedLogIndex: number | null = null;
 
   // 🎙️ PRACTICE CENTER VARIABLES & SIMULATION DATA
   // ====================================================
@@ -211,7 +219,12 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   // Each lesson carries a reading passage (article) that is both shown to the
   // student before practice and attached to the AI system prompt as a scope-
   // limiting "security" boundary (see categoryPrompt in sendPracticeMessage()).
-  teachingLessons = [
+  // Hardcoded defaults below are only the initial/error-fallback value now --
+  // loadPracticeContentFromDb() (called from ngOnInit) replaces these with the
+  // teacher-editable, year-level-specific content from practice_scenarios as
+  // soon as it loads (see Teacher > จัดการเนื้อหาฝึกฝน). Typed `any[]` since the
+  // DB rows use a different shape (scenario_id instead of key, no `prompt`).
+  teachingLessons: any[] = [
     { key: 'welcome', titleTh: 'ต้อนรับนักเรียนหน้าชั้นเรียน', titleEn: 'Welcoming Students', description: 'ครูต้อนรับนักเรียนในวันแรกของการเปิดเทอม แนะนำตัวเองและสร้างความประทับใจแรกที่ดี', prompt: 'welcoming students to the classroom on the first day of school', article: `It is the first day of the new school year, and you are meeting your students for the very first time. As their English teacher, you want to make them feel welcome, comfortable, and excited to learn. Teacher Jane will play the role of one of your new students. Greet the class warmly, introduce yourself, tell them a little about what they will learn this year, and ask a friendly question to break the ice, such as their name or what they enjoy. Keep your tone warm, encouraging, and easy to understand, since this is the very first impression your students will have of you.`, vocab: [{ en: 'welcome', th: 'ต้อนรับ' }, { en: 'introduce yourself', th: 'แนะนำตัวเอง' }, { en: 'classroom', th: 'ห้องเรียน' }, { en: 'excited', th: 'ตื่นเต้น' }, { en: 'first impression', th: 'ความประทับใจแรก' }], image: 'ครูยืนหน้าชั้นเรียนที่มีป้าย "Welcome to Our Class!" ประดับสีสันสดใส' },
     { key: 'rules', titleTh: 'อธิบายกฎระเบียบในห้องเรียน', titleEn: 'Explaining Classroom Rules', description: 'ครูอธิบายกฎระเบียบพื้นฐานในห้องเรียนให้นักเรียนเข้าใจตรงกันตั้งแต่ต้นปี', prompt: 'explaining classroom rules to students (like raising hands to speak)', article: `Today you need to explain the classroom rules to your students so that lessons run smoothly all year. Teacher Jane will act as one of your students listening to your instructions. Explain the basic expectations clearly and kindly: raise your hand before speaking, listen quietly when others are talking, arrive on time, and always be respectful to classmates. Use simple, direct language so that even beginner-level students can understand you easily.`, vocab: [{ en: 'classroom rules', th: 'กฎระเบียบห้องเรียน' }, { en: 'raise your hand', th: 'ยกมือ' }, { en: 'respectful', th: 'มีมารยาท' }, { en: 'expectation', th: 'ข้อกำหนด/ความคาดหวัง' }, { en: 'listen quietly', th: 'ฟังอย่างเงียบๆ' }], image: 'โปสเตอร์กฎระเบียบห้องเรียนติดผนัง มีไอคอนประกอบแต่ละข้อ' },
     { key: 'parent', titleTh: 'คุยโทรศัพท์กับผู้ปกครองของนักเรียน', titleEn: 'Calling a Parent', description: 'ครูโทรศัพท์พูดคุยกับผู้ปกครองเพื่อรายงานความก้าวหน้าของนักเรียนอย่างสุภาพ', prompt: 'calling a parent on the phone to discuss their child\'s progress', article: `You need to call one of your student's parents to talk about their child's progress in class. Teacher Jane will play the role of the parent on the phone. Start the call politely, introduce yourself as the child's English teacher, and share both something positive and something the student could improve on. Be professional and supportive, since the parent may be a little worried to receive a call from school.`, vocab: [{ en: 'phone call', th: 'การโทรศัพท์' }, { en: 'progress', th: 'ความก้าวหน้า' }, { en: 'polite', th: 'สุภาพ' }, { en: 'supportive', th: 'ให้กำลังใจ' }, { en: 'concern', th: 'ความกังวล' }], image: 'ครูถือโทรศัพท์คุยอยู่ในห้องพักครู มีสมุดบันทึกผลนักเรียนวางอยู่ข้างๆ' },
@@ -222,7 +235,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     { key: 'examPrep', titleTh: 'เตรียมนักเรียนก่อนสอบ', titleEn: 'Preparing Students for an Exam', description: 'ครูให้คำแนะนำและให้กำลังใจนักเรียนก่อนสอบปลายภาค', prompt: 'preparing a nervous student for an upcoming final exam with study tips and encouragement', article: `The final exam is coming up soon, and you want to prepare your students with useful tips and encouragement. Teacher Jane will play the role of a nervous student. Give practical study tips, explain what topics will be covered, and reassure the student that they can succeed with proper preparation. Keep your tone supportive and confidence-building, since some students may feel anxious about the exam.`, vocab: [{ en: 'exam', th: 'การสอบ' }, { en: 'review', th: 'ทบทวน' }, { en: 'study tip', th: 'เทคนิคการอ่านหนังสือ' }, { en: 'confident', th: 'มั่นใจ' }, { en: 'nervous', th: 'กังวล/ตื่นเต้น' }], image: 'ปฏิทินนับถอยหลังวันสอบพร้อมหนังสือและปากกาไฮไลท์วางซ้อนกัน' },
   ];
 
-  dailyLessons = [
+  dailyLessons: any[] = [
     { key: 'intro', titleTh: 'แนะนำตัวเอง', titleEn: 'Introducing Yourself', description: 'แนะนำตัวเองให้เพื่อนใหม่รู้จัก ทั้งชื่อ ที่มา และสิ่งที่กำลังเรียน', prompt: 'introducing yourself to a new classmate or friend', article: `You have just met a new classmate or friend for the first time, and you want to get to know each other. Introduce yourself with your name, where you are from, and what you are studying or doing. Ask the other person questions about themselves too, such as their name, hobbies, or interests. Keep the conversation friendly, natural, and relaxed, just like a real first conversation between two people getting to know each other.`, vocab: [{ en: 'introduce', th: 'แนะนำตัว' }, { en: 'classmate', th: 'เพื่อนร่วมชั้น' }, { en: 'hobby', th: 'งานอดิเรก' }, { en: 'major', th: 'วิชาเอก' }, { en: 'get to know', th: 'ทำความรู้จัก' }], image: 'นักศึกษาสองคนยิ้มทักทายกันในลานมหาวิทยาลัย ยื่นมือจับมือกัน' },
     { key: 'hobby', titleTh: 'งานอดิเรกและเวลาว่าง', titleEn: 'Hobbies & Free Time', description: 'พูดคุยกับเพื่อนเรื่องงานอดิเรกและกิจกรรมยามว่างที่ชื่นชอบ', prompt: 'chatting about hobbies and how you spend your free time', article: `You are chatting with a friend about hobbies and how you like to spend your free time. Talk about what hobbies or activities you enjoy, how often you do them, and why you like them. Ask your friend about their own hobbies too, and try to find something you both enjoy in common. Keep the conversation light, friendly, and natural.`, vocab: [{ en: 'free time', th: 'เวลาว่าง' }, { en: 'enjoy', th: 'ชื่นชอบ' }, { en: 'in common', th: 'ที่มีร่วมกัน' }, { en: 'relax', th: 'ผ่อนคลาย' }, { en: 'activity', th: 'กิจกรรม' }], image: 'ไอคอนงานอดิเรกหลากหลาย เช่น กีตาร์ หนังสือ จักรยาน กล้องถ่ายรูป จัดวางรอบตัวการ์ตูนคน' },
     { key: 'weekend', titleTh: 'แผนวันหยุดสุดสัปดาห์', titleEn: 'Weekend Plans', description: 'คุยกับเพื่อนเรื่องแผนการใช้เวลาช่วงวันหยุดสุดสัปดาห์', prompt: 'talking about weekend plans with a friend', article: `It's Friday afternoon, and you are talking with a friend about your plans for the weekend. Share what you are planning to do this weekend, whether it's relaxing at home, going out with friends, or doing something new. Ask your friend about their weekend plans as well, and react naturally to what they share.`, vocab: [{ en: 'weekend', th: 'วันหยุดสุดสัปดาห์' }, { en: 'plan', th: 'วางแผน' }, { en: 'go out', th: 'ออกไปเที่ยว' }, { en: 'relax', th: 'พักผ่อน' }, { en: 'Friday', th: 'วันศุกร์' }], image: 'ปฏิทินตั้งโต๊ะเปิดหน้าวันเสาร์-อาทิตย์ มีไอคอนกิจกรรมพักผ่อนล้อมรอบ' },
@@ -233,7 +246,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     { key: 'technology', titleTh: 'เทคโนโลยีและโซเชียลมีเดียในชีวิตประจำวัน', titleEn: 'Technology & Social Media', description: 'พูดคุยเรื่องการใช้เทคโนโลยีและโซเชียลมีเดียในชีวิตประจำวัน', prompt: 'chatting about technology and social media use in daily life', article: `You are chatting with a friend about technology and social media use in everyday life. Talk about which apps you use most, how social media affects your day, and share your opinion on spending less or more time online. Ask your friend the same.`, vocab: [{ en: 'social media', th: 'โซเชียลมีเดีย' }, { en: 'app', th: 'แอปพลิเคชัน' }, { en: 'screen time', th: 'เวลาหน้าจอ' }, { en: 'online', th: 'ออนไลน์' }, { en: 'opinion', th: 'ความคิดเห็น' }], image: 'มือถือแสดงไอคอนแอปโซเชียลมีเดียหลายแอปลอยอยู่รอบจอ' },
   ];
 
-  interviewLessons = [
+  interviewLessons: any[] = [
     { key: 'school', titleTh: 'ตำแหน่งครูสอนภาษาอังกฤษในโรงเรียน', titleEn: 'English Teacher at a Local School', description: 'สัมภาษณ์งานตำแหน่งครูสอนภาษาอังกฤษที่โรงเรียนทั่วไป', prompt: 'interviewing for an English teacher position at a local school', article: `You are applying for an English teacher position at a local school. The interview panel wants to know about your teaching philosophy, classroom management skills, and how you communicate with parents. Before the interview begins, think about your reasons for choosing this profession and your plans for professional growth.`, vocab: [{ en: 'teaching philosophy', th: 'ปรัชญาการสอน' }, { en: 'classroom management', th: 'การบริหารจัดการชั้นเรียน' }, { en: 'qualification', th: 'คุณสมบัติ' }, { en: 'strength', th: 'จุดแข็ง' }, { en: 'professional growth', th: 'การพัฒนาวิชาชีพ' }], image: 'โต๊ะสัมภาษณ์งานพร้อมเรซูเม่และคณะกรรมการนั่งฝั่งตรงข้าม' },
     { key: 'international', titleTh: 'ตำแหน่งครูโรงเรียนนานาชาติ', titleEn: 'English Teacher at an International School', description: 'สัมภาษณ์งานตำแหน่งครูสอนภาษาอังกฤษที่โรงเรียนนานาชาติ', prompt: 'interviewing for an English teacher position at an international school', article: `You are interviewing for an English teacher position at an international school with high academic standards. The principal wants to understand your teaching methods, how you handle student-centered learning, and your approach to classroom discipline and parent communication.`, vocab: [{ en: 'student-centered', th: 'เน้นผู้เรียนเป็นศูนย์กลาง' }, { en: 'academic standard', th: 'มาตรฐานวิชาการ' }, { en: 'principal', th: 'ผู้อำนวยการ' }, { en: 'approach', th: 'แนวทาง' }, { en: 'expectation', th: 'ความคาดหวัง' }], image: 'ธงชาติหลายประเทศแขวนในห้องเรียนนานาชาติ' },
     { key: 'languageCenter', titleTh: 'ติวเตอร์สถาบันสอนภาษา', titleEn: 'Tutor at a Language Center', description: 'สัมภาษณ์งานตำแหน่งติวเตอร์ที่สถาบันสอนภาษาเอกชน', prompt: 'interviewing for a tutor position at a private language center', article: `You are interviewing for a teaching position at a private language center known for its fun, energetic teaching style. The interviewer wants to know about the interactive activities and games you use to keep students engaged, as well as how you handle lively or distracted students.`, vocab: [{ en: 'energetic', th: 'กระตือรือร้น' }, { en: 'interactive activity', th: 'กิจกรรมเชิงโต้ตอบ' }, { en: 'engage', th: 'ดึงดูดความสนใจ' }, { en: 'lively', th: 'คึกคัก' }, { en: 'tutor', th: 'ติวเตอร์' }], image: 'ห้องเรียนสีสันสดใสพร้อมของเล่นการศึกษาและป้ายคำศัพท์' },
@@ -328,7 +341,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   // evaluator speech-to-speech/text-to-text use, once, when the round ends
   // (see nextSentence()/evaluateSttSession() below).
   private sttLastElapsedSeconds = 0;
-  private sttSessionAttempts: { target: string; transcript: string; elapsedSeconds: number }[] = [];
+  private sttSessionAttempts: { target: string; transcript: string; elapsedSeconds: number; score: number }[] = [];
   sttSessionFeedback: string | null = null;
   isEvaluatingSttSession = false;
 
@@ -374,28 +387,6 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   }[] = [];
   ttsDictationFeedback: string | null = null;
   isEvaluatingTtsDictation = false;
-
-  minimalPairsPool = [
-    { word1: 'ship', word2: 'sheep', meaning1: 'เรือ', meaning2: 'แกะ', correct: 'sheep' },
-    { word1: 'ship', word2: 'sheep', meaning1: 'เรือ', meaning2: 'แกะ', correct: 'ship' },
-    { word1: 'bad', word2: 'bed', meaning1: 'เลว/แย่', meaning2: 'เตียงนอน', correct: 'bad' },
-    { word1: 'bad', word2: 'bed', meaning1: 'เลว/แย่', meaning2: 'เตียงนอน', correct: 'bed' },
-    { word1: 'think', word2: 'sink', meaning1: 'คิด', meaning2: 'อ่างล้างจาน/จม', correct: 'think' },
-    { word1: 'think', word2: 'sink', meaning1: 'คิด', meaning2: 'อ่างล้างจาน/จม', correct: 'sink' },
-    { word1: 'live', word2: 'leave', meaning1: 'อาศัยอยู่', meaning2: 'จากไป/ออกจาก', correct: 'live' },
-    { word1: 'live', word2: 'leave', meaning1: 'อาศัยอยู่', meaning2: 'จากไป/ออกจาก', correct: 'leave' },
-    { word1: 'fan', word2: 'van', meaning1: 'พัดลม', meaning2: 'รถตู้', correct: 'fan' },
-    { word1: 'fan', word2: 'van', meaning1: 'พัดลม', meaning2: 'รถตู้', correct: 'van' },
-    { word1: 'wet', word2: 'vet', meaning1: 'เปียก', meaning2: 'สัตวแพทย์', correct: 'wet' },
-    { word1: 'wet', word2: 'vet', meaning1: 'เปียก', meaning2: 'สัตวแพทย์', correct: 'vet' },
-    { word1: 'fit', word2: 'feet', meaning1: 'พอดี', meaning2: 'เท้า', correct: 'fit' },
-    { word1: 'fit', word2: 'feet', meaning1: 'พอดี', meaning2: 'เท้า', correct: 'feet' }
-  ];
-  mpPool: any[] = [];
-  mpIndex = 0;
-  mpSelectedAnswer = '';
-  mpFeedback: 'correct' | 'wrong' | '' = '';
-  mpScore = 0;
 
   // Mistakes Review Hub
   frequentlyWrongItems: { id: string; type: 'word' | 'sentence' | 'grammar'; original: string; correct: string; clue?: string; wrongCount: number }[] = [];
@@ -447,7 +438,11 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   textPracticeSubMode: 'menu' | 'chat' | 'qa' = 'menu';
 
   // ── Text-to-Text "Chat" sub-mode: random roleplay topic (Duolingo-style) ──
-  practiceChatTopics: { id: number; icon: string; titleTh: string; titleEn: string; scenario: string }[] = [
+  // Hardcoded default below is only the initial/error-fallback value now --
+  // loadPracticeContentFromDb() replaces it with year-level-specific content
+  // from practice_chat_topics as soon as it loads. `any[]` since DB rows use
+  // `topic_id` instead of `id`.
+  practiceChatTopics: any[] = [
     { id: 1, icon: '👋', titleTh: 'ทักทายและแนะนำตัว', titleEn: 'Greetings & Introductions', scenario: 'You are meeting a new international student on campus for the first time. Greet them and introduce yourself.' },
     { id: 2, icon: '🍽️', titleTh: 'สั่งอาหารที่ร้านอาหาร', titleEn: 'Ordering at a Restaurant', scenario: 'You are a waiter/waitress at a restaurant taking the customer\'s food order.' },
     { id: 3, icon: '📞', titleTh: 'รับสายโทรศัพท์ในสำนักงาน', titleEn: 'Answering an Office Call', scenario: 'You are a receptionist answering a phone call at a school office.' },
@@ -457,7 +452,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     { id: 7, icon: '💼', titleTh: 'สัมภาษณ์งานเบื้องต้น', titleEn: 'A Basic Job Interview', scenario: 'You are an interviewer asking a candidate basic job interview questions.' },
     { id: 8, icon: '🛒', titleTh: 'ซื้อของที่ร้านสะดวกซื้อ', titleEn: 'Shopping at a Convenience Store', scenario: 'You are a shop clerk helping a customer find and pay for items.' },
   ];
-  currentChatTopic: { id: number; icon: string; titleTh: string; titleEn: string; scenario: string } | null = null;
+  currentChatTopic: any | null = null;
 
   // ── End-of-conversation AI summary report ──
   chatSummaryVisible = false;
@@ -492,18 +487,28 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   // ====================================================
   // 🦉 DUOLINGO-STYLE EXTRA FEATURES
   // ====================================================
-  showMoreSheet = false;
   showVoiceSettingsModal = false;
   showHistoryModal = false;
-  showBadgesModal = false;
 
   // Profile History Sub-View Control
   profileSubView: 'main' | 'category-detail' = 'main';
   selectedHistoryCategory = 'practice';
   expandedProfileLogIndex: number | null = null;
 
-  // History Sidebar Panel in Text-to-Text Mode
+  // History panel -- shared across all 4 Practice modes, each with its own
+  // "ประวัติ (ชื่อโหมด)" button in its own workspace header. Text-to-Text
+  // renders it as the original sliding sidebar (its layout has room next to
+  // the chat); the other 3 modes render it as a modal (see historyModalMode
+  // check further down the template) since their layouts don't have a
+  // side pane to slide one into.
   showHistoryPanel = false;
+  historyPanelMode: 'speech-to-speech' | 'text-to-text' | 'speech-to-text' | 'text-to-speech' = 'text-to-text';
+  readonly historyModeLabels: Record<string, string> = {
+    'speech-to-speech': 'Speech-to-Speech',
+    'text-to-text': 'Text-to-Text',
+    'speech-to-text': 'Speech-to-Text',
+    'text-to-speech': 'Text-to-Speech',
+  };
 
   // Voice Settings Options
   voiceEffectsEnabled = true;
@@ -512,10 +517,6 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   thaiTranslationsEnabled = true;
   thaiSubtitlesEnabled = true;
   useWhisperSpeech = true;
-
-  // Speech Confirmation State
-  stsPendingText = '';
-  showStsConfirm = false;
 
   private aiResponseDb: { [key: number]: { userKeyword: string; reply: string }[] } = {
     1: [
@@ -618,10 +619,38 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.initPracticeCenter();
+    this.loadPracticeContentFromDb();
     const pendingLog = this.practiceSession.takePendingResumeLog();
     if (pendingLog) {
       this.loadPastChatSession(pendingLog);
     }
+  }
+
+  // เดิม teachingLessons/dailyLessons/interviewLessons/practiceChatTopics เป็นชุดเดียวกัน
+  // hardcode ตายตัวไม่ว่านักศึกษาจะอยู่ชั้นปีไหน อาจารย์แก้ไม่ได้เลย — ตอนนี้โหลดจาก
+  // practice_scenarios/practice_chat_topics ที่กรองตาม activeYearLevel จริงแทน (อาจารย์แก้ไข
+  // ได้จากหน้า Teacher > จัดการเนื้อหาฝึกฝน) ปีที่ยังไม่มีเนื้อหาจริงจะได้ array ว่างเปล่า
+  // (ตั้งใจ — ไม่ fallback กลับไปโชว์เนื้อหาปี 1 ให้ปีอื่น เพราะนั่นคือปัญหาเดิมที่แก้อยู่นี้)
+  // ยกเว้นตอน request ล้มเหลวจริง (เช่น เน็ตหลุด) ถึงจะคงค่า hardcode เดิมไว้กันหน้าว่างเปล่า
+  private loadPracticeContentFromDb(): void {
+    const year = this.session.activeYearLevel || 1;
+
+    this.apiService.getPracticeScenarios(year, 'teaching').subscribe({
+      next: (data: any[]) => { if (Array.isArray(data)) this.teachingLessons = data; },
+      error: () => {},
+    });
+    this.apiService.getPracticeScenarios(year, 'daily').subscribe({
+      next: (data: any[]) => { if (Array.isArray(data)) this.dailyLessons = data; },
+      error: () => {},
+    });
+    this.apiService.getPracticeScenarios(year, 'interview').subscribe({
+      next: (data: any[]) => { if (Array.isArray(data)) this.interviewLessons = data; },
+      error: () => {},
+    });
+    this.apiService.getPracticeChatTopics(year).subscribe({
+      next: (data: any[]) => { if (Array.isArray(data)) this.practiceChatTopics = data; },
+      error: () => {},
+    });
   }
 
   getInitial(): string {
@@ -1395,6 +1424,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
         title: `Text-to-Speech Dictation (${this.ttsDictationResults.length} ข้อ)`,
         score: avgScore,
         xp: Math.min(30, this.ttsDictationResults.length * 3),
+        practiceMode: 'text-to-speech',
         // เดิมยัดผล "target -> answer (score%)" ลงในช่อง transcript แล้วโชว์เป็นบับเบิล
         // แชท ทั้งที่แบบฝึกหัดนี้ไม่มีบทสนทนาจริง (แค่ฟัง-พิมพ์ทีละคำ) ทำให้ดูแปลกเพราะ
         // ทุกบับเบิลถูก label เป็น "คุณ" หมด — เก็บเป็น report (shape เดียวกับ
@@ -1578,19 +1608,6 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     return `Hello ${studentName}! I am your AI partner. Let's start practicing!`;
   }
 
-  closePracticeChat(): void {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-    this.isPlayingTTS = false;
-    this.aiWriting = false;
-
-    this.textPracticeSubMode = 'menu';
-    this.practiceMode = 'menu';
-    this.currentChatTopic = null;
-    this.chatSummaryVisible = false;
-  }
-
   enterTextPracticeSubMode(subMode: 'chat' | 'qa') {
     this.textPracticeSubMode = subMode;
     this.practiceMessages = [];
@@ -1609,12 +1626,71 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleHistoryPanel() {
-    this.showHistoryPanel = !this.showHistoryPanel;
-    this.gameFx.playSoundEffect('click');
-    if (this.showHistoryPanel) {
+  toggleHistoryPanel(mode: 'speech-to-speech' | 'text-to-text' | 'speech-to-text' | 'text-to-speech') {
+    // Clicking a different mode's button while a panel is already open
+    // switches it to that mode instead of closing; only clicking the same
+    // mode's button again (or the panel's own × button) closes it.
+    if (this.showHistoryPanel && this.historyPanelMode === mode) {
+      this.showHistoryPanel = false;
+    } else {
+      this.historyPanelMode = mode;
+      this.showHistoryPanel = true;
       this.learningLog.loadLearningLogs();
     }
+    this.gameFx.playSoundEffect('click');
+  }
+
+  // Each mode's history button only ever wants its own entries -- Games/
+  // Lessons/Review logs (practiceMode undefined) and the other 3 modes'
+  // entries never show up here.
+  get historyLogsForCurrentPanel(): LearningLogEntry[] {
+    return this.learningLog.learningLogs.filter((l) => l.practiceMode === this.historyPanelMode);
+  }
+
+  // "View details" for the 3 modal-based history panels (Speech-to-Speech,
+  // Speech-to-Text, Text-to-Speech). Deliberately NOT handleHistoryClick()
+  // -- that method's transcript branch calls loadPastChatSession(), which
+  // hardcodes practiceMode = 'text-to-text' to resume the session inline
+  // next to the chat box. Speech-to-Speech logs carry a transcript too, so
+  // reusing it here would silently yank the student into Text-to-Text mode.
+  // This just shows a read-only summary instead, same info handleHistoryClick's
+  // own non-transcript branch already shows, plus a transcript/wordResults
+  // preview inline since there's no sidebar to expand them in.
+  viewHistoryLogDetail(log: LearningLogEntry): void {
+    const dateFormatted = new Date(log.date).toLocaleString('th-TH', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+
+    const transcriptHtml = log.transcript?.length
+      ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;max-height:220px;overflow-y:auto;text-align:left;">
+          ${log.transcript.map((m) => `<p style="margin:4px 0;"><strong>${m.sender === 'user' ? 'คุณ' : 'AI'}:</strong> ${this.gameFx.stripMarkdown(m.text)}</p>`).join('')}
+         </div>`
+      : '';
+
+    const wordResultsHtml = log.wordResults?.length
+      ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;max-height:220px;overflow-y:auto;text-align:left;">
+          ${log.wordResults.map((w) => `<p style="margin:4px 0;display:flex;justify-content:space-between;gap:10px;"><span>${w.text}</span><span style="color:${w.score >= 70 ? '#10b981' : '#ef4444'};font-weight:700;white-space:nowrap;">${w.userAnswer || '—'} (${w.score}%)</span></p>`).join('')}
+         </div>`
+      : '';
+
+    Swal.fire({
+      title: log.title,
+      html: `
+        <div style="text-align: left; font-size: 0.9rem; line-height: 1.6; color: #475569; padding: 0.5rem 0;">
+          <p style="margin: 6px 0;"><strong>วันที่ทำกิจกรรม:</strong> ${dateFormatted}</p>
+          ${log.score !== undefined ? `<p style="margin: 6px 0;"><strong>คะแนนสำเร็จ:</strong> <span style="color: #0d9488; font-weight: 800;">${log.score}%</span></p>` : ''}
+          <p style="margin: 6px 0;"><strong>คะแนนประสบการณ์ที่ได้รับ:</strong> <span style="color: #10b981; font-weight: 800;">+${log.xp} XP</span></p>
+          ${log.report?.overall ? `<p style="margin: 10px 0 0; padding-top: 10px; border-top: 1px solid #f1f5f9; white-space: pre-line;">${log.report.overall}</p>` : ''}
+          ${log.report?.tips?.length ? `<p style="margin: 8px 0 0; padding-top: 8px; border-top: 1px solid #f1f5f9; white-space: pre-line;"><strong>💡 คำแนะนำ:</strong><br>${log.report.tips.join('<br>')}</p>` : ''}
+          ${transcriptHtml}
+          ${wordResultsHtml}
+        </div>
+      `,
+      icon: 'success',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#0d9488',
+    });
   }
 
   // ให้ AI เป็นคนเปิดบทสนทนาตามหัวข้อที่สุ่มได้ (เรียก backend จริง ไม่ใช้ข้อความตายตัว)
@@ -1750,6 +1826,7 @@ Start the conversation naturally and in character with a short opening line (1-2
       title: `Text-to-Text Chat${this.currentChatTopic ? ': ' + this.currentChatTopic.titleTh : ''}`,
       score: this.chatSummaryReport?.scores?.total,
       xp: 20,
+      practiceMode: 'text-to-text',
       transcript: this.practiceMessages.map((m) => ({
         sender: m.sender,
         text: m.text,
@@ -1790,12 +1867,6 @@ Start the conversation naturally and in character with a short opening line (1-2
       })
       .subscribe({ error: () => {} }); // best-effort -- student's own summary already shown either way
   }
-
-  toggleLogTranscript(index: number): void {
-    this.expandedLogIndex = this.expandedLogIndex === index ? null : index;
-  }
-
-
 
   // --- Turn control: starts/stops both the live transcript and the audio
   // recording together (mic button click, and auto-resume between turns) ---
@@ -1882,6 +1953,7 @@ Start the conversation naturally and in character with a short opening line (1-2
     this.practiceMessages = [];
     this.recognizedText = '';
     this.practiceMode = 'menu';
+    this.showHistoryPanel = false;
     this.ttsDictationStep = 'setup';
     this.ttsDictationPlaybackToken++; // invalidate any pending timer/callback
     this.ttsDictationIsPlaying = false;
@@ -1941,6 +2013,7 @@ Start the conversation naturally and in character with a short opening line (1-2
           title: `Speaking Practice (${this.practiceMode === 'speech-to-speech' ? 'Speech-to-Speech' : 'Video Call'})`,
           score: res.total_score,
           xp: 30,
+          practiceMode: 'speech-to-speech',
           transcript: this.practiceMessages.map((m: any) => ({ sender: m.sender, text: m.text })),
           report: {
             overall: res.feedback || 'ประเมินผลการฝึกพูดของคุณเรียบร้อยแล้ว',
@@ -2401,6 +2474,7 @@ Start the conversation naturally and in character with a short opening line (1-2
         target: currentTarget,
         transcript: this.recognizedText,
         elapsedSeconds: this.sttLastElapsedSeconds,
+        score: this.sttFinalScore ?? 0,
       });
       // If the combined score is null or less than 100, add to wrong list
       if (this.sttFinalScore === null || this.sttFinalScore < 100) {
@@ -2482,6 +2556,33 @@ Start the conversation naturally and in character with a short opening line (1-2
         next: (res: any) => {
           this.isEvaluatingSttSession = false;
           this.sttSessionFeedback = res?.feedback || null;
+
+          // Push a history entry too -- same wordResults shape as the
+          // Text-to-Speech dictation log (per-sentence text/answer/score)
+          // since this mode also has no real back-and-forth to show as a
+          // transcript, just sentences read aloud one at a time.
+          const avgScore = res.total_score ?? Math.round(
+            this.sttSessionAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / this.sttSessionAttempts.length
+          );
+          this.learningLog.learningLogs.unshift({
+            date: new Date(),
+            type: 'Speaking',
+            title: `Speech-to-Text Practice (${this.sttSessionAttempts.length} ประโยค)`,
+            score: avgScore,
+            xp: 20,
+            practiceMode: 'speech-to-text',
+            wordResults: this.sttSessionAttempts.map((a) => ({
+              text: a.target,
+              userAnswer: a.transcript,
+              score: a.score,
+            })),
+            report: {
+              overall: res.feedback || 'ประเมินผลการอ่านออกเสียงของคุณเรียบร้อยแล้ว',
+              corrections: [],
+              tips: [],
+            },
+          });
+          this.learningLog.saveLearningLogs();
         },
         error: () => {
           this.isEvaluatingSttSession = false;
@@ -2502,6 +2603,7 @@ Start the conversation naturally and in character with a short opening line (1-2
 
     this.practiceSentences = [...this.sttOriginalSentences];
     this.practiceMode = 'menu';
+    this.showHistoryPanel = false;
     this.sttStep = 'setup';
     this.showSttReviewModal = false;
   }
@@ -2587,13 +2689,13 @@ IMPORTANT: If the student made any grammar or spelling mistake in their message,
           categoryPrompt = `You are roleplaying in the scenario: ${this.currentChatTopic.titleEn} (${this.currentChatTopic.scenario}). Help the student practice English language commonly used in this situation.`;
         } else if (this.selectedCategory === 'teaching') {
           if (this.selectedLesson) {
-            categoryPrompt = `You are roleplaying in a School/Classroom setting for the lesson "${this.selectedLesson.titleEn}" (${this.selectedLesson.prompt}). Reading passage / scope for this lesson:\n"""${this.selectedLesson.article}"""\nStay strictly within the situation described above (setting, characters, topic). If the student goes off-topic, answer briefly and politely, then steer the conversation back to this scenario.`;
+            categoryPrompt = `You are roleplaying in a School/Classroom setting for the lesson "${this.selectedLesson.titleEn}". Reading passage / scope for this lesson:\n"""${this.selectedLesson.article}"""\nStay strictly within the situation described above (setting, characters, topic). If the student goes off-topic, answer briefly and politely, then steer the conversation back to this scenario.`;
           } else {
             categoryPrompt = `You are roleplaying in a School/Classroom setting. Help the student practice English language commonly used by English Teachers (e.g. welcoming students, managing the classroom, giving instructions, talking to parent).`;
           }
         } else if (this.selectedCategory === 'daily') {
           if (this.selectedLesson) {
-            categoryPrompt = `You are roleplaying in a casual daily-life conversation about "${this.selectedLesson.titleEn}" (${this.selectedLesson.prompt}). Reading passage / scope for this topic:\n"""${this.selectedLesson.article}"""\nStay within this topic. If the student goes off-topic, answer briefly and politely, then steer the conversation back to this topic.`;
+            categoryPrompt = `You are roleplaying in a casual daily-life conversation about "${this.selectedLesson.titleEn}". Reading passage / scope for this topic:\n"""${this.selectedLesson.article}"""\nStay within this topic. If the student goes off-topic, answer briefly and politely, then steer the conversation back to this topic.`;
           } else {
             categoryPrompt = `You are roleplaying in a casual daily life setting. Chat about hobbies, routines, travel, food, or general greetings.`;
           }

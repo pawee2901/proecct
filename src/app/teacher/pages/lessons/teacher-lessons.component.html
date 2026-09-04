@@ -90,7 +90,54 @@
         </div>
       </div>
 
-      <form class="editor-form" style="display: flex; flex-direction: column; gap: 1.6rem; margin-top: 1rem;">
+      <!-- กล่องนำทาง 4 ส่วนของฟอร์มแก้ไขบทเรียน — กดแล้วสลับไปแสดงเฉพาะส่วนนั้น แทนการ
+           เลื่อนดูฟอร์มยาวๆ ทีเดียว ทุกช่องยังอยู่ใน <form> เดียวกันเสมอ (แค่ซ่อน/แสดงด้วย
+           @if) ข้อมูลเลยไม่หายตอนสลับกล่อง และปุ่ม Save ด้านบนบันทึกทุกส่วนพร้อมกันเสมอ -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-top: 1.25rem;">
+        <button
+          type="button"
+          (click)="activeEditTab = 'lesson'"
+          [style.border]="activeEditTab === 'lesson' ? '2px solid #0d9488' : '1.5px solid #e2e8f0'"
+          [style.background]="activeEditTab === 'lesson' ? 'rgba(13, 148, 136, 0.06)' : '#ffffff'"
+          style="display: flex; align-items: center; gap: 0.6rem; padding: 0.85rem 1rem; border-radius: 16px; cursor: pointer; text-align: left; transition: all 0.15s;"
+        >
+          <span style="font-size: 1.4rem;">📘</span>
+          <span style="font-size: 0.82rem; font-weight: 800; color: #0f172a;">บทเรียน</span>
+        </button>
+        <button
+          type="button"
+          (click)="activeEditTab = 'vocab'"
+          [style.border]="activeEditTab === 'vocab' ? '2px solid #0d9488' : '1.5px solid #e2e8f0'"
+          [style.background]="activeEditTab === 'vocab' ? 'rgba(13, 148, 136, 0.06)' : '#ffffff'"
+          style="display: flex; align-items: center; gap: 0.6rem; padding: 0.85rem 1rem; border-radius: 16px; cursor: pointer; text-align: left; transition: all 0.15s;"
+        >
+          <span style="font-size: 1.4rem;">📚</span>
+          <span style="font-size: 0.82rem; font-weight: 800; color: #0f172a;">คลังคำศัพท์ประจำบทเรียน</span>
+        </button>
+        <button
+          type="button"
+          (click)="activeEditTab = 'fullquiz'"
+          [style.border]="activeEditTab === 'fullquiz' ? '2px solid #0d9488' : '1.5px solid #e2e8f0'"
+          [style.background]="activeEditTab === 'fullquiz' ? 'rgba(13, 148, 136, 0.06)' : '#ffffff'"
+          style="display: flex; align-items: center; gap: 0.6rem; padding: 0.85rem 1rem; border-radius: 16px; cursor: pointer; text-align: left; transition: all 0.15s;"
+        >
+          <span style="font-size: 1.4rem;">📝</span>
+          <span style="font-size: 0.82rem; font-weight: 800; color: #0f172a;">แบบทดสอบหลายตอน</span>
+        </button>
+        <button
+          type="button"
+          (click)="activeEditTab = 'ai'"
+          [style.border]="activeEditTab === 'ai' ? '2px solid #0d9488' : '1.5px solid #e2e8f0'"
+          [style.background]="activeEditTab === 'ai' ? 'rgba(13, 148, 136, 0.06)' : '#ffffff'"
+          style="display: flex; align-items: center; gap: 0.6rem; padding: 0.85rem 1rem; border-radius: 16px; cursor: pointer; text-align: left; transition: all 0.15s;"
+        >
+          <span style="font-size: 1.4rem;">⚙️</span>
+          <span style="font-size: 0.82rem; font-weight: 800; color: #0f172a;">เกณฑ์คะแนน & คำสั่งให้ AI</span>
+        </button>
+      </div>
+
+      <form class="editor-form" style="display: flex; flex-direction: column; gap: 1.6rem; margin-top: 1.25rem;">
+        @if (activeEditTab === 'lesson') {
         <div class="form-group-flat">
           <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">ชื่อบทเรียน (English Title)</label>
           <input type="text" class="filter-input" style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.65rem 0.9rem; width: 100%; box-sizing: border-box; background: #ffffff;" [(ngModel)]="editingLesson.name" name="lessonName" placeholder="เช่น Unit 1: Welcoming Students" />
@@ -430,7 +477,9 @@
             </button>
           </div>
         </div>
+        } <!-- /activeEditTab === 'lesson' (part 1) -->
 
+        @if (activeEditTab === 'vocab') {
         <!-- คลังคำศัพท์ -->
         <div class="section-container">
           <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">คลังคำศัพท์ประจำบทเรียน (Vocabulary Manager)</h4>
@@ -465,7 +514,220 @@
             เพิ่มคำศัพท์ใหม่ / Add Vocabulary
           </button>
         </div>
+        } <!-- /activeEditTab === 'vocab' -->
 
+        @if (activeEditTab === 'lesson') {
+        <!-- แบบทดสอบก่อนเรียน (Pre-Test) / แบบทดสอบหลังเรียน (Post-Test) — ซ่อนทั้งคู่ถ้า
+             บทเรียนนี้เปิดใช้แบบทดสอบหลายตอนอยู่แล้ว (แท็บ "แบบทดสอบหลายตอน") เพราะ
+             fullQuiz แทนที่ preQuiz/postQuiz ทั้งคู่อยู่แล้วฝั่งนักศึกษา (ดู
+             student-lessons.component.html: !lessonsData.currentUnit.fullQuiz) เก็บชุดง่ายนี้ไว้
+             ให้เฉพาะบทเรียนที่ยังไม่มีแบบทดสอบหลายตอน -->
+        @if (!editingLesson.fullQuiz) {
+        <!-- แบบทดสอบก่อนเรียน (Pre-Test) -->
+        <div class="section-container">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">แบบทดสอบก่อนเรียน (Pre-Test)</h4>
+          <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">คำถามแบบเลือกตอบที่นักศึกษาต้องทำก่อนเริ่มเรียนบทนี้ ใช้วัดพื้นฐานความรู้เดิม คะแนนคิดจากสัดส่วนข้อที่ตอบถูกทั้งหมด</p>
+
+          @for (q of editingLesson.preQuiz; track $index; let qi = $index) {
+            <div style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; margin-bottom: 0.85rem; background: #fafafa;">
+              <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.65rem;">
+                <span style="font-weight: 800; color: #0d9488; white-space: nowrap;">ข้อ {{ qi + 1 }}</span>
+                <input type="text" class="filter-input" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff;" [(ngModel)]="q.question" name="preQ_{{qi}}" placeholder="พิมพ์คำถาม" />
+                <button type="button" class="btn-reject" (click)="removeQuizQuestion('preQuiz', qi)">ลบข้อนี้</button>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-left: 2.75rem;">
+                @for (opt of q.options; track $index; let oi = $index) {
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="radio" [name]="'preAns_' + qi" [checked]="q.answer === oi" (change)="setQuizAnswer('preQuiz', qi, oi)" title="เลือกเป็นคำตอบที่ถูกต้อง" />
+                    <input type="text" class="filter-input" [style.border]="q.answer === oi ? '1.5px solid #10b981' : '1px solid #e2e8f0'" style="flex: 1; border-radius: 10px; padding: 0.4rem 0.7rem; background: #ffffff;" [(ngModel)]="q.options[oi]" name="preOpt_{{qi}}_{{oi}}" placeholder="ตัวเลือกคำตอบ" />
+                    <button type="button" class="btn-reject" style="padding: 0.2rem 0.55rem;" (click)="removeQuizOption('preQuiz', qi, oi)" [disabled]="q.options.length <= 2" title="ลบตัวเลือกนี้">✕</button>
+                  </div>
+                }
+                <button type="button" class="btn-primary-action outline" style="align-self: flex-start; margin-top: 0.3rem; font-size: 0.75rem; padding: 0.35rem 0.75rem;" (click)="addQuizOption('preQuiz', qi)">+ เพิ่มตัวเลือก</button>
+              </div>
+            </div>
+          } @empty {
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.85rem;">ยังไม่มีคำถามแบบทดสอบก่อนเรียน</p>
+          }
+
+          <button type="button" class="btn-primary-action outline" (click)="addQuizQuestion('preQuiz')">
+            เพิ่มคำถามก่อนเรียน / Add Pre-Test Question
+          </button>
+        </div>
+
+        <!-- แบบทดสอบหลังเรียน (Post-Test) -->
+        <div class="section-container">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">แบบทดสอบหลังเรียน (Post-Test)</h4>
+          <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">คำถามแบบเลือกตอบที่นักศึกษาต้องทำหลังเรียนจบบทนี้ ใช้วัดความเข้าใจหลังเรียน คะแนนคิดจากสัดส่วนข้อที่ตอบถูกทั้งหมด</p>
+
+          @for (q of editingLesson.postQuiz; track $index; let qi = $index) {
+            <div style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; margin-bottom: 0.85rem; background: #fafafa;">
+              <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.65rem;">
+                <span style="font-weight: 800; color: #0d9488; white-space: nowrap;">ข้อ {{ qi + 1 }}</span>
+                <input type="text" class="filter-input" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff;" [(ngModel)]="q.question" name="postQ_{{qi}}" placeholder="พิมพ์คำถาม" />
+                <button type="button" class="btn-reject" (click)="removeQuizQuestion('postQuiz', qi)">ลบข้อนี้</button>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-left: 2.75rem;">
+                @for (opt of q.options; track $index; let oi = $index) {
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="radio" [name]="'postAns_' + qi" [checked]="q.answer === oi" (change)="setQuizAnswer('postQuiz', qi, oi)" title="เลือกเป็นคำตอบที่ถูกต้อง" />
+                    <input type="text" class="filter-input" [style.border]="q.answer === oi ? '1.5px solid #10b981' : '1px solid #e2e8f0'" style="flex: 1; border-radius: 10px; padding: 0.4rem 0.7rem; background: #ffffff;" [(ngModel)]="q.options[oi]" name="postOpt_{{qi}}_{{oi}}" placeholder="ตัวเลือกคำตอบ" />
+                    <button type="button" class="btn-reject" style="padding: 0.2rem 0.55rem;" (click)="removeQuizOption('postQuiz', qi, oi)" [disabled]="q.options.length <= 2" title="ลบตัวเลือกนี้">✕</button>
+                  </div>
+                }
+                <button type="button" class="btn-primary-action outline" style="align-self: flex-start; margin-top: 0.3rem; font-size: 0.75rem; padding: 0.35rem 0.75rem;" (click)="addQuizOption('postQuiz', qi)">+ เพิ่มตัวเลือก</button>
+              </div>
+            </div>
+          } @empty {
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.85rem;">ยังไม่มีคำถามแบบทดสอบหลังเรียน</p>
+          }
+
+          <button type="button" class="btn-primary-action outline" (click)="addQuizQuestion('postQuiz')">
+            เพิ่มคำถามหลังเรียน / Add Post-Test Question
+          </button>
+        </div>
+        } @else {
+        <div class="section-container">
+          <p style="font-size: 0.8rem; color: #94a3b8;">บทเรียนนี้เปิดใช้ "แบบทดสอบหลายตอน" อยู่แล้ว (ดูแท็บ "แบบทดสอบหลายตอน" ด้านบน) จึงไม่ต้องตั้งค่าแบบทดสอบก่อน/หลังเรียนแบบง่ายซ้ำ — ถ้าต้องการกลับมาใช้แบบทดสอบแบบง่าย ให้ไปลบแบบทดสอบหลายตอนออกก่อนในแท็บนั้น</p>
+        </div>
+        }
+        } <!-- /activeEditTab === 'lesson' (part 2) -->
+
+        @if (activeEditTab === 'fullquiz') {
+        <!-- แบบทดสอบหลายตอน (Full Quiz: Part A/B/C) — ใช้แทนแบบทดสอบก่อน/หลังเรียนธรรมดา
+             ด้านบนทั้งคู่เมื่อเปิดใช้งาน (ข้อสอบชุดเดียวกันให้ทำทั้งก่อนและหลังเรียน) -->
+        <div class="section-container">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">แบบทดสอบหลายตอน (Full Quiz: Part A/B/C)</h4>
+          <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">ข้อสอบชุดใหญ่แบบมีหลายส่วน (ปรนัย / จับคู่ / เรียงลำดับ-พูดตอบ) — ถ้าเปิดใช้ นักศึกษาจะทำชุดนี้แทนแบบทดสอบก่อน/หลังเรียนแบบง่ายด้านบนทั้งคู่ (ใช้ข้อสอบชุดเดียวกันทั้งก่อนและหลังเรียน แยกแค่คะแนนที่บันทึก)</p>
+
+          @if (!editingLesson.fullQuiz) {
+            <button type="button" class="btn-primary-action outline" (click)="ensureFullQuiz()">
+              + เปิดใช้แบบทดสอบหลายตอน / Enable Full Quiz
+            </button>
+          } @else {
+            <!-- Part A: ปรนัย -->
+            <div style="margin-bottom: 1.5rem;">
+              <h5 style="font-size: 0.86rem; font-weight: 800; color: #0d9488; margin-bottom: 0.5rem;">Part A — ปรนัย (Multiple Choice)</h5>
+              @for (q of editingLesson.fullQuiz.partA; track $index; let qi = $index) {
+                <div style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; margin-bottom: 0.85rem; background: #fafafa;">
+                  <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.65rem;">
+                    <span style="font-weight: 800; color: #0d9488; white-space: nowrap;">ข้อ {{ qi + 1 }}</span>
+                    <input type="text" class="filter-input" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff;" [(ngModel)]="q.question" name="fqaQ_{{qi}}" placeholder="พิมพ์คำถาม" />
+                    <button type="button" class="btn-reject" (click)="removeFullQuizPartA(qi)">ลบข้อนี้</button>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-left: 2.75rem;">
+                    @for (opt of q.options; track $index; let oi = $index) {
+                      <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="radio" [name]="'fqaAns_' + qi" [checked]="q.answer === oi" (change)="setFullQuizPartAAnswer(qi, oi)" title="เลือกเป็นคำตอบที่ถูกต้อง" />
+                        <input type="text" class="filter-input" [style.border]="q.answer === oi ? '1.5px solid #10b981' : '1px solid #e2e8f0'" style="flex: 1; border-radius: 10px; padding: 0.4rem 0.7rem; background: #ffffff;" [(ngModel)]="q.options[oi]" name="fqaOpt_{{qi}}_{{oi}}" placeholder="ตัวเลือกคำตอบ" />
+                        <button type="button" class="btn-reject" style="padding: 0.2rem 0.55rem;" (click)="removeFullQuizPartAOption(qi, oi)" [disabled]="q.options.length <= 2" title="ลบตัวเลือกนี้">✕</button>
+                      </div>
+                    }
+                    <button type="button" class="btn-primary-action outline" style="align-self: flex-start; margin-top: 0.3rem; font-size: 0.75rem; padding: 0.35rem 0.75rem;" (click)="addFullQuizPartAOption(qi)">+ เพิ่มตัวเลือก</button>
+                  </div>
+                </div>
+              } @empty {
+                <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.85rem;">ยังไม่มีคำถาม Part A</p>
+              }
+              <button type="button" class="btn-primary-action outline" (click)="addFullQuizPartA()">+ เพิ่มคำถาม Part A</button>
+            </div>
+
+            <!-- Part B: จับคู่ -->
+            <div style="margin-bottom: 1.5rem;">
+              <h5 style="font-size: 0.86rem; font-weight: 800; color: #0d9488; margin-bottom: 0.5rem;">Part B — จับคู่ (Matching)</h5>
+              <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.65rem;">ตั้งตัวเลือกคำตอบ (Replies) ก่อน แล้วค่อยระบุว่าประโยคแต่ละข้อ (Expressions) จับคู่กับตัวเลือกไหนถูกต้อง</p>
+
+              <div style="margin-bottom: 0.85rem;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: #475569;">ตัวเลือกคำตอบ (Replies)</span>
+                @for (r of editingLesson.fullQuiz.partB.replies; track $index; let ri = $index) {
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem;">
+                    <span style="font-weight: 800; color: #0d9488; width: 1.2rem;">{{ r.key }}.</span>
+                    <input type="text" class="filter-input" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.4rem 0.7rem; background: #ffffff;" [(ngModel)]="r.text" name="fqbReply_{{ri}}" placeholder="ข้อความตัวเลือก" />
+                    <button type="button" class="btn-reject" style="padding: 0.2rem 0.55rem;" (click)="removeFullQuizPartBReply(ri)" title="ลบตัวเลือกนี้">✕</button>
+                  </div>
+                } @empty {
+                  <p style="font-size: 0.78rem; color: #94a3b8; margin: 0.4rem 0;">ยังไม่มีตัวเลือกคำตอบ</p>
+                }
+                <button type="button" class="btn-primary-action outline" style="margin-top: 0.5rem; font-size: 0.75rem; padding: 0.35rem 0.75rem;" (click)="addFullQuizPartBReply()">+ เพิ่มตัวเลือกคำตอบ</button>
+              </div>
+
+              <div>
+                <span style="font-size: 0.78rem; font-weight: 700; color: #475569;">ประโยค (Expressions) + คำตอบที่ถูกต้อง</span>
+                @for (expr of editingLesson.fullQuiz.partB.expressions; track $index; let ei = $index) {
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem;">
+                    <span style="font-weight: 800; color: #0d9488; white-space: nowrap;">{{ ei + 1 }}.</span>
+                    <input type="text" class="filter-input" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.4rem 0.7rem; background: #ffffff;" [(ngModel)]="editingLesson.fullQuiz.partB.expressions[ei]" name="fqbExpr_{{ei}}" placeholder="ข้อความประโยค" />
+                    <select class="field-select" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.4rem 0.6rem; background: #ffffff;" [ngModel]="editingLesson.fullQuiz.partB.answers[ei]" (ngModelChange)="setFullQuizPartBAnswer(ei, $event)" name="fqbAns_{{ei}}" title="คำตอบที่ถูกต้อง">
+                      <option value="">เลือกคำตอบ</option>
+                      @for (r of editingLesson.fullQuiz.partB.replies; track r.key) {
+                        <option [value]="r.key">{{ r.key }}</option>
+                      }
+                    </select>
+                    <button type="button" class="btn-reject" style="padding: 0.2rem 0.55rem;" (click)="removeFullQuizPartBExpression(ei)" title="ลบประโยคนี้">✕</button>
+                  </div>
+                } @empty {
+                  <p style="font-size: 0.78rem; color: #94a3b8; margin: 0.4rem 0;">ยังไม่มีประโยค</p>
+                }
+                <button type="button" class="btn-primary-action outline" style="margin-top: 0.5rem; font-size: 0.75rem; padding: 0.35rem 0.75rem;" (click)="addFullQuizPartBExpression()">+ เพิ่มประโยค</button>
+              </div>
+            </div>
+
+            <!-- Part C Order: เรียงลำดับ (optional) -->
+            <div style="margin-bottom: 1.5rem;">
+              <h5 style="font-size: 0.86rem; font-weight: 800; color: #0d9488; margin-bottom: 0.5rem;">Part C — เรียงลำดับ (Put in Order) <span style="font-weight: 600; color: #94a3b8;">(ไม่บังคับ)</span></h5>
+              @if (!editingLesson.fullQuiz.partCOrder) {
+                <button type="button" class="btn-primary-action outline" (click)="enableFullQuizPartCOrder()">+ เพิ่มส่วนเรียงลำดับ</button>
+              } @else {
+                <input type="text" class="filter-input" style="width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff; margin-bottom: 0.65rem;" [(ngModel)]="editingLesson.fullQuiz.partCOrder.instruction" name="fqOrderInstruction" placeholder="คำสั่ง เช่น เรียงบทสนทนาต่อไปนี้ให้ถูกลำดับ" />
+                @for (item of editingLesson.fullQuiz.partCOrder.items; track $index; let oi = $index) {
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+                    <span style="font-weight: 800; color: #0d9488; white-space: nowrap;">ลำดับที่ {{ item.correctPosition + 1 }}</span>
+                    <input type="text" class="filter-input" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.4rem 0.7rem; background: #ffffff;" [(ngModel)]="item.text" name="fqOrderItem_{{oi}}" placeholder="ข้อความ (จะสลับลำดับให้นักศึกษาเรียงใหม่)" />
+                    <button type="button" class="btn-reject" style="padding: 0.2rem 0.55rem;" (click)="removeFullQuizPartCOrderItem(oi)" title="ลบรายการนี้">✕</button>
+                  </div>
+                } @empty {
+                  <p style="font-size: 0.78rem; color: #94a3b8; margin: 0.4rem 0;">ยังไม่มีรายการให้เรียง</p>
+                }
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                  <button type="button" class="btn-primary-action outline" style="font-size: 0.75rem; padding: 0.35rem 0.75rem;" (click)="addFullQuizPartCOrderItem()">+ เพิ่มรายการ</button>
+                  <button type="button" class="btn-reject" style="font-size: 0.75rem; padding: 0.35rem 0.75rem;" (click)="removeFullQuizPartCOrder()">ลบส่วนเรียงลำดับทั้งหมด</button>
+                </div>
+              }
+            </div>
+
+            <!-- Part C: พูดตอบ -->
+            <div style="margin-bottom: 0.5rem;">
+              <h5 style="font-size: 0.86rem; font-weight: 800; color: #0d9488; margin-bottom: 0.5rem;">Part C — พูดตอบ (Speaking, AI ตรวจจากคำตอบตัวอย่าง)</h5>
+              @for (q of editingLesson.fullQuiz.partC; track $index; let qi = $index) {
+                <div style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; margin-bottom: 0.85rem; background: #fafafa;">
+                  <div style="display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 0.65rem;">
+                    <span style="font-weight: 800; color: #0d9488; white-space: nowrap; padding-top: 0.5rem;">สถานการณ์ {{ qi + 1 }}</span>
+                    <textarea class="filter-input" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.55rem 0.85rem; background: #ffffff; min-height: 70px;" [(ngModel)]="q.contextText" name="fqcContext_{{qi}}" placeholder="บทสนทนา/สถานการณ์ (ใช้ (1) (2) ระบุจุดที่ต้องพูดตอบ)"></textarea>
+                    <button type="button" class="btn-reject" (click)="removeFullQuizPartC(qi)">ลบข้อนี้</button>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-left: 6.5rem;">
+                    @for (sub of q.subQuestions; track $index; let si = $index) {
+                      <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="text" class="filter-input" style="width: 30%; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.4rem 0.7rem; background: #ffffff;" [(ngModel)]="sub.label" name="fqcLabel_{{qi}}_{{si}}" placeholder="ป้ายกำกับ เช่น Guest พูดว่า (1):" />
+                        <input type="text" class="filter-input" style="flex: 1; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.4rem 0.7rem; background: #ffffff;" [(ngModel)]="sub.sampleAnswer" name="fqcSample_{{qi}}_{{si}}" placeholder="คำตอบตัวอย่าง (ให้ AI ใช้ตรวจ)" />
+                        <button type="button" class="btn-reject" style="padding: 0.2rem 0.55rem;" (click)="removeFullQuizPartCSubQ(qi, si)" [disabled]="q.subQuestions.length <= 1" title="ลบข้อย่อยนี้">✕</button>
+                      </div>
+                    }
+                    <button type="button" class="btn-primary-action outline" style="align-self: flex-start; margin-top: 0.3rem; font-size: 0.75rem; padding: 0.35rem 0.75rem;" (click)="addFullQuizPartCSubQ(qi)">+ เพิ่มข้อย่อย</button>
+                  </div>
+                </div>
+              } @empty {
+                <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.85rem;">ยังไม่มีสถานการณ์พูดตอบ</p>
+              }
+              <button type="button" class="btn-primary-action outline" (click)="addFullQuizPartC()">+ เพิ่มสถานการณ์พูดตอบ</button>
+            </div>
+
+            <button type="button" class="btn-reject" style="margin-top: 0.5rem;" (click)="removeFullQuiz()">ลบแบบทดสอบหลายตอนทั้งหมด</button>
+          }
+        </div>
+        } <!-- /activeEditTab === 'fullquiz' -->
+
+        @if (activeEditTab === 'ai') {
         <!-- เกณฑ์คะแนน & คำสั่งให้ AI ต่อบทเรียน -->
         @if (editingLesson.id) {
           <div class="section-container">
@@ -499,6 +761,7 @@
             <p style="font-size: 0.8rem; color: #94a3b8;">บันทึกบทเรียนนี้ก่อน แล้วค่อยกลับมาตั้งเกณฑ์คะแนน/คำสั่งให้ AI ได้ทีหลัง</p>
           </div>
         }
+        } <!-- /activeEditTab === 'ai' -->
 
       </form>
     </div>

@@ -4,6 +4,7 @@ import { TeacherShellComponent } from './teacher/shell/teacher-shell.component';
 import { TeacherStudentsComponent } from './teacher/pages/students/teacher-students.component';
 import { TeacherLessonsComponent } from './teacher/pages/lessons/teacher-lessons.component';
 import { TeacherGameCoversComponent } from './teacher/pages/game-covers/teacher-game-covers.component';
+import { TeacherPracticeContentComponent } from './teacher/pages/practice-content/teacher-practice-content.component';
 import { TeacherProfileComponent } from './teacher/pages/profile/teacher-profile.component';
 import { AdminShellComponent } from './admin/shell/admin-shell.component';
 import { AdminOverviewComponent } from './admin/pages/overview/admin-overview.component';
@@ -46,6 +47,7 @@ export const routes: Routes = [
       { path: 'students', component: TeacherStudentsComponent },
       { path: 'lessons', component: TeacherLessonsComponent },
       { path: 'game-covers', component: TeacherGameCoversComponent },
+      { path: 'practice-content', component: TeacherPracticeContentComponent },
       { path: 'profile', component: TeacherProfileComponent },
     ],
   },

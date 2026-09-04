@@ -211,14 +211,15 @@
   grid-template-columns: 0.85fr 1.05fr 1.3fr 1.3fr;
 }
 /* มือถือทั่วไป (375-430px) ยังคงเป็น 2 คอลัมน์อยู่ ไม่ยืดยาวเป็นแถวเดียว —
-   field-row-3/4 ยุบเหลือ 2 คอลัมน์ แล้วให้ช่องสุดท้าย (สาขา) กว้างเต็มแถวถัดไป */
+   field-row-3 (3 ช่อง) ยุบเหลือ 2 คอลัมน์ แล้วให้ช่องสุดท้ายกว้างเต็มแถวถัดไป
+   field-row-4 (4 ช่อง: ชั้นปี/ห้องเรียน/คณะ/สาขา) พอดี 2 คอลัมน์ x 2 แถวอยู่แล้ว
+   จึงไม่ต้องบังคับช่องสุดท้ายให้เต็มแถว — ปล่อยให้ "สาขา" จับคู่กับ "คณะ" ตามลำดับปกติ */
 @media (max-width: 520px) {
   .field-row-3,
   .field-row-4 {
     grid-template-columns: 1fr 1fr;
   }
-  .field-row-3 .field-group:last-child,
-  .field-row-4 .field-group:last-child {
+  .field-row-3 .field-group:last-child {
     grid-column: 1 / -1;
   }
 }

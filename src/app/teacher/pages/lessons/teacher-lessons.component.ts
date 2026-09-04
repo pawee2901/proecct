@@ -23,6 +23,11 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
   editingLesson: any = null;
   isCreatingNew = false;
 
+  // Which of the 4 nav boxes at the top of the edit form is showing --
+  // reset to 'lesson' every time a lesson is opened/created so it doesn't
+  // stay stuck on e.g. 'ai' from the previously edited lesson.
+  activeEditTab: 'lesson' | 'vocab' | 'fullquiz' | 'ai' = 'lesson';
+
   // เกณฑ์คะแนน/คำสั่งให้ AI ต่อบทเรียน (ai_grading_instruction ฯลฯ) — โหลด/บันทึกแยก
   // จาก saveLesson() หลัก เพราะผูกกับ lesson_id จริงใน DB เท่านั้น (บทเรียนที่ยังไม่ได้
   // บันทึกครั้งแรกจะยังไม่มีให้ตั้งค่า)
@@ -96,6 +101,7 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
   editLesson(lesson: any): void {
     this.editingLesson = { ...lesson };
     this.isCreatingNew = false;
+    this.activeEditTab = 'lesson';
     this.loadLessonAiSettings(lesson.id);
 
     // Parse allowed games from contents if present
@@ -140,6 +146,12 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
     this.editingLesson.assessments = Array.isArray(lesson.assessments) ? lesson.assessments : (typeof lesson.assessments === 'string' ? JSON.parse(lesson.assessments) : []);
     this.editingLesson.preQuiz = Array.isArray(lesson.preQuiz) ? lesson.preQuiz : (typeof lesson.preQuiz === 'string' ? JSON.parse(lesson.preQuiz) : []);
     this.editingLesson.postQuiz = Array.isArray(lesson.postQuiz) ? lesson.postQuiz : (typeof lesson.postQuiz === 'string' ? JSON.parse(lesson.postQuiz) : []);
+    // แบบทดสอบหลายตอน (Part A ปรนัย / Part B จับคู่ / Part C เรียงลำดับ-พูดตอบ) — ถ้ามีจะถูกใช้
+    // แทนแบบทดสอบก่อน/หลังเรียนธรรมดาด้านบนทั้งคู่ (ดู student-lessons.component.html:
+    // !lessonsData.currentUnit.fullQuiz) null/undefined = บทเรียนนี้ยังไม่ใช้แบบทดสอบหลายตอน
+    this.editingLesson.fullQuiz = typeof lesson.fullQuiz === 'string'
+      ? (() => { try { return JSON.parse(lesson.fullQuiz); } catch { return null; } })()
+      : (lesson.fullQuiz || null);
     // Custom Game Creator Studio content — actually load whatever was saved
     // for THIS lesson (lesson_contents row, title='custom_games') instead of
     // always resetting to the same hardcoded placeholder example on every
@@ -189,9 +201,11 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
       objectives: [],
       assessments: [],
       preQuiz: [],
-      postQuiz: []
+      postQuiz: [],
+      fullQuiz: null
     };
     this.isCreatingNew = true;
+    this.activeEditTab = 'lesson';
     // บทเรียนใหม่ยังไม่มี lesson_id จริง — ต้องบันทึกบทเรียนก่อน แล้วค่อยกลับมาตั้งเกณฑ์ AI ทีหลัง
     this.aiSettings = { pass_threshold: null, game_weight: null, test_weight: null, ai_grading_instruction: null };
   }
@@ -444,6 +458,126 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
   }
   setQuizAnswer(field: 'preQuiz' | 'postQuiz', qIdx: number, optIdx: number): void {
     this.getQuizArray(field)[qIdx].answer = optIdx;
+  }
+
+  // ── Full Quiz (Part A/B/C multi-part exam) Helper Methods ──
+  // The real Pre-Test/Post-Test students take for Unit 1-5 today -- used to be
+  // hardcoded entirely in the frontend (lessons-data.service.ts), never
+  // touched the DB or any teacher UI. Now lives in lessons.full_quiz and is
+  // editable here. When present, it REPLACES both the simple preQuiz/postQuiz
+  // above for this lesson (see student-lessons.component.html:
+  // !lessonsData.currentUnit.fullQuiz) -- the same exam is given both before
+  // and after the lesson, just scored under separate pre/post keys.
+  ensureFullQuiz(): void {
+    if (!this.editingLesson.fullQuiz) {
+      this.editingLesson.fullQuiz = {
+        partA: [],
+        partB: { expressions: [], replies: [], answers: [] },
+        partC: [],
+      };
+    }
+  }
+
+  removeFullQuiz(): void {
+    Swal.fire({
+      icon: 'warning',
+      title: 'ลบแบบทดสอบหลายตอนทั้งหมด?',
+      text: 'นักศึกษาจะกลับไปทำแบบทดสอบก่อน/หลังเรียนแบบง่ายด้านบนแทน',
+      showCancelButton: true,
+      confirmButtonText: 'ลบเลย',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#dc2626',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.editingLesson.fullQuiz = null;
+      }
+    });
+  }
+
+  // Part A — ปรนัย (Multiple Choice)
+  addFullQuizPartA(): void {
+    this.ensureFullQuiz();
+    this.editingLesson.fullQuiz.partA.push({ question: '', options: ['', ''], answer: 0 });
+  }
+  removeFullQuizPartA(qIdx: number): void {
+    this.editingLesson.fullQuiz.partA.splice(qIdx, 1);
+  }
+  addFullQuizPartAOption(qIdx: number): void {
+    this.editingLesson.fullQuiz.partA[qIdx].options.push('');
+  }
+  removeFullQuizPartAOption(qIdx: number, optIdx: number): void {
+    const q = this.editingLesson.fullQuiz.partA[qIdx];
+    q.options.splice(optIdx, 1);
+    if (q.answer >= q.options.length) q.answer = 0;
+  }
+  setFullQuizPartAAnswer(qIdx: number, optIdx: number): void {
+    this.editingLesson.fullQuiz.partA[qIdx].answer = optIdx;
+  }
+
+  // Part B — จับคู่ (Matching): "expressions" is the numbered prompt list,
+  // "replies" the lettered response bank, "answers[i]" the reply key that's
+  // the correct match for expressions[i] (kept in sync by index).
+  addFullQuizPartBExpression(): void {
+    this.ensureFullQuiz();
+    this.editingLesson.fullQuiz.partB.expressions.push('');
+    this.editingLesson.fullQuiz.partB.answers.push('');
+  }
+  removeFullQuizPartBExpression(idx: number): void {
+    this.editingLesson.fullQuiz.partB.expressions.splice(idx, 1);
+    this.editingLesson.fullQuiz.partB.answers.splice(idx, 1);
+  }
+  addFullQuizPartBReply(): void {
+    this.ensureFullQuiz();
+    const replies = this.editingLesson.fullQuiz.partB.replies;
+    const nextKey = String.fromCharCode(97 + replies.length); // a, b, c, ...
+    replies.push({ key: nextKey, text: '' });
+  }
+  removeFullQuizPartBReply(idx: number): void {
+    const partB = this.editingLesson.fullQuiz.partB;
+    const removedKey = partB.replies[idx].key;
+    partB.replies.splice(idx, 1);
+    partB.answers = partB.answers.map((a: string) => (a === removedKey ? '' : a));
+  }
+  setFullQuizPartBAnswer(exprIdx: number, key: string): void {
+    this.editingLesson.fullQuiz.partB.answers[exprIdx] = key;
+  }
+
+  // Part C Order — เรียงลำดับ (optional; not every lesson has this part)
+  enableFullQuizPartCOrder(): void {
+    this.ensureFullQuiz();
+    if (!this.editingLesson.fullQuiz.partCOrder) {
+      this.editingLesson.fullQuiz.partCOrder = { instruction: '', items: [] };
+    }
+  }
+  removeFullQuizPartCOrder(): void {
+    this.editingLesson.fullQuiz.partCOrder = undefined;
+  }
+  addFullQuizPartCOrderItem(): void {
+    const items = this.editingLesson.fullQuiz.partCOrder.items;
+    items.push({ text: '', correctPosition: items.length });
+  }
+  removeFullQuizPartCOrderItem(idx: number): void {
+    const items = this.editingLesson.fullQuiz.partCOrder.items;
+    items.splice(idx, 1);
+    items.forEach((it: any, i: number) => (it.correctPosition = i));
+  }
+
+  // Part C — พูดตอบ (Speaking, graded by AI against a sample answer)
+  addFullQuizPartC(): void {
+    this.ensureFullQuiz();
+    this.editingLesson.fullQuiz.partC.push({
+      contextText: '',
+      subQuestions: [{ label: '', sampleAnswer: '' }],
+    });
+  }
+  removeFullQuizPartC(qIdx: number): void {
+    this.editingLesson.fullQuiz.partC.splice(qIdx, 1);
+  }
+  addFullQuizPartCSubQ(qIdx: number): void {
+    this.editingLesson.fullQuiz.partC[qIdx].subQuestions.push({ label: '', sampleAnswer: '' });
+  }
+  removeFullQuizPartCSubQ(qIdx: number, subIdx: number): void {
+    this.editingLesson.fullQuiz.partC[qIdx].subQuestions.splice(subIdx, 1);
   }
 
   getPreGame(): string {

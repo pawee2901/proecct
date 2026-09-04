@@ -1,0 +1,7 @@
+@use '../../shared' as *;
+
+// จัดการเนื้อหาฝึกฝน — ทุก class ที่ใช้ (section-container, courses-grid, course-card,
+// btn-primary-action, cute-table, ฯลฯ) มาจาก shared partial ด้านบนทั้งหมด เหมือน
+// teacher-lessons.component.scss/teacher-game-covers.component.scss ทุกประการ — ไฟล์นี้
+// เคยว่างเปล่า (ไม่มี @use เลย) ทำให้ view encapsulation ของ Angular กันไม่ให้ style จาก
+// _shared.scss มาถึงหน้านี้เลยสักบรรทัด การ์ดเลยเรนเดอร์เป็นข้อความเปล่าไม่มีสไตล์

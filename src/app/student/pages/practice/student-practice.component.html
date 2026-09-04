@@ -12,30 +12,30 @@
                 <ellipse cx="100" cy="178" rx="46" ry="40" fill="#FFFFFF"/>
                 <ellipse cx="100" cy="183" rx="33" ry="28" fill="#F8F8FF"/>
                 <!-- Left Wing (resting) -->
-                <path d="M 54,178 C 36,168 23,152 27,139 C 31,127 44,132 51,144 C 57,155 57,169 54,178 Z" fill="#E8E4FF"/>
+                <path d="M 54,178 C 36,168 23,152 27,139 C 31,127 44,132 51,144 C 57,155 57,169 54,178 Z" fill="#F1F5F4"/>
                 <!-- Right Wing (waving) -->
                 <g class="duck-wing-wave">
-                  <path d="M 148,170 C 166,157 180,140 175,127 C 170,114 157,120 152,133 C 147,145 145,160 148,170 Z" fill="#E8E4FF"/>
-                  <path d="M 175,127 Q 184,117 189,124" fill="none" stroke="#D8D4F8" stroke-width="5" stroke-linecap="round"/>
-                  <path d="M 172,122 Q 179,111 185,116" fill="none" stroke="#D8D4F8" stroke-width="4" stroke-linecap="round"/>
+                  <path d="M 148,170 C 166,157 180,140 175,127 C 170,114 157,120 152,133 C 147,145 145,160 148,170 Z" fill="#F1F5F4"/>
+                  <path d="M 175,127 Q 184,117 189,124" fill="none" stroke="#D9E6E3" stroke-width="5" stroke-linecap="round"/>
+                  <path d="M 172,122 Q 179,111 185,116" fill="none" stroke="#D9E6E3" stroke-width="4" stroke-linecap="round"/>
                 </g>
                 <!-- Head -->
                 <circle cx="100" cy="98" r="52" fill="#FFFFFF"/>
                 <!-- Hair tuft -->
-                <path d="M 94,47 Q 90,35 98,32 Q 96,41 100,47 Q 107,34 114,36 Q 111,44 106,49" fill="#E8E4FF" stroke="#D8D4F8" stroke-width="1"/>
+                <path d="M 94,47 Q 90,35 98,32 Q 96,41 100,47 Q 107,34 114,36 Q 111,44 106,49" fill="#F1F5F4" stroke="#D9E6E3" stroke-width="1"/>
                 <!-- Headphone band -->
                 <path d="M 50,94 Q 54,46 100,44 Q 146,46 150,94" fill="none" stroke="#0d9488" stroke-width="6" stroke-linecap="round"/>
                 <!-- Left ear cup -->
-                <ellipse cx="50" cy="97" rx="14" ry="16" fill="#9B8DF8"/>
+                <ellipse cx="50" cy="97" rx="14" ry="16" fill="#5EEAD4"/>
                 <ellipse cx="50" cy="97" rx="9" ry="11" fill="#0d9488"/>
                 <ellipse cx="50" cy="97" rx="5" ry="6" fill="#0f766e"/>
                 <!-- Right ear cup -->
-                <ellipse cx="150" cy="97" rx="14" ry="16" fill="#9B8DF8"/>
+                <ellipse cx="150" cy="97" rx="14" ry="16" fill="#5EEAD4"/>
                 <ellipse cx="150" cy="97" rx="9" ry="11" fill="#0d9488"/>
                 <ellipse cx="150" cy="97" rx="5" ry="6" fill="#0f766e"/>
                 <!-- Mic arm -->
                 <path d="M 138,118 Q 148,127 144,140" fill="none" stroke="#0d9488" stroke-width="3.5" stroke-linecap="round"/>
-                <circle cx="144" cy="143" r="6" fill="#9B8DF8"/>
+                <circle cx="144" cy="143" r="6" fill="#5EEAD4"/>
                 <circle cx="144" cy="143" r="3.5" fill="#0d9488"/>
                 <!-- Left Eye -->
                 <circle cx="82" cy="95" r="14" fill="#3D2005"/>
@@ -56,11 +56,11 @@
                 <path d="M 88,122 Q 100,128 112,122" fill="#FF8FA3"/>
                 <!-- Speech bubble - mini loading (hidden/opacity-reduced) -->
                 <g class="speech-bubble-anim" style="opacity: 0.15;">
-                  <rect x="130" y="40" width="62" height="38" rx="12" fill="white" stroke="#D8D4F8" stroke-width="1.5"/>
-                  <path d="M 144,78 L 138,90 L 152,78 Z" fill="white" stroke="#D8D4F8" stroke-width="1.5" stroke-linejoin="round"/>
-                  <circle cx="149" cy="59" r="5" fill="#C8C0FF"/>
-                  <circle cx="161" cy="59" r="5" fill="#C8C0FF"/>
-                  <circle cx="173" cy="59" r="5" fill="#C8C0FF"/>
+                  <rect x="130" y="40" width="62" height="38" rx="12" fill="white" stroke="#D9E6E3" stroke-width="1.5"/>
+                  <path d="M 144,78 L 138,90 L 152,78 Z" fill="white" stroke="#D9E6E3" stroke-width="1.5" stroke-linejoin="round"/>
+                  <circle cx="149" cy="59" r="5" fill="#5EEAD4"/>
+                  <circle cx="161" cy="59" r="5" fill="#5EEAD4"/>
+                  <circle cx="173" cy="59" r="5" fill="#5EEAD4"/>
                 </g>
               </svg>
 
@@ -299,10 +299,10 @@
                 @if (textPracticeSubMode !== 'menu') {
                   <button
                     class="toggle-qa-btn animate-scale"
-                    (click)="toggleHistoryPanel()"
+                    (click)="toggleHistoryPanel('text-to-text')"
                     style="background: #0f766e; color: white; border: none; padding: 6px 14px; border-radius: 12px; font-weight: 800; font-size: 0.76rem; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);"
                   >
-                    <span>📜</span> {{ showHistoryPanel ? 'ปิดประวัติสนทนา' : 'ดูประวัติแชทย้อนหลัง' }}
+                    <span>📜</span> {{ showHistoryPanel && historyPanelMode === 'text-to-text' ? 'ปิดประวัติ (Text-to-Text)' : 'ประวัติ (Text-to-Text)' }}
                   </button>
                 }
               </div>
@@ -431,30 +431,30 @@
                   </div>
 
                   <!-- Right Side: Sliding History Sidebar Panel -->
-                  <div class="qa-sidebar-panel animate-scale" 
-                       [style.width]="showHistoryPanel ? '360px' : '0px'" 
-                       [style.min-width]="showHistoryPanel ? '360px' : '0px'"
-                       [style.opacity]="showHistoryPanel ? '1' : '0'"
-                       [style.visibility]="showHistoryPanel ? 'visible' : 'hidden'"
-                       [style.pointer-events]="showHistoryPanel ? 'auto' : 'none'"
-                       [style.border]="showHistoryPanel ? '1px solid var(--slate-150)' : 'none'"
+                  <div class="qa-sidebar-panel animate-scale"
+                       [style.width]="showHistoryPanel && historyPanelMode === 'text-to-text' ? '360px' : '0px'"
+                       [style.min-width]="showHistoryPanel && historyPanelMode === 'text-to-text' ? '360px' : '0px'"
+                       [style.opacity]="showHistoryPanel && historyPanelMode === 'text-to-text' ? '1' : '0'"
+                       [style.visibility]="showHistoryPanel && historyPanelMode === 'text-to-text' ? 'visible' : 'hidden'"
+                       [style.pointer-events]="showHistoryPanel && historyPanelMode === 'text-to-text' ? 'auto' : 'none'"
+                       [style.border]="showHistoryPanel && historyPanelMode === 'text-to-text' ? '1px solid var(--slate-150)' : 'none'"
                        style="display: flex; flex-direction: column; background: #ffffff; box-shadow: -4px 0 20px rgba(0,0,0,0.03); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; border-radius: 20px; height: 100%; flex-shrink: 0;">
-                    
+
                     <!-- History Sidebar Header -->
                     <div style="padding: 1rem; border-bottom: 1.5px solid var(--slate-100); background: #fbfbfb; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; box-sizing: border-box;">
                       <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <span style="font-size: 1.35rem;">📜</span>
                         <div style="text-align: left;">
-                          <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">ประวัติสนทนาย้อนหลัง</h4>
+                          <h4 style="margin: 0; font-size: 0.86rem; font-weight: 850; color: var(--slate-800);">ประวัติ (Text-to-Text)</h4>
                           <p style="margin: 0; font-size: 0.65rem; color: #0f766e; font-weight: 600;">คลิกเพื่อเปิดดูรายละเอียดแชทที่ผ่านมา</p>
                         </div>
                       </div>
-                      <button (click)="toggleHistoryPanel()" style="background: none; border: none; font-size: 1.25rem; font-weight: 700; color: var(--slate-400); cursor: pointer; padding: 2px 6px;">×</button>
+                      <button (click)="toggleHistoryPanel('text-to-text')" style="background: none; border: none; font-size: 1.25rem; font-weight: 700; color: var(--slate-400); cursor: pointer; padding: 2px 6px;">×</button>
                     </div>
 
                     <!-- History List Area -->
                     <div style="flex: 1; overflow-y: auto; padding: 0.75rem; background: #fafafa; display: flex; flex-direction: column; gap: 0.6rem; min-height: 0;">
-                      @for (log of learningLog.learningLogs; track log.date; let idx = $index) {
+                      @for (log of historyLogsForCurrentPanel; track log.date; let idx = $index) {
                         <div style="display: flex; flex-direction: column; border: 1px solid var(--slate-200); border-radius: 14px; background: white; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.015); flex-shrink: 0;">
                           
                           <!-- History Row Trigger -->
@@ -478,25 +478,6 @@
                             </div>
                           </div>
 
-                          <!-- Expanded Transcript -->
-                          @if (log.transcript && expandedLogIndex === idx) {
-                            <div style="display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; background: var(--slate-50); border-top: 1px solid var(--slate-150); max-height: 250px; overflow-y: auto;">
-                              @for (msg of log.transcript; track $index) {
-                                <div style="display: flex; flex-direction: column; gap: 1px;" [style.align-items]="msg.sender === 'user' ? 'flex-end' : 'flex-start'">
-                                  <span style="font-size: 0.6rem; font-weight: 800; color: var(--slate-400);">{{ msg.sender === 'user' ? 'คุณ' : 'AI' }}</span>
-                                  <div
-                                    style="max-width: 90%; padding: 0.45rem 0.65rem; border-radius: 10px; font-size: 0.72rem; line-height: 1.4; word-break: break-word; font-weight: 600; text-align: left;"
-                                    [style.background]="msg.sender === 'user' ? 'var(--pastel-blue-dark)' : 'white'"
-                                    [style.color]="msg.sender === 'user' ? 'white' : 'var(--slate-700)'"
-                                    [style.border]="msg.sender === 'user' ? 'none' : '1.5px solid var(--slate-200)'"
-                                  >
-                                    {{ gameFx.stripMarkdown(msg.text) }}
-                                  </div>
-                                </div>
-                              }
-                            </div>
-                          }
-
                         </div>
                       } @empty {
                         <div style="text-align: center; padding: 2rem 1rem; color: var(--slate-400);">
@@ -516,10 +497,19 @@
           @if (practiceMode === 'speech-to-text') {
             <div class="practice-workspace workspace-speaking" style="position: relative;">
               <div class="ws-header">
-                <button class="ws-back-btn" (click)="exitSttPractice()">
-                  ⬅ กลับสู่เมนูฝึกฝน
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                  <button class="ws-back-btn" (click)="exitSttPractice()">
+                    ⬅ กลับสู่เมนูฝึกฝน
+                  </button>
+                  <span class="ws-badge badge-green">Speech-to-Text Mode</span>
+                </div>
+                <button
+                  class="toggle-qa-btn animate-scale"
+                  (click)="toggleHistoryPanel('speech-to-text')"
+                  style="background: #0f766e; color: white; border: none; padding: 6px 14px; border-radius: 12px; font-weight: 800; font-size: 0.76rem; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);"
+                >
+                  <span>📜</span> {{ showHistoryPanel && historyPanelMode === 'speech-to-text' ? 'ปิดประวัติ (Speech-to-Text)' : 'ประวัติ (Speech-to-Text)' }}
                 </button>
-                <span class="ws-badge badge-green">Speech-to-Text Mode</span>
               </div>
 
               <!-- STEP 1: Setup (same level + accent pattern as Text-to-Speech) -->
@@ -691,10 +681,19 @@
           @if (practiceMode === 'text-to-speech') {
             <div class="practice-workspace workspace-listening">
               <div class="ws-header">
-                <button class="ws-back-btn" (click)="exitPracticeMode()">
-                  ⬅ กลับสู่เมนูฝึกฝน
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                  <button class="ws-back-btn" (click)="exitPracticeMode()">
+                    ⬅ กลับสู่เมนูฝึกฝน
+                  </button>
+                  <span class="ws-badge badge-indigo">Text-to-Speech Mode</span>
+                </div>
+                <button
+                  class="toggle-qa-btn animate-scale"
+                  (click)="toggleHistoryPanel('text-to-speech')"
+                  style="background: #0f766e; color: white; border: none; padding: 6px 14px; border-radius: 12px; font-weight: 800; font-size: 0.76rem; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);"
+                >
+                  <span>📜</span> {{ showHistoryPanel && historyPanelMode === 'text-to-speech' ? 'ปิดประวัติ (Text-to-Speech)' : 'ประวัติ (Text-to-Speech)' }}
                 </button>
-                <span class="ws-badge badge-indigo">Text-to-Speech Mode</span>
               </div>
 
               <!-- STEP 1: Setup -->
@@ -929,11 +928,20 @@
           @if (practiceMode === 'speech-to-speech') {
             <div class="practice-workspace workspace-audio-call">
               <div class="ws-header">
-                <button class="ws-back-btn" (click)="exitPracticeMode()">
-                  ⬅ กลับสู่เมนูฝึกฝน
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                  <button class="ws-back-btn" (click)="exitPracticeMode()">
+                    ⬅ กลับสู่เมนูฝึกฝน
+                  </button>
+                  <span class="ws-badge badge-violet">Real-Time Speech-to-Speech</span>
+                  <span class="ws-badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">🎙️ ตัดเสียงรบกวน (Noise Suppression)</span>
+                </div>
+                <button
+                  class="toggle-qa-btn animate-scale"
+                  (click)="toggleHistoryPanel('speech-to-speech')"
+                  style="background: #0f766e; color: white; border: none; padding: 6px 14px; border-radius: 12px; font-weight: 800; font-size: 0.76rem; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);"
+                >
+                  <span>📜</span> {{ showHistoryPanel && historyPanelMode === 'speech-to-speech' ? 'ปิดประวัติ (Speech-to-Speech)' : 'ประวัติ (Speech-to-Speech)' }}
                 </button>
-                <span class="ws-badge badge-violet">Real-Time Speech-to-Speech</span>
-                <span class="ws-badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">🎙️ ตัดเสียงรบกวน (Noise Suppression)</span>
               </div>
 
               <div class="audio-call-layout" [class.layout-split]="selectedCategory === 'interview' || selectedCategory === 'presentation'">
@@ -1307,6 +1315,58 @@
             </div>
           </div>
           }
+          }
+
+          <!-- Shared "ประวัติ (ชื่อโหมด)" modal for Speech-to-Speech / Speech-to-Text /
+               Text-to-Speech -- Text-to-Text has its own sliding sidebar above instead
+               since its split-pane layout has room for one; these 3 don't, so a
+               centered popup triggered from each mode's own header button instead. -->
+          @if (showHistoryPanel && historyPanelMode !== 'text-to-text') {
+            <div class="history-modal-backdrop" (click)="toggleHistoryPanel(historyPanelMode)" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+              <div (click)="$event.stopPropagation()" class="animate-scale" style="background: white; border-radius: 22px; width: 100%; max-width: 480px; max-height: 82vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.25);">
+
+                <!-- Modal Header -->
+                <div style="padding: 1rem 1.25rem; border-bottom: 1.5px solid var(--slate-100); background: #fbfbfb; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.35rem;">📜</span>
+                    <div style="text-align: left;">
+                      <h4 style="margin: 0; font-size: 0.9rem; font-weight: 850; color: var(--slate-800);">ประวัติ ({{ historyModeLabels[historyPanelMode] }})</h4>
+                      <p style="margin: 0; font-size: 0.65rem; color: #0f766e; font-weight: 600;">คลิกแต่ละรายการเพื่อดูรายละเอียด</p>
+                    </div>
+                  </div>
+                  <button (click)="toggleHistoryPanel(historyPanelMode)" style="background: none; border: none; font-size: 1.25rem; font-weight: 700; color: var(--slate-400); cursor: pointer; padding: 2px 6px;">×</button>
+                </div>
+
+                <!-- History List -->
+                <div style="flex: 1; overflow-y: auto; padding: 0.75rem; background: #fafafa; display: flex; flex-direction: column; gap: 0.6rem; min-height: 0;">
+                  @for (log of historyLogsForCurrentPanel; track log.date) {
+                    <div
+                      (click)="viewHistoryLogDetail(log)"
+                      style="display: flex; align-items: center; gap: 0.65rem; padding: 0.75rem 1rem; border: 1px solid var(--slate-200); border-radius: 14px; background: white; cursor: pointer; transition: background 0.15s; min-height: 56px; box-sizing: border-box; box-shadow: 0 2px 6px rgba(0,0,0,0.015);"
+                      onmouseover="this.style.background='#f8fafc'"
+                      onmouseout="this.style.background='white'"
+                    >
+                      <span style="font-size: 1.35rem; flex-shrink: 0;">🗒️</span>
+                      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
+                        <h5 style="margin: 0; font-size: 0.78rem; font-weight: 850; color: var(--slate-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;">{{ log.title }}</h5>
+                        <span style="font-size: 0.65rem; color: var(--slate-400); line-height: 1.2;">{{ log.date | date:'shortTime' }} · {{ log.date | date:'dd/MM/yyyy' }}</span>
+                      </div>
+                      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; justify-content: center;">
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #10b981; line-height: 1;">+{{ log.xp }} XP</span>
+                        @if (log.score !== undefined) {
+                          <span style="font-size: 0.65rem; font-weight: 850; background: #f0fdfa; color: #0d9488; padding: 1px 6px; border-radius: 8px; line-height: 1.2; margin-top: 1px;">{{ log.score }}%</span>
+                        }
+                      </div>
+                    </div>
+                  } @empty {
+                    <div style="text-align: center; padding: 2rem 1rem; color: var(--slate-400);">
+                      <p style="font-size: 1.5rem; margin: 0 0 0.5rem 0;">🗒️</p>
+                      <p style="font-size: 0.7rem; font-weight: 600; margin: 0;">ยังไม่มีประวัติของโหมดนี้</p>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
           }
         </div>
       </section>

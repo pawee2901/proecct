@@ -75,20 +75,17 @@ export interface Unit {
   coverImage?: string;
 }
 
-export interface LeaderboardEntry {
-  rank: number;
-  name: string;
-  practice_count: number;
-  total_score: number;
-  isCurrentUser?: boolean;
-}
-
 export interface LearningLogEntry {
   date: Date | string;
   type: string;
   title: string;
   score?: number;
   xp: number;
+  /** Which of the 4 Practice modes produced this entry, so each mode's own
+   *  "ประวัติ (ชื่อโหมด)" button can filter to just its own log instead of
+   *  mixing in the other 3 modes (or Lessons/Games/Review entries, which
+   *  leave this undefined and so never show in any per-mode history). */
+  practiceMode?: 'speech-to-speech' | 'text-to-text' | 'speech-to-text' | 'text-to-speech';
   transcript?: { sender: 'user' | 'ai'; text: string; grammarSuggestion?: string | null }[];
   // สรุปผลแบบเดียวกับ modal "ผลสรุปการฝึกพูด" (chatSummaryReport ใน
   // student-practice.component.ts — เดิม AI สร้างสรุปนี้ให้ทุกครั้งที่จบแชท/ฝึกพูด แต่
@@ -125,4 +122,11 @@ export interface ProgressReportEntry {
   postScore: number | null;
   gameScramble: number | null;
   gameDialogue: number | null;
+  /** Combined pre/post/game score + pass-fail for this lesson, computed by
+   *  the backend (ai/lesson_grading.py) from the teacher's configured
+   *  pass_threshold/game_weight/test_weight — see ProgressService.
+   *  Undefined until synced from GET /student/lesson-scores/<id>. */
+  overallScore?: number | null;
+  passed?: boolean | null;
+  reasoning?: string;
 }
