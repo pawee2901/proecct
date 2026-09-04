@@ -78,9 +78,9 @@
               <div class="duo-setup-header" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem;">
                 <button class="duo-setup-close" (click)="cancelPracticeSetup()" style="background: none; border: none; font-size: 1.8rem; color: var(--slate-400); cursor: pointer; line-height: 1;">×</button>
                 <div class="duo-setup-progress-bar" style="flex: 1; height: 16px; background: var(--slate-100); border-radius: 10px; overflow: hidden; border: 1px solid var(--slate-200);">
-                  <div class="duo-setup-progress-fill" [style.width.%]="(setupStep / 3) * 100" style="height: 100%; background: linear-gradient(90deg, #0d9488, #0f766e); border-radius: 10px; transition: width 0.3s ease;"></div>
+                  <div class="duo-setup-progress-fill" [style.width.%]="(setupStep / totalSetupSteps) * 100" style="height: 100%; background: linear-gradient(90deg, #0d9488, #0f766e); border-radius: 10px; transition: width 0.3s ease;"></div>
                 </div>
-                <span class="duo-setup-step-count" style="font-size: 0.85rem; font-weight: 600; color: var(--slate-600); min-width: 90px; text-align: right;">ขั้นตอนที่ {{ setupStep }} จาก 3</span>
+                <span class="duo-setup-step-count" style="font-size: 0.85rem; font-weight: 600; color: var(--slate-600); min-width: 90px; text-align: right;">ขั้นตอนที่ {{ setupStep }} จาก {{ totalSetupSteps }}</span>
               </div>
 
               <!-- STEP 1: Select Topic / Goal -->
@@ -174,11 +174,53 @@
                 </div>
               }
 
+              <!-- STEP 4: Lesson Preview (reading passage + vocab + image concept) -->
+              @if (setupStep === 4 && selectedLesson) {
+                <div class="duo-setup-step animate-fade" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <div style="text-align:center; margin-bottom: 0.25rem;">
+                    <h2 class="duo-setup-title" style="font-size: 1.2rem; font-weight: 800; color: var(--slate-800); margin: 0;">📖 บทความสำหรับบทเรียนนี้</h2>
+                    <p class="duo-setup-desc" style="font-size: 0.8rem; color: var(--slate-500); margin: 0.25rem 0 0;">อ่านบทความและคำศัพท์ก่อนเริ่มฝึกพูด เพื่อให้ AI คุยอยู่ในขอบเขตของสถานการณ์นี้</p>
+                  </div>
+
+                  <div class="lesson-preview-card" style="background: linear-gradient(135deg, #f0fdfa, #ecfeff); border: 1px solid #99f6e4; border-radius: 16px; padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem;">
+                    <div style="display:flex; align-items:center; gap:0.7rem;">
+                      <span style="font-size: 2rem; line-height:1;">{{ selectedCategory === 'teaching' ? '👩‍🏫' : selectedCategory === 'daily' ? '💬' : '💼' }}</span>
+                      <div>
+                        <h3 style="margin:0; font-size:1.05rem; font-weight:800; color:#0f766e;">{{ selectedLesson.titleTh }}</h3>
+                        <p style="margin:2px 0 0; font-size:0.78rem; color:#0d9488; font-weight:600;">{{ selectedLesson.titleEn }}</p>
+                      </div>
+                    </div>
+
+                    <p style="margin:0; font-size:0.82rem; color: var(--slate-600); line-height:1.5; background: white; border-radius: 10px; padding: 0.65rem 0.85rem; border: 1px dashed #5eead4;">
+                      💡 <strong>เรื่องย่อ:</strong> {{ selectedLesson.description }}
+                    </p>
+
+                    <div style="background: white; border: 1px solid #99f6e4; border-radius: 12px; padding: 0.85rem 1rem;">
+                      <span style="font-size:0.72rem; font-weight:800; color:#0f766e; text-transform:uppercase; letter-spacing:0.04em;">บทความอ่านก่อนฝึก (Reading Passage)</span>
+                      <p style="margin: 0.4rem 0 0; font-size: 0.82rem; color: var(--slate-700); line-height: 1.55; font-style: italic;">{{ selectedLesson.article }}</p>
+                    </div>
+
+                    <div>
+                      <span style="font-size:0.72rem; font-weight:800; color:#0f766e; text-transform:uppercase; letter-spacing:0.04em;">คำศัพท์สำคัญ</span>
+                      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(min(180px,100%),1fr)); gap:0.5rem; margin-top:0.5rem;">
+                        @for (v of selectedLesson.vocab; track v.en) {
+                          <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; background:#f0fdfa; border:1px solid #99f6e4; border-radius:10px; padding:0.45rem 0.7rem;">
+                            <span style="font-size:0.8rem; font-weight:700; color:#0f766e;">{{ v.en }}</span>
+                            <span style="font-size:0.76rem; color: var(--slate-500);">{{ v.th }}</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              }
+
               <!-- STEP NAVIGATION FOOTER -->
               <div class="duo-setup-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px solid var(--slate-200); padding-top: 1rem;">
                 <button class="duo-setup-btn-prev" [disabled]="setupStep === 1" (click)="prevSetupStep()" style="background: white; border: 1px solid var(--slate-300); border-radius: 12px; padding: 0.65rem 1.25rem; font-weight: 600; color: var(--slate-600); cursor: pointer; transition: all 0.2s ease;">ย้อนกลับ</button>
                 <button class="duo-setup-btn-next" (click)="nextSetupStep()" style="background: linear-gradient(135deg, #0d9488, #0f766e); border: none; border-radius: 12px; padding: 0.65rem 1.5rem; font-weight: 700; color: white; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(13, 148, 136,0.35);">
-                  {{ setupStep === 3 ? 'เริ่มฝึกฝนทันที 🚀' : 'ขั้นตอนถัดไป' }}
+                  {{ setupStep === totalSetupSteps ? 'เริ่มฝึกฝนทันที 🚀' : 'ขั้นตอนถัดไป' }}
                 </button>
               </div>
             </div>
@@ -967,7 +1009,7 @@
                           }
                           
                           <!-- Custom Topic option -->
-                          <div (click)="presentationTopic = 'custom'" 
+                          <div (click)="presentationTopic = 'custom'"
                                style="padding: 0.85rem 1.1rem; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03); cursor: pointer; transition: all 0.2s;"
                                [style.borderColor]="presentationTopic === 'custom' ? '#3b82f6' : 'rgba(255, 255, 255, 0.1)'"
                                [style.background]="presentationTopic === 'custom' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255, 255, 255, 0.03)'"
@@ -975,14 +1017,26 @@
                                onmouseout="this.style.background=this.style.borderColor==='#3b82f6'?'rgba(59, 130, 246, 0.12)':'rgba(255, 255, 255, 0.03)'">
                             <h4 style="margin: 0; font-size: 0.88rem; font-weight: 800; color: #f3f4f6;">✍️ กำหนดหัวข้อด้วยตนเอง (Custom Topic)</h4>
                             @if (presentationTopic === 'custom') {
-                              <input type="text" [(ngModel)]="presentationCustomTopic" (click)="$event.stopPropagation()" placeholder="พิมพ์ชื่อหัวข้อภาษาอังกฤษที่นี่..." 
+                              <input type="text" [(ngModel)]="presentationCustomTopic" (click)="$event.stopPropagation()" placeholder="พิมพ์ชื่อหัวข้อภาษาอังกฤษที่นี่..."
                                      style="width: 100%; margin-top: 0.6rem; background: rgba(15, 23, 42, 0.8); border: 1.5px solid #3b82f6; border-radius: 8px; padding: 0.5rem 0.75rem; color: white; font-size: 0.82rem; font-weight: 600; outline: none;" />
                             }
                           </div>
                         </div>
 
-                        <button (click)="presentationPhase = 'presenting'; presentationSlideIndex = 1;"
-                                style="margin-top: 0.5rem; padding: 0.75rem; border-radius: 12px; border: none; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; font-weight: 800; font-size: 0.92rem; cursor: pointer; box-shadow: 0 4px 14px rgba(37,99,235,0.4); transition: all 0.2s;"
+                        <!-- Reading passage / vocab / image concept preview for the selected topic -->
+                        @if (presentationTopics.find(t => t.key === presentationTopic); as selTopic) {
+                          <div style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); border-radius: 14px; padding: 0.9rem 1rem; display:flex; flex-direction:column; gap:0.65rem;">
+                            <p style="margin:0; font-size:0.78rem; color:#bfdbfe; line-height:1.5;">💡 <strong style="color:#93c5fd;">เรื่องย่อ:</strong> {{ selTopic.description }}</p>
+                            <p style="margin:0; font-size:0.78rem; color: rgba(255,255,255,0.75); line-height:1.55; font-style: italic; background: rgba(15,23,42,0.4); border-radius:10px; padding:0.55rem 0.75rem;">{{ selTopic.article }}</p>
+                            <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
+                              @for (v of selTopic.vocab; track v.en) {
+                                <span style="font-size:0.72rem; font-weight:700; color:#93c5fd; background: rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 3px 9px;">{{ v.en }} · {{ v.th }}</span>
+                              }
+                            </div>
+                          </div>
+                        }
+
+                        <button (click)="presentationPhase = 'presenting'; presentationSlideIndex = 1;"                                style="margin-top: 0.5rem; padding: 0.75rem; border-radius: 12px; border: none; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; font-weight: 800; font-size: 0.92rem; cursor: pointer; box-shadow: 0 4px 14px rgba(37,99,235,0.4); transition: all 0.2s;"
                                 onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 18px rgba(37,99,235,0.5)'"
                                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 14px rgba(37,99,235,0.4)'">
                           เริ่มฝึกนำเสนอผลงาน 🚀

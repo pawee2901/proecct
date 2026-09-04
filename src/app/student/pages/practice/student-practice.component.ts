@@ -55,7 +55,16 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   practiceSetupActive = false;
   setupStep = 1;
   selectedCategory: 'teaching' | 'daily' | 'presentation' | 'interview' = 'teaching';
-  selectedTeachingTopic: { key: string; titleTh: string; prompt: string; greeting: string } | null = null;
+  selectedLesson: {
+    key: string;
+    titleTh: string;
+    titleEn: string;
+    description: string;
+    prompt: string;
+    article: string;
+    vocab: { en: string; th: string }[];
+    image: string;
+  } | null = null;
   selectedLevel: 'beginner' | 'intermediate' | 'advanced' = 'beginner';
   selectedAvatar: 'jane' | 'david' | 'alex' | 'maria' = 'jane';
   pendingPracticeMode: 'menu' | 'text-to-text' | 'speech-to-text' | 'text-to-speech' | 'speech-to-speech' = 'menu';
@@ -107,24 +116,132 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   presentationQaCount = 0;
   presentationQaQuestions: string[] = [];
   presentationTopics = [
-    { key: 'games', titleTh: 'การใช้เกมตอบโต้ในห้องเรียนภาษาอังกฤษ', titleEn: 'Interactive Games in English Classrooms', slides: [
+    { key: 'games', titleTh: 'การใช้เกมตอบโต้ในห้องเรียนภาษาอังกฤษ', titleEn: 'Interactive Games in English Classrooms',
+      description: 'นำเสนอแนวคิดการใช้เกมโต้ตอบเพื่อเพิ่มการมีส่วนร่วมในห้องเรียนภาษาอังกฤษ',
+      article: `You are about to give an academic presentation to a panel of evaluators about using interactive games in your English classroom. Your presentation will explain why gamified learning increases student engagement, what kinds of games you use, and what results you expect. After you present, an AI evaluator will ask you follow-up questions about your presentation.`,
+      vocab: [{ en: 'gamified learning', th: 'การเรียนแบบเกม' }, { en: 'engagement', th: 'การมีส่วนร่วม' }, { en: 'retention', th: 'การจดจำ' }, { en: 'evaluator', th: 'ผู้ประเมิน' }, { en: 'strategy', th: 'กลยุทธ์' }],
+      image: 'ไวท์บอร์ดมีลูกเต๋าและการ์ดคำศัพท์วางเป็นฉากเกมในห้องเรียน',
+      slides: [
       { title: 'Slide 1: Introduction & Goals', points: ['Introduction to gamified learning', 'Purpose: Increase student engagement and vocabulary retention', 'Target: Primary school students'] },
       { title: 'Slide 2: Methodology & Core Games', points: ['Use of word scrambles, typing sprints, and roleplays', 'Structuring 15-minute interactive sessions in every class', 'Combining grammar drill with game mechanics'] },
       { title: 'Slide 3: Expected Benefits', points: ['Expected 25% increase in weekly quiz scores', 'Lowering student anxiety when speaking English', 'Building natural competition and team spirit'] },
       { title: 'Slide 4: Conclusion & Q&A', points: ['Gamified learning is sustainable and effective', 'Preparing for committee evaluation', 'Q&A session with the AI evaluator'] }
     ]},
-    { key: 'phonics', titleTh: 'การสอนโฟนิกส์สำหรับเด็กเล็ก', titleEn: 'Teaching Phonics to Young Learners', slides: [
+    { key: 'phonics', titleTh: 'การสอนโฟนิกส์สำหรับเด็กเล็ก', titleEn: 'Teaching Phonics to Young Learners',
+      description: 'นำเสนอแนวทางการสอนโฟนิกส์เพื่อพัฒนาทักษะการอ่านของเด็กเล็ก',
+      article: `You are presenting to a panel of evaluators about teaching phonics to young learners. Your presentation covers the phonics approach, the daily activities you use, and the results you expect for your students' reading skills. After your presentation, an AI evaluator will ask follow-up questions about your methods and reasoning.`,
+      vocab: [{ en: 'phonics', th: 'โฟนิกส์' }, { en: 'letter-sound', th: 'เสียงตัวอักษร' }, { en: 'blending', th: 'การผสมเสียง' }, { en: 'decode', th: 'ถอดรหัสคำ' }, { en: 'literacy', th: 'การรู้หนังสือ' }],
+      image: 'บัตรคำตัวอักษร A-Z พร้อมรูปภาพประกอบเสียงวางเรียงกัน',
+      slides: [
       { title: 'Slide 1: The Phonics Approach', points: ['Phonics vs Whole Language learning', 'Importance of letter-sound relationships', 'Target: Kindergarten to Grade 2 students'] },
       { title: 'Slide 2: Activity Design', points: ['Daily 10-minute sound blending drills', 'Interactive sound-matching flashcards', 'Using songs and physical actions for phonetic reinforcement'] },
       { title: 'Slide 3: Key Outcomes', points: ['Improved reading speed and pronunciation accuracy', 'Helping students decode unfamiliar words independently', 'Boosting overall reading confidence'] },
       { title: 'Slide 4: Summary & Q&A', points: ['Phonics is the foundation of early literacy', 'Ready for parents and school board review', 'Q&A session with the AI evaluator'] }
     ]},
-    { key: 'classroom', titleTh: 'แผนการจัดการระเบียบในชั้นเรียนเชิงบวก', titleEn: 'Positive Classroom Management Plan', slides: [
+    { key: 'classroom', titleTh: 'แผนการจัดการระเบียบในชั้นเรียนเชิงบวก', titleEn: 'Positive Classroom Management Plan',
+      description: 'นำเสนอแผนการบริหารจัดการชั้นเรียนเชิงบวกเพื่อลดปัญหาพฤติกรรม',
+      article: `You are presenting a positive classroom management plan to a panel of evaluators. Your presentation explains your approach to discipline, the practical strategies you use, and the impact you expect on student learning and behavior. After your presentation, an AI evaluator will ask you follow-up questions about how your plan works in practice.`,
+      vocab: [{ en: 'discipline', th: 'วินัย' }, { en: 'positive reinforcement', th: 'การเสริมแรงเชิงบวก' }, { en: 'classroom culture', th: 'บรรยากาศห้องเรียน' }, { en: 'consistency', th: 'ความสม่ำเสมอ' }, { en: 'behavior', th: 'พฤติกรรม' }],
+      image: 'กระดานติดดาว/สติกเกอร์รางวัลพฤติกรรมดีในห้องเรียน',
+      slides: [
       { title: 'Slide 1: Positive Discipline Foundation', points: ['Focusing on positive reinforcement over punishment', 'Creating a safe and respectful classroom culture', 'Aligning student and teacher expectations'] },
       { title: 'Slide 2: Practical Strategies', points: ['Defining 3 simple classroom rules together', 'Using a "Streak System" for good team behavior', 'Implementing cool-down zones for overwhelmed students'] },
       { title: 'Slide 3: Impact on Learning', points: ['Minimizing teaching disruptions by 40%', 'Higher participation from introverted students', 'Better teacher-student relationships'] },
       { title: 'Slide 4: Final Wrap-up', points: ['Effective management requires consistency and empathy', 'Ready for Principal review', 'Q&A session with the AI evaluator'] }
+    ]},
+    { key: 'technology', titleTh: 'การใช้เทคโนโลยีในห้องเรียนภาษาอังกฤษ', titleEn: 'Using Technology in the English Classroom',
+      description: 'นำเสนอแนวทางการนำเทคโนโลยีมาใช้ในห้องเรียนภาษาอังกฤษ',
+      article: `You are presenting to a panel of evaluators about how you plan to use technology in your English classroom. Your presentation explains which digital tools you would use, how they support student learning, and the benefits you expect. After your presentation, an AI evaluator will ask you follow-up questions about your plan.`,
+      vocab: [{ en: 'digital tool', th: 'เครื่องมือดิจิทัล' }, { en: 'interactive whiteboard', th: 'กระดานอัจฉริยะ' }, { en: 'app', th: 'แอปพลิเคชัน' }, { en: 'online homework', th: 'การบ้านออนไลน์' }, { en: 'motivation', th: 'แรงจูงใจ' }],
+      image: 'แท็บเล็ตและกระดานอัจฉริยะแสดงแบบฝึกหัดคำศัพท์',
+      slides: [
+      { title: 'Slide 1: Introduction & Goals', points: ['Overview of digital tools for language learning', 'Purpose: Make lessons more interactive and accessible', 'Target: Secondary school English classes'] },
+      { title: 'Slide 2: Tools & Methods', points: ['Using apps and websites for vocabulary practice', 'Interactive whiteboard activities and quizzes', 'Blending online homework with in-class review'] },
+      { title: 'Slide 3: Expected Benefits', points: ['Higher student motivation through interactive content', 'Easier tracking of individual student progress', 'Preparing students for digital-age communication'] },
+      { title: 'Slide 4: Conclusion & Q&A', points: ['Technology supports, but does not replace, good teaching', 'Ready for committee evaluation', 'Q&A session with the AI evaluator'] }
+    ]},
+    { key: 'assessment', titleTh: 'การวัดผลและการให้ข้อเสนอแนะแก่ผู้เรียน', titleEn: 'Assessment and Feedback Strategies',
+      description: 'นำเสนอวิธีการวัดผลและการให้ข้อเสนอแนะที่ช่วยพัฒนาผู้เรียน',
+      article: `You are presenting to a panel of evaluators about your approach to assessing students and giving feedback. Your presentation covers why regular assessment matters, the methods and tools you use, and how your approach helps students improve. After your presentation, an AI evaluator will ask you follow-up questions about your methods.`,
+      vocab: [{ en: 'assessment', th: 'การประเมินผล' }, { en: 'feedback', th: 'ข้อเสนอแนะ' }, { en: 'rubric', th: 'เกณฑ์การให้คะแนน' }, { en: 'formative', th: 'การประเมินระหว่างเรียน' }, { en: 'progress', th: 'ความก้าวหน้า' }],
+      image: 'สมุดคะแนนพร้อมปากกาสีแดงและกราฟความก้าวหน้าของนักเรียน',
+      slides: [
+      { title: 'Slide 1: Why Assessment Matters', points: ['Purpose of ongoing formative assessment', 'Balancing tests with everyday classroom feedback', 'Target: Improving student learning outcomes'] },
+      { title: 'Slide 2: Methods & Tools', points: ['Using quizzes, quick checks, and peer review', 'Giving specific, actionable written feedback', 'Tracking progress with simple rubrics'] },
+      { title: 'Slide 3: Impact on Students', points: ['Students understand their strengths and weaknesses clearly', 'Reduced test anxiety through frequent low-stakes checks', 'Higher motivation from visible progress over time'] },
+      { title: 'Slide 4: Conclusion & Q&A', points: ['Good feedback is specific, timely, and encouraging', 'Ready for committee evaluation', 'Q&A session with the AI evaluator'] }
+    ]},
+    { key: 'onlineLearning', titleTh: 'การจัดการเรียนการสอนออนไลน์', titleEn: 'Online & Blended Learning',
+      description: 'นำเสนอแนวทางการจัดการเรียนการสอนออนไลน์และแบบผสมผสาน',
+      article: `You are presenting to a panel about designing an online/blended English course: which platforms you use, how you keep students engaged remotely, and how you measure success compared to in-person classes.`,
+      vocab: [{ en: 'blended learning', th: 'การเรียนผสมผสาน' }, { en: 'platform', th: 'แพลตฟอร์ม' }, { en: 'remote', th: 'ระยะไกล' }, { en: 'interaction', th: 'การมีปฏิสัมพันธ์' }, { en: 'engagement', th: 'การมีส่วนร่วม' }],
+      image: 'หน้าจอคอมพิวเตอร์แสดงห้องเรียนวิดีโอคอลกับนักเรียนหลายคน',
+      slides: [
+      { title: 'Slide 1: Introduction & Goals', points: ['Overview of online/blended English courses', 'Purpose: Maintain quality learning outside the classroom', 'Target: Students learning remotely or in hybrid mode'] },
+      { title: 'Slide 2: Platforms & Methods', points: ['Using video conferencing and LMS platforms', 'Structuring live sessions plus asynchronous tasks', 'Keeping lessons interactive despite the distance'] },
+      { title: 'Slide 3: Expected Benefits', points: ['Flexible access to lessons anytime, anywhere', 'Easier tracking of assignments and attendance', 'Preparing students for digital learning environments'] },
+      { title: 'Slide 4: Conclusion & Q&A', points: ['Online learning complements, not replaces, in-person teaching', 'Ready for committee evaluation', 'Q&A session with the AI evaluator'] }
+    ]},
+    { key: 'parentEngagement', titleTh: 'การสร้างความร่วมมือกับผู้ปกครอง', titleEn: 'Parent Engagement Strategies',
+      description: 'นำเสนอกลยุทธ์การสร้างความร่วมมือและการสื่อสารกับผู้ปกครอง',
+      article: `You are presenting a strategy for building strong communication and partnership with parents: how you share progress updates, handle concerns, and involve parents in their child's learning journey.`,
+      vocab: [{ en: 'partnership', th: 'ความร่วมมือ' }, { en: 'communication', th: 'การสื่อสาร' }, { en: 'concern', th: 'ข้อกังวล' }, { en: 'progress report', th: 'รายงานความก้าวหน้า' }, { en: 'involve', th: 'มีส่วนร่วม' }],
+      image: 'จดหมายรายงานผลการเรียนพร้อมไอคอนพ่อแม่และเด็กจับมือกัน',
+      slides: [
+      { title: 'Slide 1: Why Parent Engagement Matters', points: ['Purpose of strong home-school communication', 'Building trust between teacher and family', 'Target: Improving student support at home'] },
+      { title: 'Slide 2: Practical Strategies', points: ['Regular progress updates via message or call', 'Parent-teacher conferences twice a semester', 'Simple guides for parents to help at home'] },
+      { title: 'Slide 3: Impact on Students', points: ['Students feel more supported and motivated', 'Parents catch issues early through open communication', 'Stronger sense of school-home partnership'] },
+      { title: 'Slide 4: Conclusion & Q&A', points: ['Engaged parents lead to better student outcomes', 'Ready for committee evaluation', 'Q&A session with the AI evaluator'] }
+    ]},
+    { key: 'curriculum', titleTh: 'การออกแบบหลักสูตรภาษาอังกฤษเชิงบูรณาการ', titleEn: 'Integrated Curriculum Design',
+      description: 'นำเสนอการออกแบบหลักสูตรภาษาอังกฤษที่บูรณาการทักษะฟัง พูด อ่าน เขียน',
+      article: `You are presenting a redesigned English curriculum that integrates speaking, listening, reading, and writing skills across real-world themes, explaining your rationale and how it will be evaluated by the department.`,
+      vocab: [{ en: 'curriculum', th: 'หลักสูตร' }, { en: 'integrate', th: 'บูรณาการ' }, { en: 'real-world theme', th: 'หัวข้อใกล้ตัว' }, { en: 'rationale', th: 'เหตุผลรองรับ' }, { en: 'evaluate', th: 'ประเมิน' }],
+      image: 'แผนผังหลักสูตรรูปแบบ mind map เชื่อมทักษะฟัง พูด อ่าน เขียน',
+      slides: [
+      { title: 'Slide 1: Introduction & Goals', points: ['Overview of an integrated four-skills curriculum', 'Purpose: Connect skills through real-world themes', 'Target: Secondary to university-level English classes'] },
+      { title: 'Slide 2: Design & Structure', points: ['Organizing units around real-world themes', 'Linking speaking, listening, reading, and writing tasks', 'Balancing structured practice with creative tasks'] },
+      { title: 'Slide 3: Expected Outcomes', points: ['More natural transfer of skills between contexts', 'Higher student engagement through relevant themes', 'Clear alignment with department learning goals'] },
+      { title: 'Slide 4: Conclusion & Q&A', points: ['An integrated curriculum better reflects real language use', 'Ready for department evaluation', 'Q&A session with the AI evaluator'] }
     ]}
+  ];
+
+  // Random-selection lesson libraries for Teaching / Daily / Interview categories
+  // (Presentation keeps its own explicit topic-picker above, presentationTopics).
+  // Each lesson carries a reading passage (article) that is both shown to the
+  // student before practice and attached to the AI system prompt as a scope-
+  // limiting "security" boundary (see categoryPrompt in sendPracticeMessage()).
+  teachingLessons = [
+    { key: 'welcome', titleTh: 'ต้อนรับนักเรียนหน้าชั้นเรียน', titleEn: 'Welcoming Students', description: 'ครูต้อนรับนักเรียนในวันแรกของการเปิดเทอม แนะนำตัวเองและสร้างความประทับใจแรกที่ดี', prompt: 'welcoming students to the classroom on the first day of school', article: `It is the first day of the new school year, and you are meeting your students for the very first time. As their English teacher, you want to make them feel welcome, comfortable, and excited to learn. Teacher Jane will play the role of one of your new students. Greet the class warmly, introduce yourself, tell them a little about what they will learn this year, and ask a friendly question to break the ice, such as their name or what they enjoy. Keep your tone warm, encouraging, and easy to understand, since this is the very first impression your students will have of you.`, vocab: [{ en: 'welcome', th: 'ต้อนรับ' }, { en: 'introduce yourself', th: 'แนะนำตัวเอง' }, { en: 'classroom', th: 'ห้องเรียน' }, { en: 'excited', th: 'ตื่นเต้น' }, { en: 'first impression', th: 'ความประทับใจแรก' }], image: 'ครูยืนหน้าชั้นเรียนที่มีป้าย "Welcome to Our Class!" ประดับสีสันสดใส' },
+    { key: 'rules', titleTh: 'อธิบายกฎระเบียบในห้องเรียน', titleEn: 'Explaining Classroom Rules', description: 'ครูอธิบายกฎระเบียบพื้นฐานในห้องเรียนให้นักเรียนเข้าใจตรงกันตั้งแต่ต้นปี', prompt: 'explaining classroom rules to students (like raising hands to speak)', article: `Today you need to explain the classroom rules to your students so that lessons run smoothly all year. Teacher Jane will act as one of your students listening to your instructions. Explain the basic expectations clearly and kindly: raise your hand before speaking, listen quietly when others are talking, arrive on time, and always be respectful to classmates. Use simple, direct language so that even beginner-level students can understand you easily.`, vocab: [{ en: 'classroom rules', th: 'กฎระเบียบห้องเรียน' }, { en: 'raise your hand', th: 'ยกมือ' }, { en: 'respectful', th: 'มีมารยาท' }, { en: 'expectation', th: 'ข้อกำหนด/ความคาดหวัง' }, { en: 'listen quietly', th: 'ฟังอย่างเงียบๆ' }], image: 'โปสเตอร์กฎระเบียบห้องเรียนติดผนัง มีไอคอนประกอบแต่ละข้อ' },
+    { key: 'parent', titleTh: 'คุยโทรศัพท์กับผู้ปกครองของนักเรียน', titleEn: 'Calling a Parent', description: 'ครูโทรศัพท์พูดคุยกับผู้ปกครองเพื่อรายงานความก้าวหน้าของนักเรียนอย่างสุภาพ', prompt: 'calling a parent on the phone to discuss their child\'s progress', article: `You need to call one of your student's parents to talk about their child's progress in class. Teacher Jane will play the role of the parent on the phone. Start the call politely, introduce yourself as the child's English teacher, and share both something positive and something the student could improve on. Be professional and supportive, since the parent may be a little worried to receive a call from school.`, vocab: [{ en: 'phone call', th: 'การโทรศัพท์' }, { en: 'progress', th: 'ความก้าวหน้า' }, { en: 'polite', th: 'สุภาพ' }, { en: 'supportive', th: 'ให้กำลังใจ' }, { en: 'concern', th: 'ความกังวล' }], image: 'ครูถือโทรศัพท์คุยอยู่ในห้องพักครู มีสมุดบันทึกผลนักเรียนวางอยู่ข้างๆ' },
+    { key: 'meeting', titleTh: 'ประชุมปรึกษาหารือครูร่วมวิชา', titleEn: 'Teacher Meeting', description: 'ครูเข้าร่วมประชุมกับเพื่อนครูเพื่อวางแผนการสอนและหลักสูตรร่วมกัน', prompt: 'a school teacher meeting discussing lesson planning and syllabus design', article: `You are attending a teacher meeting today to discuss lesson planning and the course syllabus with your colleagues. Teacher Jane will play the role of a fellow English teacher in the meeting. Share your ideas about what topics to teach next month, discuss how to divide teaching duties, and give your opinion politely if you disagree. Use professional, collaborative language, since a good meeting depends on everyone working together toward the same goal.`, vocab: [{ en: 'meeting', th: 'การประชุม' }, { en: 'lesson planning', th: 'การวางแผนการสอน' }, { en: 'syllabus', th: 'หลักสูตรรายวิชา' }, { en: 'collaborate', th: 'ร่วมมือกัน' }, { en: 'opinion', th: 'ความคิดเห็น' }], image: 'ครูหลายคนนั่งรอบโต๊ะประชุม มีกระดาษแผนการสอนและแล็ปท็อปวางอยู่' },
+    { key: 'feedback', titleTh: 'ให้ Feedback ผลการเรียนแก่นักเรียน', titleEn: 'Giving Student Feedback', description: 'ครูให้ข้อเสนอแนะและกำลังใจนักเรียนหลังทำแบบทดสอบย่อยได้ไม่ดี', prompt: 'giving a student feedback and encouragement after they did poorly on a quiz', article: `One of your students did poorly on a recent quiz, and you need to talk to them after class to give feedback and encouragement. Teacher Jane will play the role of this student. Start by pointing out something the student did well, then gently explain which parts they need to improve and why. Give the student one or two practical suggestions for how to study better next time, and end the conversation with encouragement so they feel motivated instead of discouraged.`, vocab: [{ en: 'feedback', th: 'ข้อเสนอแนะ' }, { en: 'improve', th: 'พัฒนา' }, { en: 'encourage', th: 'ให้กำลังใจ' }, { en: 'quiz', th: 'แบบทดสอบย่อย' }, { en: 'suggestion', th: 'ข้อแนะนำ' }], image: 'กระดาษข้อสอบที่มีคะแนนและคอมเมนต์ของครูเขียนกำกับไว้ พร้อมดาวให้กำลังใจ' },
+    { key: 'vocab', titleTh: 'เสริมศัพท์วิชาการให้นักเรียน', titleEn: 'Building Academic Vocabulary', description: 'ครูสอนคำศัพท์วิชาการใหม่ให้นักเรียน พร้อมอธิบายความหมายและตัวอย่างประโยค', prompt: 'teaching a student new academic vocabulary words with meanings and example sentences', article: `You want to help your students expand their academic English vocabulary before an upcoming lesson. Teacher Jane will play the role of a student who is a little unsure about new vocabulary words. Introduce a few new academic words, explain their meanings in simple terms, and give an example sentence for each so students understand how to use them in context. Encourage the student to try using the new words in their own sentence, and correct them gently if needed.`, vocab: [{ en: 'vocabulary', th: 'คำศัพท์' }, { en: 'define', th: 'ให้คำจำกัดความ' }, { en: 'context', th: 'บริบท' }, { en: 'example sentence', th: 'ประโยคตัวอย่าง' }, { en: 'academic', th: 'เชิงวิชาการ' }], image: 'การ์ดคำศัพท์ (flashcards) วางเรียงบนโต๊ะพร้อมดินสอและสมุดจด' },
+    { key: 'conflict', titleTh: 'จัดการความขัดแย้งระหว่างนักเรียนในห้องเรียน', titleEn: 'Managing Student Conflict', description: 'ครูไกล่เกลี่ยความขัดแย้งระหว่างนักเรียนสองคนในห้องเรียนอย่างใจเย็นและยุติธรรม', prompt: 'mediating a disagreement between two students during group work', article: `Two students in your class have had a disagreement during group work, and you need to step in to resolve it calmly. Teacher Jane will play the role of one of the students involved. Listen to what happened, let both sides feel heard, and guide the students toward a fair resolution. Use calm, clear language, and remind the students of classroom expectations for treating each other with respect.`, vocab: [{ en: 'disagreement', th: 'ความขัดแย้ง' }, { en: 'resolve', th: 'แก้ไข/ยุติ' }, { en: 'fair', th: 'ยุติธรรม' }, { en: 'respect', th: 'ความเคารพ' }, { en: 'calm down', th: 'ทำใจให้สงบ' }], image: 'นักเรียนสองคนนั่งคนละฝั่งโต๊ะ มีครูยืนอยู่ตรงกลางทำท่าไกล่เกลี่ย' },
+    { key: 'examPrep', titleTh: 'เตรียมนักเรียนก่อนสอบ', titleEn: 'Preparing Students for an Exam', description: 'ครูให้คำแนะนำและให้กำลังใจนักเรียนก่อนสอบปลายภาค', prompt: 'preparing a nervous student for an upcoming final exam with study tips and encouragement', article: `The final exam is coming up soon, and you want to prepare your students with useful tips and encouragement. Teacher Jane will play the role of a nervous student. Give practical study tips, explain what topics will be covered, and reassure the student that they can succeed with proper preparation. Keep your tone supportive and confidence-building, since some students may feel anxious about the exam.`, vocab: [{ en: 'exam', th: 'การสอบ' }, { en: 'review', th: 'ทบทวน' }, { en: 'study tip', th: 'เทคนิคการอ่านหนังสือ' }, { en: 'confident', th: 'มั่นใจ' }, { en: 'nervous', th: 'กังวล/ตื่นเต้น' }], image: 'ปฏิทินนับถอยหลังวันสอบพร้อมหนังสือและปากกาไฮไลท์วางซ้อนกัน' },
+  ];
+
+  dailyLessons = [
+    { key: 'intro', titleTh: 'แนะนำตัวเอง', titleEn: 'Introducing Yourself', description: 'แนะนำตัวเองให้เพื่อนใหม่รู้จัก ทั้งชื่อ ที่มา และสิ่งที่กำลังเรียน', prompt: 'introducing yourself to a new classmate or friend', article: `You have just met a new classmate or friend for the first time, and you want to get to know each other. Introduce yourself with your name, where you are from, and what you are studying or doing. Ask the other person questions about themselves too, such as their name, hobbies, or interests. Keep the conversation friendly, natural, and relaxed, just like a real first conversation between two people getting to know each other.`, vocab: [{ en: 'introduce', th: 'แนะนำตัว' }, { en: 'classmate', th: 'เพื่อนร่วมชั้น' }, { en: 'hobby', th: 'งานอดิเรก' }, { en: 'major', th: 'วิชาเอก' }, { en: 'get to know', th: 'ทำความรู้จัก' }], image: 'นักศึกษาสองคนยิ้มทักทายกันในลานมหาวิทยาลัย ยื่นมือจับมือกัน' },
+    { key: 'hobby', titleTh: 'งานอดิเรกและเวลาว่าง', titleEn: 'Hobbies & Free Time', description: 'พูดคุยกับเพื่อนเรื่องงานอดิเรกและกิจกรรมยามว่างที่ชื่นชอบ', prompt: 'chatting about hobbies and how you spend your free time', article: `You are chatting with a friend about hobbies and how you like to spend your free time. Talk about what hobbies or activities you enjoy, how often you do them, and why you like them. Ask your friend about their own hobbies too, and try to find something you both enjoy in common. Keep the conversation light, friendly, and natural.`, vocab: [{ en: 'free time', th: 'เวลาว่าง' }, { en: 'enjoy', th: 'ชื่นชอบ' }, { en: 'in common', th: 'ที่มีร่วมกัน' }, { en: 'relax', th: 'ผ่อนคลาย' }, { en: 'activity', th: 'กิจกรรม' }], image: 'ไอคอนงานอดิเรกหลากหลาย เช่น กีตาร์ หนังสือ จักรยาน กล้องถ่ายรูป จัดวางรอบตัวการ์ตูนคน' },
+    { key: 'weekend', titleTh: 'แผนวันหยุดสุดสัปดาห์', titleEn: 'Weekend Plans', description: 'คุยกับเพื่อนเรื่องแผนการใช้เวลาช่วงวันหยุดสุดสัปดาห์', prompt: 'talking about weekend plans with a friend', article: `It's Friday afternoon, and you are talking with a friend about your plans for the weekend. Share what you are planning to do this weekend, whether it's relaxing at home, going out with friends, or doing something new. Ask your friend about their weekend plans as well, and react naturally to what they share.`, vocab: [{ en: 'weekend', th: 'วันหยุดสุดสัปดาห์' }, { en: 'plan', th: 'วางแผน' }, { en: 'go out', th: 'ออกไปเที่ยว' }, { en: 'relax', th: 'พักผ่อน' }, { en: 'Friday', th: 'วันศุกร์' }], image: 'ปฏิทินตั้งโต๊ะเปิดหน้าวันเสาร์-อาทิตย์ มีไอคอนกิจกรรมพักผ่อนล้อมรอบ' },
+    { key: 'travel', titleTh: 'ประสบการณ์การท่องเที่ยว', titleEn: 'Travel Experiences', description: 'เล่าประสบการณ์การเดินทางท่องเที่ยวที่น่าจดจำให้เพื่อนฟัง', prompt: 'sharing a memorable travel experience with a friend', article: `You are talking with a friend about a memorable trip or travel experience you have had. Describe where you went, what you did there, and what made the trip memorable or enjoyable. Ask your friend if they have traveled anywhere interesting too, and keep the conversation flowing naturally like two friends sharing travel stories.`, vocab: [{ en: 'memorable', th: 'น่าจดจำ' }, { en: 'destination', th: 'จุดหมายปลายทาง' }, { en: 'experience', th: 'ประสบการณ์' }, { en: 'souvenir', th: 'ของที่ระลึก' }, { en: 'journey', th: 'การเดินทาง' }], image: 'กระเป๋าเดินทางวางข้างแผนที่โลกและกล้องถ่ายรูป' },
+    { key: 'food', titleTh: 'อาหารโปรดและการทำอาหาร', titleEn: 'Favorite Food & Cooking', description: 'พูดคุยเรื่องอาหารจานโปรดและความชอบในการทำอาหาร', prompt: 'talking about favorite food and cooking with a friend', article: `You are talking with a friend about food — your favorite dishes and whether you enjoy cooking. Share what your favorite food is and why you like it, and talk about whether you like to cook or prefer eating out. Ask your friend about their favorite food too, and perhaps recommend a dish they should try.`, vocab: [{ en: 'favorite dish', th: 'อาหารจานโปรด' }, { en: 'cook', th: 'ทำอาหาร' }, { en: 'recipe', th: 'สูตรอาหาร' }, { en: 'eat out', th: 'ไปกินข้าวนอกบ้าน' }, { en: 'flavor', th: 'รสชาติ' }], image: 'จานอาหารไทยหน้าตาน่ากินวางบนโต๊ะ มีตะเกียบ/ช้อนส้อม' },
+    { key: 'movies', titleTh: 'หนังและความบันเทิง', titleEn: 'Movies & Entertainment', description: 'พูดคุยเรื่องหนังและซีรีส์ที่ดูล่าสุด พร้อมแนะนำเรื่องที่ชอบ', prompt: 'chatting about movies, shows, and entertainment', article: `You are chatting with a friend about movies and entertainment. Talk about the last movie or show you watched, what genre you like, and why you enjoyed or disliked it. Ask your friend for recommendations and discuss your favorite actors or series.`, vocab: [{ en: 'genre', th: 'ประเภทหนัง' }, { en: 'recommend', th: 'แนะนำ' }, { en: 'plot', th: 'โครงเรื่อง' }, { en: 'series', th: 'ซีรีส์' }, { en: 'actor/actress', th: 'นักแสดง' }], image: 'ป๊อปคอร์นและรีโมททีวีวางหน้าจอโทรทัศน์ในบรรยากาศห้องนั่งเล่น' },
+    { key: 'health', titleTh: 'สุขภาพและการออกกำลังกาย', titleEn: 'Health & Exercise', description: 'พูดคุยเรื่องการดูแลสุขภาพและการออกกำลังกายในชีวิตประจำวัน', prompt: 'talking about exercise and healthy habits', article: `You are talking with a friend about staying healthy. Share what kind of exercise you do, how often you work out, and any healthy habits you try to keep, like sleep or diet. Ask your friend about their own fitness routine and give each other encouragement.`, vocab: [{ en: 'exercise', th: 'ออกกำลังกาย' }, { en: 'routine', th: 'กิจวัตร' }, { en: 'diet', th: 'อาหารการกิน' }, { en: 'healthy habit', th: 'นิสัยสุขภาพดี' }, { en: 'stay fit', th: 'รักษาสุขภาพ' }], image: 'รองเท้าวิ่งคู่หนึ่งวางข้างขวดน้ำและเสื่อโยคะ' },
+    { key: 'technology', titleTh: 'เทคโนโลยีและโซเชียลมีเดียในชีวิตประจำวัน', titleEn: 'Technology & Social Media', description: 'พูดคุยเรื่องการใช้เทคโนโลยีและโซเชียลมีเดียในชีวิตประจำวัน', prompt: 'chatting about technology and social media use in daily life', article: `You are chatting with a friend about technology and social media use in everyday life. Talk about which apps you use most, how social media affects your day, and share your opinion on spending less or more time online. Ask your friend the same.`, vocab: [{ en: 'social media', th: 'โซเชียลมีเดีย' }, { en: 'app', th: 'แอปพลิเคชัน' }, { en: 'screen time', th: 'เวลาหน้าจอ' }, { en: 'online', th: 'ออนไลน์' }, { en: 'opinion', th: 'ความคิดเห็น' }], image: 'มือถือแสดงไอคอนแอปโซเชียลมีเดียหลายแอปลอยอยู่รอบจอ' },
+  ];
+
+  interviewLessons = [
+    { key: 'school', titleTh: 'ตำแหน่งครูสอนภาษาอังกฤษในโรงเรียน', titleEn: 'English Teacher at a Local School', description: 'สัมภาษณ์งานตำแหน่งครูสอนภาษาอังกฤษที่โรงเรียนทั่วไป', prompt: 'interviewing for an English teacher position at a local school', article: `You are applying for an English teacher position at a local school. The interview panel wants to know about your teaching philosophy, classroom management skills, and how you communicate with parents. Before the interview begins, think about your reasons for choosing this profession and your plans for professional growth.`, vocab: [{ en: 'teaching philosophy', th: 'ปรัชญาการสอน' }, { en: 'classroom management', th: 'การบริหารจัดการชั้นเรียน' }, { en: 'qualification', th: 'คุณสมบัติ' }, { en: 'strength', th: 'จุดแข็ง' }, { en: 'professional growth', th: 'การพัฒนาวิชาชีพ' }], image: 'โต๊ะสัมภาษณ์งานพร้อมเรซูเม่และคณะกรรมการนั่งฝั่งตรงข้าม' },
+    { key: 'international', titleTh: 'ตำแหน่งครูโรงเรียนนานาชาติ', titleEn: 'English Teacher at an International School', description: 'สัมภาษณ์งานตำแหน่งครูสอนภาษาอังกฤษที่โรงเรียนนานาชาติ', prompt: 'interviewing for an English teacher position at an international school', article: `You are interviewing for an English teacher position at an international school with high academic standards. The principal wants to understand your teaching methods, how you handle student-centered learning, and your approach to classroom discipline and parent communication.`, vocab: [{ en: 'student-centered', th: 'เน้นผู้เรียนเป็นศูนย์กลาง' }, { en: 'academic standard', th: 'มาตรฐานวิชาการ' }, { en: 'principal', th: 'ผู้อำนวยการ' }, { en: 'approach', th: 'แนวทาง' }, { en: 'expectation', th: 'ความคาดหวัง' }], image: 'ธงชาติหลายประเทศแขวนในห้องเรียนนานาชาติ' },
+    { key: 'languageCenter', titleTh: 'ติวเตอร์สถาบันสอนภาษา', titleEn: 'Tutor at a Language Center', description: 'สัมภาษณ์งานตำแหน่งติวเตอร์ที่สถาบันสอนภาษาเอกชน', prompt: 'interviewing for a tutor position at a private language center', article: `You are interviewing for a teaching position at a private language center known for its fun, energetic teaching style. The interviewer wants to know about the interactive activities and games you use to keep students engaged, as well as how you handle lively or distracted students.`, vocab: [{ en: 'energetic', th: 'กระตือรือร้น' }, { en: 'interactive activity', th: 'กิจกรรมเชิงโต้ตอบ' }, { en: 'engage', th: 'ดึงดูดความสนใจ' }, { en: 'lively', th: 'คึกคัก' }, { en: 'tutor', th: 'ติวเตอร์' }], image: 'ห้องเรียนสีสันสดใสพร้อมของเล่นการศึกษาและป้ายคำศัพท์' },
+    { key: 'privateTutor', titleTh: 'ติวเตอร์ภาษาอังกฤษส่วนตัวให้เด็ก', titleEn: 'Private Tutor for a Child', description: 'สัมภาษณ์กับผู้ปกครองที่ต้องการจ้างติวเตอร์ภาษาอังกฤษส่วนตัวให้บุตรหลาน', prompt: 'interviewing with a parent to become their child\'s private English tutor', article: `You are interviewing with a parent who wants to hire a private English tutor for their child. The parent wants to know about your experience teaching children, your methods for keeping young learners focused, and how you will communicate with them about their child's progress.`, vocab: [{ en: 'private tutor', th: 'ติวเตอร์ส่วนตัว' }, { en: 'patience', th: 'ความอดทน' }, { en: 'reassure', th: 'สร้างความมั่นใจ' }, { en: 'one-on-one', th: 'แบบตัวต่อตัว' }, { en: 'progress update', th: 'การรายงานความก้าวหน้า' }], image: 'เด็กนั่งเรียนกับติวเตอร์ที่โต๊ะบ้าน มีหนังสือและดินสอสี' },
+    { key: 'online', titleTh: 'ครูสอนภาษาอังกฤษออนไลน์', titleEn: 'Online English Teacher', description: 'สัมภาษณ์งานตำแหน่งครูสอนภาษาอังกฤษออนไลน์ผ่านวิดีโอคอล', prompt: 'interviewing for an online English teaching position', article: `You are interviewing for a position as an online English teacher, working with students over video call from home. The interviewer wants to know how you keep students engaged through a screen, how you handle technical issues during a lesson, and how you build a good learning relationship without meeting students in person.`, vocab: [{ en: 'video call', th: 'การประชุมทางวิดีโอ' }, { en: 'technical issue', th: 'ปัญหาทางเทคนิค' }, { en: 'adaptable', th: 'ปรับตัวได้' }, { en: 'virtual classroom', th: 'ห้องเรียนเสมือน' }, { en: 'rapport', th: 'ความสัมพันธ์ที่ดี' }], image: 'ครูสอนหน้าจอคอมพิวเตอร์พร้อมหูฟังและไฟสตูดิโอขนาดเล็ก' },
+    { key: 'corporate', titleTh: 'ครูสอนภาษาอังกฤษธุรกิจให้พนักงานบริษัท', titleEn: 'Corporate Business English Trainer', description: 'สัมภาษณ์งานตำแหน่งวิทยากรสอนภาษาอังกฤษธุรกิจให้พนักงานบริษัท', prompt: 'interviewing for a corporate Business English trainer position', article: `You are interviewing for a corporate trainer position teaching Business English to company employees. The HR manager wants to know how you tailor lessons to workplace needs like emails, meetings, and presentations.`, vocab: [{ en: 'corporate trainer', th: 'วิทยากรฝึกอบรมองค์กร' }, { en: 'tailor', th: 'ปรับให้เหมาะสม' }, { en: 'workplace', th: 'สถานที่ทำงาน' }, { en: 'HR manager', th: 'ผู้จัดการฝ่ายบุคคล' }, { en: 'professional communication', th: 'การสื่อสารเชิงวิชาชีพ' }], image: 'ห้องประชุมออฟฟิศพร้อมโปรเจกเตอร์และพนักงานนั่งฟังบรรยาย' },
+    { key: 'summerCamp', titleTh: 'ครูประจำค่ายภาษาอังกฤษภาคฤดูร้อน', titleEn: 'Summer English Camp Instructor', description: 'สัมภาษณ์งานตำแหน่งครูประจำค่ายภาษาอังกฤษภาคฤดูร้อน', prompt: 'interviewing for a summer English camp instructor role', article: `You are interviewing for a summer English camp instructor role. The camp director wants to know how you keep a large group of children active, engaged, and learning through games and outdoor activities.`, vocab: [{ en: 'summer camp', th: 'ค่ายฤดูร้อน' }, { en: 'instructor', th: 'ผู้สอน' }, { en: 'outdoor activity', th: 'กิจกรรมกลางแจ้ง' }, { en: 'group management', th: 'การดูแลกลุ่ม' }, { en: 'enthusiasm', th: 'ความกระตือรือร้น' }], image: 'เด็กๆ เล่นเกมกลางแจ้งใต้เต็นท์ค่ายฤดูร้อน' },
+    { key: 'governmentSchool', titleTh: 'ครูสอนภาษาอังกฤษโรงเรียนรัฐบาลต่างจังหวัด', titleEn: 'Rural Government School Teacher', description: 'สัมภาษณ์งานตำแหน่งครูสอนภาษาอังกฤษที่โรงเรียนรัฐบาลในต่างจังหวัด', prompt: 'interviewing for an English teacher position at a rural government school', article: `You are interviewing for an English teacher position at a rural government school with limited resources. The interviewer wants to know how you adapt lessons with few materials and motivate students with different skill levels.`, vocab: [{ en: 'rural', th: 'ชนบท' }, { en: 'limited resources', th: 'ทรัพยากรจำกัด' }, { en: 'adapt', th: 'ปรับใช้' }, { en: 'mixed-ability', th: 'ระดับความสามารถหลากหลาย' }, { en: 'motivate', th: 'สร้างแรงจูงใจ' }], image: 'ห้องเรียนเรียบง่ายในชนบท มีกระดานดำและหนังสือเก่าวางบนโต๊ะไม้' },
   ];
 
   
@@ -604,8 +721,37 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     }
   }
 
+  get totalSetupSteps(): number {
+    // Presentation keeps its own in-workspace topic picker + slides, so the
+    // wizard stops at step 3 (avatar) for it; other categories get a 4th
+    // step that previews the randomly-picked reading passage/vocab/image.
+    return this.selectedCategory === 'presentation' ? 3 : 4;
+  }
+
+  private getLessonPoolForCategory(category: string): any[] {
+    if (category === 'teaching') return this.teachingLessons;
+    if (category === 'daily') return this.dailyLessons;
+    if (category === 'interview') return this.interviewLessons;
+    return [];
+  }
+
+  private pickRandomLesson(): void {
+    const pool = this.getLessonPoolForCategory(this.selectedCategory);
+    this.selectedLesson = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
+  }
+
+  buildLessonGreeting(lesson: { titleEn: string }): string {
+    const studentName = this.session.currentUser?.firstName || 'there';
+    const avatarName = this.avatarDetails[this.selectedAvatar]?.label || 'your AI partner';
+    return `Hello ${studentName}! I am ${avatarName}. Let's practice: ${lesson.titleEn}. Are you ready to begin?`;
+  }
+
   nextSetupStep() {
-    if (this.setupStep < 3) {
+    const total = this.totalSetupSteps;
+    if (this.setupStep < total) {
+      if (this.setupStep === 3 && total === 4) {
+        this.pickRandomLesson();
+      }
       this.setupStep++;
       this.gameFx.playSoundEffect('click');
     } else {
@@ -673,18 +819,11 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
       this.presentationQaQuestions = [];
     }
     
-    // Randomize teaching topic if category is teaching
-    if (this.selectedCategory === 'teaching') {
-      const studentName = this.session.currentUser?.firstName || 'there';
-      const topics = [
-        { key: 'welcome', titleTh: 'ต้อนรับนักเรียนหน้าชั้นเรียน', prompt: 'welcoming students to the classroom on the first day of school', greeting: `Hello ${studentName}! I am Teacher Jane. I'll be your mentor today. Let's practice welcoming students to the classroom on the first day. Are you ready?` },
-        { key: 'rules', titleTh: 'อธิบายกฎระเบียบในห้องเรียน', prompt: 'explaining classroom rules to students (like raising hands to speak)', greeting: `Hello ${studentName}! I am Teacher Jane. I'll be your mentor today. Let's practice explaining the classroom rules to our students.` },
-        { key: 'parent', titleTh: 'คุยโทรศัพท์กับผู้ปกครองของนักเรียน', prompt: 'calling a parent on the phone to discuss their child\'s progress', greeting: `Hello ${studentName}! This is Teacher Jane. Let's practice calling a parent to discuss their child's progress.` },
-        { key: 'meeting', titleTh: 'ประชุมปรึกษาหารือครูร่วมวิชา', prompt: 'a school teacher meeting discussing lesson planning and syllabus design', greeting: `Hello ${studentName}! I am Teacher Jane. Let's practice conducting a teacher meeting for lesson planning.` }
-      ];
-      this.selectedTeachingTopic = topics[Math.floor(Math.random() * topics.length)];
-    } else {
-      this.selectedTeachingTopic = null;
+    // selectedLesson was already randomized in nextSetupStep() when leaving
+    // step 3 (teaching / daily / interview). Presentation uses its own
+    // in-workspace topic picker instead, so clear it here for that category.
+    if (this.selectedCategory === 'presentation') {
+      this.selectedLesson = null;
     }
 
     const mode = this.pendingPracticeMode;
@@ -1407,11 +1546,12 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
       return `Hello ${studentName}! I am ${examiner}, your presentation evaluator today. Please select a presentation topic and click "Start Presentation" when you are ready to begin!`;
     }
 
+    if ((cat === 'teaching' || cat === 'daily') && this.selectedLesson) {
+      return this.buildLessonGreeting(this.selectedLesson);
+    }
+
     if (avatar === 'jane') {
       if (cat === 'teaching') {
-        if (this.selectedTeachingTopic) {
-          return this.selectedTeachingTopic.greeting;
-        }
         return `Hello ${studentName}! I am Teacher Jane, your senior mentor. Let's practice English for classroom teaching. Are you ready?`;
       }
       return `Hello ${studentName}! I am Teacher Jane. Let's chat in English! How are you doing today?`;
@@ -2446,22 +2586,27 @@ IMPORTANT: If the student made any grammar or spelling mistake in their message,
         if (this.currentChatTopic) {
           categoryPrompt = `You are roleplaying in the scenario: ${this.currentChatTopic.titleEn} (${this.currentChatTopic.scenario}). Help the student practice English language commonly used in this situation.`;
         } else if (this.selectedCategory === 'teaching') {
-          if (this.selectedTeachingTopic) {
-            categoryPrompt = `You are roleplaying in a School/Classroom setting. Specifically, the scenario is: ${this.selectedTeachingTopic.prompt}. Help the student practice English language commonly used in this situation.`;
+          if (this.selectedLesson) {
+            categoryPrompt = `You are roleplaying in a School/Classroom setting for the lesson "${this.selectedLesson.titleEn}" (${this.selectedLesson.prompt}). Reading passage / scope for this lesson:\n"""${this.selectedLesson.article}"""\nStay strictly within the situation described above (setting, characters, topic). If the student goes off-topic, answer briefly and politely, then steer the conversation back to this scenario.`;
           } else {
             categoryPrompt = `You are roleplaying in a School/Classroom setting. Help the student practice English language commonly used by English Teachers (e.g. welcoming students, managing the classroom, giving instructions, talking to parent).`;
           }
         } else if (this.selectedCategory === 'daily') {
-          categoryPrompt = `You are roleplaying in a casual daily life setting. Chat about hobbies, routines, travel, food, or general greetings.`;
+          if (this.selectedLesson) {
+            categoryPrompt = `You are roleplaying in a casual daily-life conversation about "${this.selectedLesson.titleEn}" (${this.selectedLesson.prompt}). Reading passage / scope for this topic:\n"""${this.selectedLesson.article}"""\nStay within this topic. If the student goes off-topic, answer briefly and politely, then steer the conversation back to this topic.`;
+          } else {
+            categoryPrompt = `You are roleplaying in a casual daily life setting. Chat about hobbies, routines, travel, food, or general greetings.`;
+          }
         } else if (this.selectedCategory === 'presentation') {
           const topicName = this.getPresentationTopicName();
-          categoryPrompt = `You are an academic examiner evaluating the student's presentation on the topic "${topicName}".
+          const topicData = this.presentationTopics.find(t => t.key === this.presentationTopic);
+          categoryPrompt = `You are an academic examiner evaluating the student's presentation on the topic "${topicName}".${topicData?.article ? ` Context for this presentation:\n"""${topicData.article}"""` : ''}
           Currently in Q&A phase. The student just answered Q&A question ${this.presentationQaCount}.
           Ask the next follow-up question (Question ${this.presentationQaCount + 1} of 2) related to their presentation topic. Keep it realistic, brief and professional.`;
         } else if (this.selectedCategory === 'interview') {
           const currentQ = this.interviewQuestions[this.interviewQuestionIndex - 1];
           const nextQ = this.interviewQuestionIndex < 5 ? this.interviewQuestions[this.interviewQuestionIndex] : null;
-          categoryPrompt = `You are conducting a job interview for an English Teacher position.
+          categoryPrompt = `You are conducting a job interview for an English Teacher position.${this.selectedLesson ? ` Interview context — "${this.selectedLesson.titleEn}": ${this.selectedLesson.article}` : ''}
           The student is answering your question: "${currentQ}".
           Give a very brief evaluation of their response (1-2 sentences) in character, and then ask the next question exactly as follows:
           ${nextQ ? `"${nextQ}"` : `"The interview is now complete. Thank you very much for your time today!"`}
