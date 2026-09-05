@@ -1,0 +1,71 @@
+<!-- Purely decorative -- never announced, never clickable. -->
+<div class="cbg-root" aria-hidden="true">
+
+  <!-- Shared shapes/gradients for the clouds/sparkles/paper-airplane,
+       referenced below via <use>/url(). The two corner illustrations used
+       to be hand-drawn SVG here too (gradients, shadows, glossy highlights)
+       but are now the user-supplied artwork below (real PNGs) instead, so
+       those defs were removed with them. -->
+  <svg width="0" height="0" style="position: absolute">
+    <defs>
+      <symbol id="cbg-cloud" viewBox="0 0 100 56">
+        <ellipse cx="30" cy="36" rx="26" ry="18" fill="url(#g-cloud)" />
+        <ellipse cx="58" cy="24" rx="30" ry="22" fill="url(#g-cloud)" />
+        <ellipse cx="82" cy="38" rx="20" ry="15" fill="url(#g-cloud)" />
+        <rect x="14" y="34" width="76" height="20" rx="10" fill="url(#g-cloud)" />
+        <ellipse cx="46" cy="20" rx="11" ry="7" fill="#ffffff" opacity=".85" />
+      </symbol>
+      <symbol id="cbg-star" viewBox="0 0 40 40">
+        <polygon points="20,3 24,15 37,15 27,23 31,35 20,27 9,35 13,23 3,15 16,15" fill="currentColor" />
+      </symbol>
+      <symbol id="cbg-heart" viewBox="0 0 40 40">
+        <path d="M20,34 C20,34 5,23 5,13 C5,8 9,5 13,5 C16,5 19,7 20,9 C21,7 24,5 27,5 C31,5 35,8 35,13 C35,23 20,34 20,34Z" fill="currentColor" />
+      </symbol>
+      <symbol id="cbg-dot" viewBox="0 0 10 10">
+        <circle cx="5" cy="5" r="5" fill="currentColor" />
+      </symbol>
+
+      <linearGradient id="g-cloud" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffffff" />
+        <stop offset="100%" stop-color="#eef1fb" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- Clouds -->
+  <svg class="cbg-cloud cbg-cloud-1" viewBox="0 0 100 56"><use href="#cbg-cloud" /></svg>
+  <svg class="cbg-cloud cbg-cloud-2" viewBox="0 0 100 56"><use href="#cbg-cloud" /></svg>
+  <svg class="cbg-cloud cbg-cloud-3" viewBox="0 0 100 56"><use href="#cbg-cloud" /></svg>
+
+  <!-- Sparkles scattered around the canvas -->
+  <svg class="cbg-spark spark-1" viewBox="0 0 40 40"><use href="#cbg-star" /></svg>
+  <svg class="cbg-spark spark-2" viewBox="0 0 10 10"><use href="#cbg-dot" /></svg>
+  <svg class="cbg-spark spark-3" viewBox="0 0 40 40"><use href="#cbg-star" /></svg>
+  <svg class="cbg-spark spark-4" viewBox="0 0 40 40"><use href="#cbg-heart" /></svg>
+  <svg class="cbg-spark spark-5" viewBox="0 0 10 10"><use href="#cbg-dot" /></svg>
+  <svg class="cbg-spark spark-6" viewBox="0 0 40 40"><use href="#cbg-star" /></svg>
+  <svg class="cbg-spark spark-7" viewBox="0 0 10 10"><use href="#cbg-dot" /></svg>
+  <svg class="cbg-spark spark-8" viewBox="0 0 40 40"><use href="#cbg-heart" /></svg>
+  <svg class="cbg-spark spark-9" viewBox="0 0 40 40"><use href="#cbg-star" /></svg>
+  <svg class="cbg-spark spark-10" viewBox="0 0 10 10"><use href="#cbg-dot" /></svg>
+
+  <!-- Paper airplane + dashed flight trail -->
+  <svg class="cbg-plane-trail" viewBox="0 0 200 150" preserveAspectRatio="none">
+    <path d="M6,140 C55,120 88,58 190,10" fill="none" stroke="#f5c451" stroke-width="2.5" stroke-dasharray="1 9" stroke-linecap="round" />
+  </svg>
+  <svg class="cbg-plane" viewBox="0 0 60 60">
+    <path d="M4,32 L56,6 L36,32 L56,58 Z" fill="#FF8FA3" />
+    <path d="M19,32 L36,32 L28,46 Z" fill="#e8708f" />
+    <path d="M8,30 L50,10" stroke="#ffffff" stroke-width="1.4" opacity=".5" stroke-linecap="round" />
+  </svg>
+
+  <!-- Bottom-left corner: bunny reading atop a stack of books, with a
+       little mug of pencils beside it. User-supplied artwork (real
+       transparent PNG, not hand-drawn SVG -- see cute-background
+       component doc comment). -->
+  <img class="cbg-corner cbg-corner-bl" src="assets/cute-bg/bunny-books.png" alt="" />
+
+  <!-- Bottom-right corner: backpack with leaning books + an open book
+       and pencil resting in front of it. Same source as above. -->
+  <img class="cbg-corner cbg-corner-br" src="assets/cute-bg/backpack-books.png" alt="" />
+</div>

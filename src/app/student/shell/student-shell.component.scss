@@ -95,13 +95,19 @@
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  background: var(--brand-page-gradient);
+  // Fallback color only -- <app-cute-background> (first child, position:
+  // absolute + inset: 0) paints a full pastel gradient + decorations over
+  // this at z-index 0, so this rarely shows. Was `var(--brand-page-gradient)`
+  // (the flat teal/mint wash shared with Teacher/Admin); switched to a
+  // plain cream so this area no longer depends on that shared token.
+  background: #fff8f0;
 }
 
 /* Ambient blurred orbs removed - flat soft-white background now, matching
    the Teacher area (see .dashboard-wrap above). .orb elements are no
    longer rendered in the template either; rule kept only in case anything
-   still references the class, harmlessly inert. */
+   still references the class, harmlessly inert. Superseded by
+   <app-cute-background> for this area's own decorative layer. */
 .orb {
   display: none;
 }

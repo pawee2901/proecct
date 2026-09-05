@@ -77,6 +77,12 @@ export class StudentLessonsComponent implements OnDestroy {
   pdfDoc: any = null;
   pdfLoading = false;
   isSlideFullscreen = false;
+  // Per-unit cache so a slide already downloaded this session is never
+  // re-fetched -- keyed by unit id since a student can open several units'
+  // roadmaps in one visit. pdfLoadPromise covers the in-flight case (e.g.
+  // prefetch still downloading when the student clicks "Lesson").
+  private pdfDocCache = new Map<number, any>();
+  private pdfLoadPromise = new Map<number, Promise<any>>();
 
   constructor(
     public lessonsData: LessonsDataService,
@@ -105,6 +111,12 @@ export class StudentLessonsComponent implements OnDestroy {
     this.lessonsData.currentUnit = u;
     this.currentStep = null;
     this.quizSubmitted = false;
+    // Kick the (often 14-28MB) slide PDF off downloading right away, well
+    // before the student reaches the "Lesson" roadmap step -- by the time
+    // they click through Pre-Test/game-pre and press it, the file is
+    // usually already loaded, so loadPdfForUnit() below can render
+    // instantly instead of showing the loading spinner from a cold start.
+    this.prefetchLessonPdf(u.id);
   }
 
   selectUnit(unit: Unit): void {
@@ -415,25 +427,58 @@ export class StudentLessonsComponent implements OnDestroy {
     }
   }
 
-  loadPdfForUnit(unitId: number): void {
-    const currentUnitObj = this.lessonsData.units.find((u) => u.id === unitId);
-    const url = this.resolveSlideUrl(unitId, currentUnitObj?.slidePath);
+  // Returns the cached doc/in-flight promise for unitId if one exists,
+  // otherwise starts the pdf.js download and caches it. Shared by the
+  // silent prefetch (enterLesson()) and the actual "Lesson" step open
+  // (loadPdfForUnit()) so there is exactly one in-flight request per unit.
+  private getPdfDocument(unitId: number): Promise<any> {
+    const cached = this.pdfDocCache.get(unitId);
+    if (cached) return Promise.resolve(cached);
 
-    this.pdfLoading = true;
-    this.pdfDoc = null;
+    const inFlight = this.pdfLoadPromise.get(unitId);
+    if (inFlight) return inFlight;
 
     if (typeof pdfjsLib === 'undefined') {
-      console.error('pdfjsLib is not loaded');
-      this.pdfLoading = false;
-      return;
+      return Promise.reject(new Error('pdfjsLib is not loaded'));
     }
 
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    pdfjsLib
+    const currentUnitObj = this.lessonsData.units.find((u) => u.id === unitId);
+    const url = this.resolveSlideUrl(unitId, currentUnitObj?.slidePath);
+
+    const promise = pdfjsLib
       .getDocument(url)
       .promise.then((pdf: any) => {
+        this.pdfDocCache.set(unitId, pdf);
+        this.pdfLoadPromise.delete(unitId);
+        return pdf;
+      })
+      .catch((err: any) => {
+        this.pdfLoadPromise.delete(unitId);
+        throw err;
+      });
+
+    this.pdfLoadPromise.set(unitId, promise);
+    return promise;
+  }
+
+  // Best-effort background download -- called from enterLesson() as soon as
+  // a unit's roadmap opens. Failures are swallowed here; loadPdfForUnit()
+  // will surface/retry them if the student actually opens the Lesson step.
+  private prefetchLessonPdf(unitId: number): void {
+    this.getPdfDocument(unitId).catch(() => {});
+  }
+
+  loadPdfForUnit(unitId: number): void {
+    const alreadyCached = this.pdfDocCache.has(unitId);
+    this.pdfDoc = null;
+    // Nothing to spin on if enterLesson() already finished prefetching it.
+    this.pdfLoading = !alreadyCached;
+
+    this.getPdfDocument(unitId)
+      .then((pdf: any) => {
         this.pdfDoc = pdf;
         this.currentLessonPage = 0;
         this.pdfLoading = false;

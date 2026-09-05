@@ -575,9 +575,10 @@
                   @if (isEvaluatingSttSession) {
                     <p style="font-size: 0.8rem; color: var(--slate-400); margin-bottom: 1rem;">⏳ AI กำลังวิเคราะห์ผลรอบนี้...</p>
                   } @else if (sttSessionFeedback) {
-                    <p style="font-size: 0.85rem; color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 0.7rem 1rem; max-width: 500px; margin-bottom: 1rem; line-height: 1.5; text-align: left;">
-                      🤖 {{ sttSessionFeedback }}
-                    </p>
+                    <div class="ai-feedback-card animate-fade" style="max-width: 500px; margin-bottom: 1rem; text-align: left;">
+                      <div class="ai-feedback-head"><span class="ai-feedback-avatar">🤖</span> คำแนะนำจาก AI</div>
+                      <div class="ai-feedback-body markdown-body" [innerHTML]="formatMarkdown(sttSessionFeedback)"></div>
+                    </div>
                   }
 
                   <div style="display: flex; gap: 1rem; width: 100%; max-width: 420px; justify-content: center;">
@@ -743,7 +744,7 @@
 
               <!-- STEP 2: Question (audio only -- no text shown) -->
               @if (ttsDictationStep === 'question') {
-                <div class="tts-controls-panel" style="max-width: 480px; margin: 0 auto; align-items: center; text-align: center;">
+                <div class="tts-controls-panel" style="width: 100%; align-items: center; text-align: center;">
                   <span style="align-self: center; font-size: 0.75rem; font-weight: 700; color: var(--slate-400);">ข้อที่ {{ ttsDictationResults.length + 1 }}</span>
 
                   <div
@@ -776,22 +777,23 @@
                        either way, since the timer starts when playback ends,
                        not when typing starts. Only the submit button below is
                        gated on ttsDictationIsPlaying. -->
-                  <textarea
-                    class="custom-tts-textarea"
-                    style="height: 70px; width: 100%; margin-top: 0.75rem;"
-                    placeholder="พิมพ์หรือเขียนด้วยปากกาสิ่งที่คุณได้ยินตรงนี้..."
-                    [(ngModel)]="ttsDictationInput"
-                    (keydown.enter)="$event.preventDefault(); submitTtsDictationAnswer()"
-                  ></textarea>
+                  <div class="tts-answer-row" style="margin-top: 0.75rem;">
+                    <textarea
+                      class="custom-tts-textarea"
+                      style="height: 70px;"
+                      placeholder="พิมพ์หรือเขียนด้วยปากกาสิ่งที่คุณได้ยินตรงนี้..."
+                      [(ngModel)]="ttsDictationInput"
+                      (keydown.enter)="$event.preventDefault(); submitTtsDictationAnswer()"
+                    ></textarea>
 
-                  <button
-                    class="custom-tts-play-btn"
-                    style="padding: 0.75rem 0; margin-top: 0.75rem;"
-                    [disabled]="ttsDictationIsPlaying || !ttsDictationInput.trim()"
-                    (click)="submitTtsDictationAnswer()"
-                  >
-                    ✅ ส่งคำตอบ
-                  </button>
+                    <button
+                      class="custom-tts-play-btn custom-tts-send-btn"
+                      [disabled]="ttsDictationIsPlaying || !ttsDictationInput.trim()"
+                      (click)="submitTtsDictationAnswer()"
+                    >
+                      ส่งคำตอบ
+                    </button>
+                  </div>
 
                   <button
                     style="margin-top: 0.5rem; background: none; border: none; color: var(--slate-400); font-size: 0.78rem; font-weight: 700; cursor: pointer; text-decoration: underline;"
@@ -873,9 +875,10 @@
                   @if (isEvaluatingTtsDictation) {
                     <p style="font-size: 0.8rem; color: var(--slate-400); text-align: center;">⏳ AI กำลังวิเคราะห์ผลรอบนี้...</p>
                   } @else if (ttsDictationFeedback) {
-                    <p style="font-size: 0.85rem; color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 0.85rem 1.1rem; line-height: 1.5;">
-                      🤖 {{ ttsDictationFeedback }}
-                    </p>
+                    <div class="ai-feedback-card animate-fade">
+                      <div class="ai-feedback-head"><span class="ai-feedback-avatar">🤖</span> คำแนะนำจาก AI</div>
+                      <div class="ai-feedback-body markdown-body" [innerHTML]="formatMarkdown(ttsDictationFeedback)"></div>
+                    </div>
                   }
 
                   <!-- Per-item breakdown -->

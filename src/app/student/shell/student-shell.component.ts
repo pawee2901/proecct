@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, ActivatedRoute } from '@angular/router';
 
+import { CuteBackgroundComponent } from '../../shared/cute-background/cute-background.component';
 import { StudentSessionService } from '../services/student-session.service';
 import { LessonsDataService } from '../services/lessons-data.service';
 import { ProgressService } from '../services/progress.service';
@@ -32,7 +33,7 @@ import { SharedUiStateService } from '../services/shared-ui-state.service';
 @Component({
   selector: 'app-student-shell',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, CuteBackgroundComponent],
   templateUrl: './student-shell.component.html',
   styleUrl: './student-shell.component.scss',
 })

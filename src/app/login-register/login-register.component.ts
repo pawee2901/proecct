@@ -4,6 +4,7 @@ import { ApiService } from '../services/api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UNIVERSITY_OPTIONS } from '../shared/university-options';
+import { CuteBackgroundComponent } from '../shared/cute-background/cute-background.component';
 
 interface LoginForm {
   username: string;
@@ -36,7 +37,7 @@ interface SpawnChar {
 @Component({
   selector: 'app-login-register',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CuteBackgroundComponent],
   templateUrl: './login-register.component.html',
   styleUrl: './login-register.component.css',
 })

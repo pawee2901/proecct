@@ -1,0 +1,112 @@
+// Pastel pink/lavender/cream wash + floating decorations. Sits absolutely
+// inside whatever `position: relative` wrapper hosts it (dashboard-wrap,
+// login's page-wrapper) as that wrapper's first child, so it paints behind
+// every other child at the default stack level -- same z-index:0-and-DOM-
+// order trick already used by the (now-retired) .orb layer in
+// student-shell.component.scss.
+:host {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+
+  background:
+    radial-gradient(ellipse 55% 60% at 50% 35%, #fffdf8 0%, rgba(255, 253, 248, 0) 70%),
+    radial-gradient(ellipse 60% 50% at 8% 0%, #ffd3e6 0%, rgba(255, 211, 230, 0) 60%),
+    radial-gradient(ellipse 60% 50% at 100% 0%, #ded1f7 0%, rgba(222, 209, 247, 0) 60%),
+    radial-gradient(ellipse 80% 60% at 50% 120%, #ffe9b8 0%, rgba(255, 233, 184, 0) 65%),
+    linear-gradient(180deg, #fff8f0 0%, #fdf6ee 100%);
+}
+
+.cbg-root {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Clouds ── */
+.cbg-cloud {
+  position: absolute;
+  height: auto;
+  filter: drop-shadow(0 8px 14px rgba(120, 100, 140, 0.12));
+}
+.cbg-cloud-1 { top: 5%; left: 3%; width: clamp(90px, 13vw, 170px); opacity: .95; animation: cbgDrift 10s ease-in-out infinite alternate; }
+.cbg-cloud-2 { top: 12%; right: 5%; width: clamp(80px, 11vw, 150px); opacity: .9; animation: cbgDrift 12s ease-in-out infinite alternate-reverse; }
+.cbg-cloud-3 { top: 30%; right: 20%; width: clamp(60px, 8vw, 110px); opacity: .8; animation: cbgDrift 9s ease-in-out infinite alternate; }
+
+@keyframes cbgDrift {
+  from { transform: translateY(0); }
+  to   { transform: translateY(10px); }
+}
+
+/* ── Sparkles ── */
+.cbg-spark {
+  position: absolute;
+  animation: cbgTwinkle 3.4s ease-in-out infinite;
+}
+.spark-1  { top: 8%;  left: 17%; width: 16px; color: #FFD166; animation-delay: 0s; }
+.spark-2  { top: 15%; left: 42%; width: 8px;  color: #FF8FA3; animation-delay: .4s; }
+.spark-3  { top: 6%;  right: 32%; width: 14px; color: #8FC1F2; animation-delay: .8s; }
+.spark-4  { top: 42%; left: 6%;  width: 18px; color: #FF8FA3; animation-delay: 1.2s; }
+.spark-5  { top: 55%; right: 8%; width: 9px;  color: #F8CE6B; animation-delay: 1.6s; }
+.spark-6  { top: 22%; left: 26%; width: 12px; color: #C3AEEF; animation-delay: 2s; }
+.spark-7  { top: 66%; left: 44%; width: 8px;  color: #8FC1F2; animation-delay: .6s; }
+.spark-8  { top: 34%; left: 60%; width: 16px; color: #FFD166; animation-delay: 1s; }
+.spark-9  { top: 60%; right: 30%; width: 14px; color: #FF8FA3; animation-delay: 1.8s; }
+.spark-10 { top: 10%; left: 60%; width: 9px;  color: #C3AEEF; animation-delay: 2.4s; }
+
+@keyframes cbgTwinkle {
+  0%, 100% { opacity: .4; transform: scale(.85); }
+  50%      { opacity: .95; transform: scale(1); }
+}
+
+/* ── Paper airplane ── */
+.cbg-plane {
+  position: absolute;
+  top: 16%;
+  right: 24%;
+  width: clamp(38px, 5vw, 58px);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .12));
+  animation: cbgFloat 6s ease-in-out infinite;
+}
+.cbg-plane-trail {
+  position: absolute;
+  top: 9%;
+  right: 12%;
+  width: clamp(140px, 16vw, 220px);
+  opacity: .65;
+}
+
+@keyframes cbgFloat {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50%      { transform: translate(-6px, -10px) rotate(-4deg); }
+}
+
+/* ── Corner illustrations (user-supplied PNG artwork, real alpha
+   transparency -- see cute-background.component.html) ── */
+.cbg-corner {
+  position: absolute;
+  bottom: 0;
+  display: block;
+  height: auto;
+  filter: drop-shadow(0 10px 16px rgba(120, 90, 110, 0.16));
+}
+.cbg-corner-bl { left: clamp(-20px, -2vw, 6px); width: clamp(210px, 26vw, 360px); }
+.cbg-corner-br { right: clamp(-24px, -2.4vw, 6px); width: clamp(230px, 29vw, 400px); }
+
+@media (max-width: 900px) {
+  .cbg-corner-bl, .cbg-corner-br { width: clamp(130px, 30vw, 200px); }
+  .cbg-plane, .cbg-plane-trail { display: none; }
+}
+
+@media (max-width: 560px) {
+  .cbg-corner-bl, .cbg-corner-br { width: 108px; opacity: .9; }
+  .cbg-cloud-3 { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cbg-cloud, .cbg-spark, .cbg-plane {
+    animation: none !important;
+  }
+}

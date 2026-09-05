@@ -1,4 +1,10 @@
 <div class="dashboard-wrap premium-gradient-bg" [class.shake-anim]="gameFx.gameShake" (click)="onWrapperClick()">
+  <!-- Decorative pastel background (clouds/sparkles/corner illustrations) --
+       first child + z-index:0 so it paints behind top-nav/main-content;
+       see student-shell.component.scss's "TOP NAV" comment for how the
+       stacking order works out. -->
+  <app-cute-background></app-cute-background>
+
   <!-- Confetti overlay -->
   @if (gameFx.showConfetti) {
     <div class="confetti-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; overflow: hidden;">

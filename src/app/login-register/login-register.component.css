@@ -21,7 +21,10 @@
   --ink:        #0f172a;
   --ink-md:     #475569;
   --ink-lt:     #94a3b8;
-  --bg-page:    linear-gradient(135deg, #eafaf6 0%, #f3fbf8 45%, #fdf6ea 100%);
+  /* Fallback color only -- <app-cute-background> (first child, position:
+     absolute + inset: 0) paints a full pastel gradient + decorations over
+     this at z-index 0, so this rarely shows. */
+  --bg-page:    #fff8f0;
   --card-r:     28px;
   --field-r:    14px;
   --trans:      all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

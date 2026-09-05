@@ -996,23 +996,92 @@
     }
   }
 
+  /* Dictation answer row: textarea + submit button side by side, instead of
+     the button sitting on its own centered row below the textarea. */
+  .tts-answer-row {
+    width: 100%;
+    display: flex;
+    align-items: stretch;
+    gap: 0.6rem;
+
+    .custom-tts-textarea {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .custom-tts-send-btn {
+      flex: 0 0 auto;
+      width: 108px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      white-space: nowrap;
+      padding: 0 0.5rem;
+    }
+  }
+
   .custom-tts-play-btn {
-    background: var(--pastel-blue-dark);
+    background: linear-gradient(135deg, var(--pastel-blue-dark), var(--pastel-blue-darker));
     border: none;
     color: #fff;
-    padding: 0.65rem 0;
+    padding: 0.7rem 0;
     font-size: 0.8rem;
-    font-weight: 700;
-    border-radius: 12px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    border-radius: 14px;
     cursor: pointer;
-    transition: background 0.2s ease;
-    &:hover {
-      background: var(--pastel-blue-darker);
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.32);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(13, 148, 136, 0.42);
+    }
+    &:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 3px 10px rgba(13, 148, 136, 0.32);
     }
     &:disabled {
       background: var(--slate-300);
+      box-shadow: none;
+      opacity: 0.75;
       cursor: not-allowed;
     }
+  }
+}
+
+/* AI feedback card: readable container for AI-generated round-summary text
+   (formatMarkdown()'d, not raw-interpolated) -- shared by the Speech-to-Text
+   and Text-to-Speech dictation "summary" screens. */
+.ai-feedback-card {
+  background: linear-gradient(135deg, #f0fdfa, #ecfeff);
+  border: 1px solid #99f6e4;
+  border-radius: 16px;
+  padding: 1rem 1.15rem;
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.08);
+
+  .ai-feedback-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #0f766e;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed rgba(13, 148, 136, 0.25);
+  }
+
+  .ai-feedback-avatar {
+    font-size: 1rem;
+  }
+
+  .ai-feedback-body {
+    font-size: 0.85rem;
+    color: var(--slate-700);
+    line-height: 1.7;
   }
 }
 
