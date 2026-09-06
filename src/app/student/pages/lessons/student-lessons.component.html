@@ -66,8 +66,18 @@
           </div>
         }
         @if (lessonDetailUnit) {
-          <!-- Lesson Detail View -->
-          <div class="lesson-detail animate-fade">
+          <!-- Lesson Detail View --
+               [hidden] (not display:none via CSS elsewhere, and not an @if
+               that would unmount/reset the component state) while a
+               fullscreen step/quiz overlay is open on top of it -- .quiz-fs-
+               overlay's background is transparent (see its own comment) so
+               <app-cute-background> shows through behind it, but this view
+               would show through right along with it since it's still
+               sitting in the DOM underneath, bleeding through everywhere the
+               overlay's own content doesn't happen to cover (visible e.g.
+               behind the roadmap mini-games, whose card is far smaller than
+               the viewport). -->
+          <div class="lesson-detail animate-fade" [hidden]="stepFullscreen || quizFullscreen">
             <div class="detail-header">
               <button class="btn-back-detail" (click)="lessonDetailUnit = null">
                 <svg
@@ -597,34 +607,27 @@
                     <span class="part-dot dot-a"> </span>Part A — ปรนัย
                     {{ lessonsData.currentUnit.fullQuiz!.partA.length }} ข้อ</span
                   >
-                  <span
-                    >{{ fullQuizResult.partAScore }} /
-                    {{
-                      lessonsData.currentUnit.fullQuiz!.partA.length * 10 > 70
-                        ? 70
-                        : lessonsData.currentUnit.fullQuiz!.partA.length * 10
-                    }}</span
-                  >
+                  <span>{{ fullQuizResult.partAScore }} / {{ getFullQuizPartMaxes().partA }}</span>
                 </div>
                 <div class="score-row">
                   <span> <span class="part-dot dot-b"> </span>Part B — จับคู่</span>
-                  <span>{{ fullQuizResult.partBScore }} / 10</span>
+                  <span>{{ fullQuizResult.partBScore }} / {{ getFullQuizPartMaxes().partB }}</span>
                 </div>
                 @if (lessonsData.currentUnit.fullQuiz!.partCOrder) {
                   <div class="score-row">
                     <span> <span class="part-dot dot-order"> </span>Part C — เรียงลำดับ</span>
-                    <span>{{ fullQuizResult.orderScore }} / 10</span>
+                    <span>{{ fullQuizResult.orderScore }} / {{ getFullQuizPartMaxes().order }}</span>
                   </div>
                   @if (fullQuizResult.partCScore > 0) {
                     <div class="score-row">
                       <span> <span class="part-dot dot-c"> </span>Part D — พูดตอบ</span>
-                      <span>{{ fullQuizResult.partCScore }} / {{ fullQuizResult.partCScore }}</span>
+                      <span>{{ fullQuizResult.partCScore }} / {{ getFullQuizPartMaxes().speak }}</span>
                     </div>
                   }
                 } @else {
                   <div class="score-row">
                     <span> <span class="part-dot dot-c"> </span>Part C — พูดตอบ</span>
-                    <span>{{ fullQuizResult.partCScore }} / {{ fullQuizResult.partCScore }}</span>
+                    <span>{{ fullQuizResult.partCScore }} / {{ getFullQuizPartMaxes().speak }}</span>
                   </div>
                 }
               </div>
@@ -675,19 +678,7 @@
                       }
                     </div>
                     <div class="qfs-speech-answer">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        style="width: 14px; height: 14px; flex-shrink: 0; color: #0d9488"
-                      >
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                      </svg>
-                      {{ partCAnswers[qIdx]?.[subIdx] || '(ไม่มีคำตอบ)' }}
+                      <strong>คำตอบ:</strong> {{ partCAnswers[qIdx]?.[subIdx] || '(ไม่มีคำตอบ)' }}
                     </div>
                     <div class="qfs-speech-sample">
                       <strong>ตัวอย่าง:</strong> {{ sub.sampleAnswer }}

@@ -87,16 +87,21 @@
 
     <div class="section-container">
       <div class="filter-controls-row">
-        <div class="search-input-wrapper">
+        <div class="search-input-wrapper search-input-wrapper--compact">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
           <input type="text" class="filter-input" placeholder="ค้นหาชื่อหรือรหัสนักศึกษา..." [(ngModel)]="searchQuery" />
         </div>
-        <button type="button" class="btn-primary-action" (click)="openAddStudentModal()">
-          เพิ่มนักศึกษา / Add Student
-        </button>
+        <div class="header-buttons-row header-buttons-row--compact">
+          <button type="button" class="btn-primary-action outline" [disabled]="exportingStudents" (click)="exportStudentsToWord()">
+            {{ exportingStudents ? 'กำลังรวบรวมคะแนน...' : 'ดาวน์โหลดรายชื่อ + คะแนน (Word)' }}
+          </button>
+          <button type="button" class="btn-primary-action" (click)="openAddStudentModal()">
+            เพิ่มนักศึกษา / Add Student
+          </button>
+        </div>
       </div>
 
       <div class="table-responsive">
@@ -268,6 +273,92 @@
                   }
                   @if (a.ai_feedback) {
                     <p style="font-size: 0.76rem; color: #475569; margin: 0;">ผลวิเคราะห์ของ AI: {{ a.ai_feedback }}</p>
+                  }
+                  @if (a.quiz_answers) {
+                    <button type="button" class="quiz-detail-toggle-btn" (click)="toggleActivityDetail(a.session_id)">
+                      {{ expandedActivitySessionId === a.session_id ? 'ซ่อนข้อสอบ ▲' : 'ดูข้อสอบทั้งหมด ▼' }}
+                    </button>
+                  }
+                  @if (a.quiz_answers && expandedActivitySessionId === a.session_id) {
+                    <div class="quiz-detail-box">
+                      @if (a.quiz_answers.quizFormat === 'simple') {
+                        @for (q of a.quiz_answers.questions; track $index; let i = $index) {
+                          <div class="quiz-q-row" [class.wrong]="!q.isCorrect">
+                            <p class="quiz-q-text">{{ i + 1 }}. {{ q.question }}</p>
+                            <p class="quiz-q-answer">
+                              คำตอบที่เลือก: <strong>{{ q.chosenAnswer || '(ไม่ได้ตอบ)' }}</strong>
+                              @if (!q.isCorrect) {
+                                <span class="quiz-correct-hint">(เฉลย: {{ q.correctAnswer }})</span>
+                              }
+                              <span class="quiz-result-icon">{{ q.isCorrect ? '✅' : '❌' }}</span>
+                            </p>
+                          </div>
+                        }
+                      } @else {
+                        <p class="quiz-part-label">ตอนที่ 1 (Part A) — {{ a.quiz_answers.scores.partA }} คะแนน</p>
+                        @for (q of a.quiz_answers.partA; track $index; let i = $index) {
+                          <div class="quiz-q-row" [class.wrong]="!q.isCorrect">
+                            <p class="quiz-q-text">{{ i + 1 }}. {{ q.question }}</p>
+                            <p class="quiz-q-answer">
+                              คำตอบที่เลือก: <strong>{{ q.chosenAnswer || '(ไม่ได้ตอบ)' }}</strong>
+                              @if (!q.isCorrect) {
+                                <span class="quiz-correct-hint">(เฉลย: {{ q.correctAnswer }})</span>
+                              }
+                              <span class="quiz-result-icon">{{ q.isCorrect ? '✅' : '❌' }}</span>
+                            </p>
+                          </div>
+                        }
+
+                        <p class="quiz-part-label">ตอนที่ 2 (Part B) — {{ a.quiz_answers.scores.partB }} คะแนน</p>
+                        @for (b of a.quiz_answers.partB; track $index; let i = $index) {
+                          <div class="quiz-q-row" [class.wrong]="!b.isCorrect">
+                            <p class="quiz-q-text">{{ i + 1 }}. {{ b.expression }}</p>
+                            <p class="quiz-q-answer">
+                              ตอบ: <strong>{{ b.chosenReplyText || '(ไม่ได้ตอบ)' }}</strong>
+                              @if (!b.isCorrect) {
+                                <span class="quiz-correct-hint">(เฉลย: {{ b.correctReplyText }})</span>
+                              }
+                              <span class="quiz-result-icon">{{ b.isCorrect ? '✅' : '❌' }}</span>
+                            </p>
+                          </div>
+                        }
+
+                        @if (a.quiz_answers.partCOrder) {
+                          <p class="quiz-part-label">ตอนที่ 3 (เรียงลำดับประโยค) — {{ a.quiz_answers.scores.order }} คะแนน</p>
+                          <p class="quiz-q-text" style="font-style: italic;">{{ a.quiz_answers.partCOrder.instruction }}</p>
+                          @for (item of a.quiz_answers.partCOrder.items; track $index; let i = $index) {
+                            <div class="quiz-q-row" [class.wrong]="item.chosenPosition !== item.correctPosition">
+                              <p class="quiz-q-answer">
+                                {{ item.chosenPosition }}. {{ item.text }}
+                                @if (item.chosenPosition !== item.correctPosition) {
+                                  <span class="quiz-correct-hint">(ตำแหน่งที่ถูกต้อง: {{ item.correctPosition }})</span>
+                                }
+                                <span class="quiz-result-icon">{{ item.chosenPosition === item.correctPosition ? '✅' : '❌' }}</span>
+                              </p>
+                            </div>
+                          }
+                        }
+
+                        @if (a.quiz_answers.partC.length > 0) {
+                          <p class="quiz-part-label">
+                            ตอนที่ {{ a.quiz_answers.partCOrder ? '4' : '3' }} (คำถามปลายเปิด) — {{ a.quiz_answers.scores.partC }} คะแนน
+                          </p>
+                          @for (q of a.quiz_answers.partC; track $index) {
+                            <p class="quiz-q-text" style="font-style: italic;">{{ q.contextText }}</p>
+                            @for (sub of q.subQuestions; track $index) {
+                              <div class="quiz-q-row" [class.wrong]="sub.similarityPercent < 50">
+                                <p class="quiz-q-text">{{ sub.label }}</p>
+                                <p class="quiz-q-answer">
+                                  คำตอบนักศึกษา: <strong>{{ sub.studentAnswer || '(ไม่ได้ตอบ)' }}</strong>
+                                  <span class="quiz-correct-hint">(ตัวอย่างคำตอบ: {{ sub.sampleAnswer }})</span>
+                                  <span class="quiz-result-icon">{{ sub.similarityPercent }}%</span>
+                                </p>
+                              </div>
+                            }
+                          }
+                        }
+                      }
+                    </div>
                   }
                 </div>
               } @empty {

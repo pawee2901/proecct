@@ -1,13 +1,60 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import Swal from 'sweetalert2';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from 'docx';
 
 import { ApiService } from '../../../services/api.service';
 import { TeacherSessionService } from '../../services/teacher-session.service';
 import { escapeHtml } from '../../utils/escape-html';
 import { UNIVERSITY_OPTIONS } from '../../../shared/university-options';
+
+// Full pre-test/post-test attempt as returned by GET /teacher/students/<id>/activity
+// (quiz_answers column, see get_teacher_student_activity() in backend/db/teacher.py) --
+// every question, every option, what the student picked/wrote, and whether it was
+// correct, not just the rolled-up total_score (%). Mirrors the two shapes
+// student-lessons.component.ts builds (SimpleQuizAnswerDetail/FullQuizAnswerDetail
+// in the student app's unit.model.ts) -- redeclared locally here since the
+// Teacher area doesn't otherwise depend on Student-area types.
+interface QuizAnswerQuestionDetail {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  correctAnswer: string;
+  chosenIndex: number;
+  chosenAnswer: string | null;
+  isCorrect: boolean;
+}
+interface SimpleQuizAnswers {
+  quizFormat: 'simple';
+  correctCount: number;
+  totalQuestions: number;
+  questions: QuizAnswerQuestionDetail[];
+}
+interface FullQuizAnswers {
+  quizFormat: 'full';
+  scores: { partA: number; partB: number; order: number; partC: number; total: number };
+  partA: QuizAnswerQuestionDetail[];
+  partB: {
+    expression: string;
+    correctReplyKey: string;
+    correctReplyText: string;
+    chosenReplyKey: string;
+    chosenReplyText: string;
+    isCorrect: boolean;
+  }[];
+  partCOrder: {
+    instruction: string;
+    items: { text: string; correctPosition: number; chosenPosition: number }[];
+  } | null;
+  partC: {
+    contextText: string;
+    subQuestions: { label: string; sampleAnswer: string; studentAnswer: string; similarityPercent: number }[];
+  }[];
+}
+type QuizAnswers = SimpleQuizAnswers | FullQuizAnswers;
 
 interface MockStudent {
   id: number;
@@ -40,7 +87,22 @@ interface MockStudent {
   /** overall/passed/reasoning มาจาก ai/lesson_grading.py (backend) ที่รวม pre/post/game
    *  เป็นคะแนนเดียว + ผ่านหรือไม่ — อาจเป็น null ได้ถ้า backend เก่ายังไม่มี field นี้ หรือ
    *  AI คำนวณไม่สำเร็จตอนนั้น (ดูคอมเมนต์ compute_lesson_overall_score) */
-  scores: { unit: string; pre: number; post: number; game: number; overall?: number | null; passed?: boolean | null; reasoning?: string }[];
+  scores: {
+    unit: string;
+    pre: number;
+    post: number;
+    game: number;
+    overall?: number | null;
+    passed?: boolean | null;
+    reasoning?: string;
+    // คะแนนดิบ (ไม่ใช่ %) ของ pre/post-test เช่น 4 ข้อถูกจาก 8 ข้อ หรือคะแนนรวมของ Full
+    // Quiz จาก 100 -- null ถ้าเป็น quiz เก่าก่อนมี quiz_answers (ดู _raw_quiz_score()
+    // ฝั่ง backend) ใช้เฉพาะตอนดาวน์โหลดรายชื่อ+คะแนนเป็น Word (exportStudentsToWord())
+    pre_correct?: number | null;
+    pre_total?: number | null;
+    post_correct?: number | null;
+    post_total?: number | null;
+  }[];
   practiceLogs: { timestamp: string; sentence: string; score: number; attempt: number; feedback: string }[];
   gameLogs?: { unit: string; gameType: string; score: number; details: string; duration: string }[];
   /** ประวัติการทำกิจกรรมรายครั้ง (ทุกแถวจริงใน practice_sessions ไม่ใช่ค่าสรุป) พร้อม
@@ -59,6 +121,9 @@ interface MockStudent {
     pronunciation_score: number | null;
     speed_score: number | null;
     grammar_score: number | null;
+    /** ข้อสอบ pre/post-test ทั้งชุดที่ตอบจริง (null ถ้าแถวนี้ไม่ใช่ quiz, หรือเป็น quiz
+     *  เก่าที่ทำก่อนมีฟีเจอร์นี้) — ดู QuizAnswers ด้านบน */
+    quiz_answers: QuizAnswers | null;
   }[];
 }
 
@@ -155,6 +220,13 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
 
   backToActivityCategories(): void {
     this.selectedActivityCategory = null;
+  }
+
+  // เปิด/ปิดดูข้อสอบทั้งชุด (quiz_answers) ของแถว activity หนึ่งแถว — ทีละแถวเดียวเท่านั้น
+  // (เปิดแถวใหม่ = ปิดแถวเก่าอัตโนมัติ) กันลิสต์ยาวเกินไปถ้ากดดูหลายแถวพร้อมกัน
+  expandedActivitySessionId: number | null = null;
+  toggleActivityDetail(sessionId: number): void {
+    this.expandedActivitySessionId = this.expandedActivitySessionId === sessionId ? null : sessionId;
   }
 
   // เปิดดูสถิติรายบุคคล — โหลดคะแนนต่อบทเรียนจริงจาก backend
@@ -322,6 +394,119 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
   // จะกด "ย้ายเข้าห้อง" ให้ กันไม่ให้คนกลุ่มนี้หายไปเงียบๆ
   get unassignedStudents(): MockStudent[] {
     return this.students.filter((st) => st.classroom_id === null);
+  }
+
+  exportingStudents = false;
+
+  // ดาวน์โหลดรายชื่อ + คะแนนของห้อง/แท็บที่กำลังดูอยู่ (filteredStudents — ตรงกับที่เห็นใน
+  // ตารางเป๊ะ รวมตัวกรองค้นหาถ้าพิมพ์อยู่) เป็นไฟล์ Word (.docx) จริง (ใช้ไลบรารี `docx`
+  // สร้างตารางเป็น OOXML ตรงๆ ในเบราว์เซอร์ ไม่ต้องมี backend endpoint ใหม่ และไม่ใช่ CSV/HTML
+  // สวมนามสกุล .doc ซึ่ง Word จะเตือน "รูปแบบไม่ตรงกับนามสกุลไฟล์" ทุกครั้งที่เปิด)
+  //
+  // เดิมมีแค่คะแนนเฉลี่ยรวม (%) หนึ่งตัวเลขต่อคน -- ตารางในไฟล์เลยไม่ต่างจาก "คะแนนเฉลี่ย"
+  // ที่เห็นในตารางหลักอยู่แล้ว ไม่มีอะไรใหม่ให้ครูเอาไปใช้ต่อ ตอนนี้ดึงคะแนนแยกก่อนเรียน/
+  // หลังเรียน/เกมต่อบทเรียนจริง (เหมือนที่เห็นตอนกด "เปิดดูสถิติ" ของนักศึกษาคนหนึ่ง ดู
+  // selectStudent()) มาแตกเป็นหนึ่งแถวต่อหนึ่งบทเรียนต่อคนแทน -- นักศึกษาที่ยังไม่เคยทำ
+  // อะไรเลยจะได้แถวเดียวเป็น "-" ทั้งแถว ไม่หายไปจากรายชื่อ
+  exportStudentsToWord(): void {
+    const rows = this.filteredStudents;
+    if (rows.length === 0) {
+      Swal.fire({ icon: 'info', title: 'ไม่มีนักศึกษาให้ดาวน์โหลด', confirmButtonColor: '#0f766e' });
+      return;
+    }
+
+    this.exportingStudents = true;
+    forkJoin(
+      rows.map((st) =>
+        this.apiService.getTeacherStudentScores(st.id).pipe(catchError(() => of([]))),
+      ),
+    ).subscribe((allScores) => {
+      this.exportingStudents = false;
+      this.buildStudentsWordDoc(rows, allScores);
+    });
+  }
+
+  private buildStudentsWordDoc(rows: MockStudent[], allScores: any[][]): void {
+    const classroomName = this.session.classrooms.find((c) => c.classroom_id === this.session.activeClassroomId)?.name || 'students';
+    // คะแนนก่อน/หลังเรียนเป็นคะแนนดิบที่ได้จริง (pre_correct/post_correct — เช่น "57" ไม่ใช่
+    // "57%") คู่กับคะแนนเต็มหนึ่งคอลัมน์ (ก่อน/หลังเรียนของบทเดียวกันใช้ข้อสอบชุดเดียวกันเสมอ
+    // จึงเต็มเท่ากัน) — ไม่มีคอลัมน์เกมแยก (คะแนนรวม/สถานะ ยังคำนวณรวมเกมอยู่เบื้องหลังเหมือนเดิม)
+    const header = ['รหัสประจำตัว', 'ชื่อ-นามสกุล', 'บทเรียน', 'คะแนนก่อนเรียน', 'คะแนนหลังเรียน', 'คะแนนเต็ม', 'คะแนนรวม', 'สถานะ'];
+
+    const headerRow = new TableRow({
+      tableHeader: true,
+      children: header.map(
+        (text) =>
+          new TableCell({
+            shading: { fill: '0D9488' },
+            children: [new Paragraph({ children: [new TextRun({ text, bold: true, color: 'FFFFFF' })] })],
+          }),
+      ),
+    });
+
+    const dataRows: TableRow[] = [];
+    rows.forEach((st, idx) => {
+      const scores: MockStudent['scores'] = Array.isArray(allScores[idx]) ? allScores[idx] : [];
+      if (scores.length === 0) {
+        dataRows.push(
+          new TableRow({
+            children: [st.student_code, st.name, '-', '-', '-', '-', '-', 'ยังไม่ได้ทำ'].map(
+              (text) => new TableCell({ children: [new Paragraph(String(text))] }),
+            ),
+          }),
+        );
+        return;
+      }
+      scores.forEach((score) => {
+        const fullMax = score.post_total ?? score.pre_total ?? null;
+        dataRows.push(
+          new TableRow({
+            children: [
+              st.student_code,
+              st.name,
+              score.unit,
+              score.pre_correct != null ? String(score.pre_correct) : '-',
+              score.post_correct != null ? String(score.post_correct) : '-',
+              fullMax != null ? String(fullMax) : '-',
+              score.overall != null ? String(score.overall) : '-',
+              score.overall != null ? (score.passed ? 'ผ่าน' : 'ไม่ผ่าน') : '-',
+            ].map((text) => new TableCell({ children: [new Paragraph(String(text))] })),
+          }),
+        );
+      });
+    });
+
+    const doc = new Document({
+      sections: [
+        {
+          children: [
+            new Paragraph({
+              children: [new TextRun({ text: `รายชื่อนักศึกษา — ${classroomName}`, bold: true, size: 32 })],
+              spacing: { after: 200 },
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: `วันที่ดาวน์โหลด: ${new Date().toLocaleDateString('th-TH')}`, size: 20, color: '64748B' })],
+              spacing: { after: 300 },
+            }),
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              rows: [headerRow, ...dataRows],
+            }),
+          ],
+        },
+      ],
+    });
+
+    Packer.toBlob(doc).then((blob) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `รายชื่อนักศึกษา-${classroomName}-${new Date().toISOString().slice(0, 10)}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
   }
 
   assignClassroom(student: MockStudent, classroomId: number): void {

@@ -105,6 +105,17 @@
   .cbg-cloud-3 { display: none; }
 }
 
+// Student Shell only (hasBottomNav input) -- lift the corner illustrations
+// clear of the fixed mobile bottom-nav (64px, same breakpoint it appears at
+// in student-shell.component.scss) instead of leaving them anchored to the
+// viewport's true bottom edge, where the bar would hide nearly all of them.
+@media (max-width: 768px) {
+  :host.has-bottom-nav .cbg-corner-bl,
+  :host.has-bottom-nav .cbg-corner-br {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cbg-cloud, .cbg-spark, .cbg-plane {
     animation: none !important;

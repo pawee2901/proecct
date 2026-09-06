@@ -63,3 +63,153 @@
     text-decoration: underline;
   }
 }
+
+// The "ดาวน์โหลด...(Word)" + "เพิ่มนักศึกษา" pair sits inside
+// .filter-controls-row (shared partial) alongside the search box -- that
+// partial's own mobile rule forces every .btn-primary-action to width:100%
+// and stacks the whole row into a column below ~768px, which sent these two
+// long-label buttons onto their own full-width rows instead of staying
+// together as a compact pair. margin-left: auto keeps the pair pinned to
+// the row's right edge (the search box's flex:1 already pushes everything
+// after it rightward on wide screens, but this makes it explicit rather
+// than relying on the sibling's flex-grow); flex-wrap: nowrap + the width
+// override below keep the two buttons side-by-side and content-sized all
+// the way down to phone widths instead of matching the general full-width
+// button rule.
+.header-buttons-row--compact {
+  // flex-direction: row wasn't enough on its own -- this element also
+  // carries the plain .header-buttons-row class (shared partial), whose own
+  // ≤768px rule sets flex-direction: column, same specificity as this
+  // class alone. Repeating the override here (and again inside the ≤640px
+  // query below, since a nested @media further down doesn't re-win against
+  // one declared later in the same file at equal specificity by itself)
+  // is what actually keeps it row-direction at every width.
+  flex-direction: row;
+  flex-wrap: nowrap;
+  margin-left: auto;
+
+  .btn-primary-action {
+    width: auto;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  // Phone width: no more room to sit comfortably at full size, but stay
+  // side-by-side (never drop to one-button-per-row) -- shrink to fit
+  // instead, splitting the row evenly and letting each button's own label
+  // wrap to a 2nd line (taller button) rather than the row growing or the
+  // pair breaking apart.
+  .header-buttons-row--compact {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    margin-left: 0;
+    width: 100%;
+    gap: 0.5rem;
+
+    .btn-primary-action {
+      flex: 1 1 0;
+      min-width: 0;
+      white-space: normal;
+      font-size: 0.72rem;
+      padding: 0.5rem 0.6rem;
+      line-height: 1.25;
+    }
+  }
+}
+
+// The search box's shared min-width (240px, .search-input-wrapper in the
+// teacher partial) plus the button pair's own width was wider than
+// .filter-controls-row at a lot of ordinary laptop/tablet widths, so the
+// search box (flex: 1, allowed to shrink but not below that floor) was the
+// one giving up and wrapping to its own line above the buttons instead of
+// all three sharing one row like on a wide desktop. Lowering the floor here
+// (page-scoped, not the shared value other pages' search boxes still use)
+// gives the row enough slack to keep everything on one line down to a much
+// narrower width before it truly has no choice but to wrap.
+.search-input-wrapper--compact {
+  min-width: 140px;
+}
+
+// ── Pre/Post-Test full attempt detail (Activity History, "ดูข้อสอบทั้งหมด") ──
+// Shows the whole quiz a student answered -- every question/option/answer,
+// not just the total_score % already shown above this in the template.
+.quiz-detail-toggle-btn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 0.1rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #0d9488;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.quiz-detail-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+  padding: 0.75rem 0.85rem;
+  background: #fff;
+  border: 1px solid var(--tchr-border);
+  border-radius: 12px;
+}
+
+.quiz-part-label {
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #0d9488;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.quiz-q-row {
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+
+  &.wrong {
+    background: #fef2f2;
+    border-color: #fecaca;
+  }
+}
+
+.quiz-q-text {
+  margin: 0 0 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.quiz-q-answer {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #475569;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.quiz-correct-hint {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.quiz-result-icon {
+  margin-left: auto;
+  font-size: 0.78rem;
+}

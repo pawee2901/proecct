@@ -104,7 +104,7 @@ export class LearningLogService {
     } catch {}
   }
 
-  log(entry: { type: string; title: string; score?: number; xp: number; transcript?: { sender: 'user' | 'ai'; text: string }[] }): void {
+  log(entry: Omit<LearningLogEntry, 'date'>): void {
     this.learningLogs.unshift({ date: new Date(), ...entry });
     this.saveLearningLogs();
     this.logsChanged$.next();

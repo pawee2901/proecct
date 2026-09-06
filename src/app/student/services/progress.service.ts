@@ -35,8 +35,13 @@ export class ProgressService {
   ) {}
 
   /** Shared by Games (pre_game/post_game, via GameEngineService) and Lessons
-   *  (pre_test/post_test, Phase 5) — original student.component.ts:5744-5754. */
-  submitQuizResultToBackend(quizType: 'pre_test' | 'post_test' | 'pre_game' | 'post_game', score: number): void {
+   *  (pre_test/post_test, Phase 5) — original student.component.ts:5744-5754.
+   *  `answers` (pre/post-test only) is the full quiz attempt -- every question,
+   *  every option, what the student picked/wrote, right or wrong, and the
+   *  per-part score breakdown (see student-lessons.component.ts submitQuiz()/
+   *  submitFullQuiz()) -- stored as-is on the backend (quiz_answers column)
+   *  instead of being discarded once the % score is computed. */
+  submitQuizResultToBackend(quizType: 'pre_test' | 'post_test' | 'pre_game' | 'post_game', score: number, answers?: unknown): void {
     if (!this.session.currentUser?.id || !this.lessonsData.currentUnit?.id) return;
     this.apiService
       .submitQuizResult({
@@ -44,6 +49,7 @@ export class ProgressService {
         lessonId: this.lessonsData.currentUnit.id,
         quizType,
         score,
+        answers,
       })
       .subscribe({ error: () => {} });
   }

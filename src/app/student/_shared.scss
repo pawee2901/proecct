@@ -280,6 +280,14 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  // [hidden] is set (see student-lessons.component.html) while a fullscreen
+  // step/quiz overlay covers this view, but the plain [hidden] attribute
+  // loses to the `display: flex` two lines up -- same specificity (0,1,0
+  // each), and this class's rule is the one injected later in the
+  // cascade. Pair the attribute with the class so it wins (0,2,0).
+  &[hidden] {
+    display: none;
+  }
   // The trail's alternating left/right zigzag (.trail-row--left/--right,
   // 10% inset from whichever edge) assumes a narrow-ish column -- on a
   // wide desktop viewport with no cap, that 10% is measured against the
@@ -353,11 +361,17 @@
    the app; state (upcoming/done/current) is layered on via outline vs.
    filled vs. pulsing, not a color swap. */
 .trail-progress {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1.5px solid rgba(13, 148, 136, 0.15);
-  border-radius: 16px;
+  // Same solid-white card treatment as .lesson-card (the Unit list cards)
+  // and every other panel across the student area, instead of the
+  // translucent teal-tinted-border look this used to have on its own --
+  // that read as a different, one-off surface against <app-cute-background>
+  // wherever this page scrolled past the panels below it.
+  background: white;
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
   padding: 0.9rem 1.1rem;
   margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 .trail-progress-top {
   display: flex;
@@ -388,6 +402,13 @@
 .trail-path {
   display: flex;
   flex-direction: column;
+  // Matches .trail-progress above / .lesson-card elsewhere -- see that
+  // comment for why this isn't the translucent teal-bordered look anymore.
+  background: white;
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .trail-row {
@@ -405,7 +426,13 @@
   padding-right: 10%;
 }
 .trail-row--right {
-  justify-content: flex-end;
+  // flex-start here (not flex-end) is intentional -- flex-direction:
+  // row-reverse swaps which physical edge "start"/"end" mean, so
+  // flex-start is what actually hugs the right edge. flex-end was
+  // packing the node+label group against the LEFT instead, landing the
+  // node barely a third of the way across instead of flush at the
+  // rightmost dash of the connector below it.
+  justify-content: flex-start;
   padding-left: 10%;
   flex-direction: row-reverse;
   .trail-label {
@@ -1242,6 +1269,9 @@
   .trail-progress {
     padding: 0.6rem 0.85rem;
     margin-bottom: 0.75rem;
+  }
+  .trail-path {
+    padding: 0.85rem 1rem;
   }
   .trail-row {
     gap: 0.6rem;

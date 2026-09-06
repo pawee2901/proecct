@@ -9,8 +9,9 @@ import { StudentSessionService } from '../../services/student-session.service';
 import { GameEngineService } from '../../services/game-engine.service';
 import { GameFxService } from '../../services/game-fx.service';
 import { LearningLogService } from '../../services/learning-log.service';
-import { Unit } from '../../models/unit.model';
+import { Unit, SimpleQuizAnswerDetail, FullQuizAnswerDetail } from '../../models/unit.model';
 import { environment } from '../../../../environments/environment';
+import { ApiService } from '../../../services/api.service';
 
 declare const pdfjsLib: any;
 
@@ -92,6 +93,7 @@ export class StudentLessonsComponent implements OnDestroy {
     public gameFx: GameFxService,
     private learningLog: LearningLogService,
     private cdr: ChangeDetectorRef,
+    private apiService: ApiService,
   ) {}
 
   ngOnDestroy(): void {
@@ -309,11 +311,26 @@ export class StudentLessonsComponent implements OnDestroy {
 
     const questions = type === 'pre' ? this.lessonsData.currentUnit.preQuiz : this.lessonsData.currentUnit.postQuiz;
     let correctCount = 0;
-    questions.forEach((q, idx) => {
-      if (this.quizAnswers[idx] === q.answer) {
-        correctCount++;
-      }
+    const questionDetails: SimpleQuizAnswerDetail['questions'] = questions.map((q, idx) => {
+      const chosenIndex = this.quizAnswers[idx];
+      const isCorrect = chosenIndex === q.answer;
+      if (isCorrect) correctCount++;
+      return {
+        question: q.question,
+        options: q.options,
+        correctIndex: q.answer,
+        correctAnswer: q.options[q.answer] ?? '',
+        chosenIndex,
+        chosenAnswer: q.options[chosenIndex] ?? null,
+        isCorrect,
+      };
     });
+    const quizDetail: SimpleQuizAnswerDetail = {
+      quizFormat: 'simple',
+      correctCount,
+      totalQuestions: questions.length,
+      questions: questionDetails,
+    };
 
     this.quizScore = Math.round((correctCount / questions.length) * 100);
     this.quizSubmitted = true;
@@ -326,11 +343,12 @@ export class StudentLessonsComponent implements OnDestroy {
 
     this.learningLog.log({
       type: type === 'pre' ? 'Pre-Test' : 'Post-Test',
-      title: `${type === 'pre' ? 'Pre-Test' : 'Post-Test'} Unit ${this.lessonsData.currentUnit.id}`,
+      title: `${type === 'pre' ? 'Pre-Test (ก่อนเรียน)' : 'Post-Test (หลังเรียน)'} Unit ${this.lessonsData.currentUnit.id}`,
       score: this.quizScore,
       xp: 25,
+      quizDetail,
     });
-    this.progress.submitQuizResultToBackend(type === 'pre' ? 'pre_test' : 'post_test', this.quizScore);
+    this.progress.submitQuizResultToBackend(type === 'pre' ? 'pre_test' : 'post_test', this.quizScore, quizDetail);
 
     this.progress.loadProgressHistory();
   }
@@ -609,6 +627,13 @@ export class StudentLessonsComponent implements OnDestroy {
   }
 
   // ── Full Quiz (3/4-Part: A / B / (Order) / C) ──
+  // Per-part max points -- teacher-configurable (Teacher ▸ Lessons ▸ AI Grading
+  // Settings ▸ "คะแนนข้อสอบ"), null = not set by the teacher, fall back to the
+  // original hardcoded defaults (see submitFullQuiz()). Part C/D (open-ended
+  // speaking) has no field of its own -- it always gets whatever's left of 100.
+  private fullQuizPartMaxes: { part_a_max: number | null; part_b_max: number | null; part_order_max: number | null } =
+    { part_a_max: null, part_b_max: null, part_order_max: null };
+
   initFullQuiz(): void {
     const fq = this.lessonsData.currentUnit.fullQuiz!;
     this.fullQuizPartAAnswers = new Array(fq.partA.length).fill(-1);
@@ -623,6 +648,29 @@ export class StudentLessonsComponent implements OnDestroy {
     this.partCRecognitions = fq.partC.map((q) => new Array(q.subQuestions.length).fill(null));
     this.fullQuizSubmitted = false;
     this.fullQuizResult = null;
+
+    this.fullQuizPartMaxes = { part_a_max: null, part_b_max: null, part_order_max: null };
+    this.apiService.getLessonAiSettings(this.lessonsData.currentUnit.id).subscribe({
+      next: (data: any) => {
+        this.fullQuizPartMaxes = {
+          part_a_max: data?.part_a_max ?? null,
+          part_b_max: data?.part_b_max ?? null,
+          part_order_max: data?.part_order_max ?? null,
+        };
+      },
+      error: () => {}, // เงียบไว้ -- submitFullQuiz() ใช้ default 70/10/10 เดิมถ้าโหลดไม่สำเร็จ
+    });
+  }
+
+  // เต็มจริงของแต่ละ Part ที่ใช้ทั้งตอนคำนวณคะแนน (submitFullQuiz()) และตอนแสดงผลสรุป
+  // (สรุปคะแนน/เฉลย Part B ในหน้าผลลัพธ์) -- ให้สองที่นี้อ่านค่าเดียวกันเสมอ ไม่ต้องคำนวณซ้ำ
+  getFullQuizPartMaxes(): { partA: number; partB: number; order: number; speak: number } {
+    const fq = this.lessonsData.currentUnit.fullQuiz!;
+    const partA = this.fullQuizPartMaxes.part_a_max ?? Math.min(fq.partA.length * 10, 70);
+    const partB = this.fullQuizPartMaxes.part_b_max ?? 10;
+    const order = fq.partCOrder ? (this.fullQuizPartMaxes.part_order_max ?? 10) : 0;
+    const speak = 100 - partA - partB - order;
+    return { partA, partB, order, speak };
   }
 
   selectFullQuizA(qIdx: number, optIdx: number): void {
@@ -781,39 +829,74 @@ export class StudentLessonsComponent implements OnDestroy {
       return;
     }
 
-    const partAMax = Math.min(fq.partA.length * 10, 70);
+    const partMaxes = this.getFullQuizPartMaxes();
+    const partAMax = partMaxes.partA;
     let partACorrect = 0;
-    fq.partA.forEach((q, i) => {
-      if (this.fullQuizPartAAnswers[i] === q.answer) partACorrect++;
+    const partADetail: FullQuizAnswerDetail['partA'] = fq.partA.map((q, i) => {
+      const chosenIndex = this.fullQuizPartAAnswers[i];
+      const isCorrect = chosenIndex === q.answer;
+      if (isCorrect) partACorrect++;
+      return {
+        question: q.question,
+        options: q.options,
+        correctIndex: q.answer,
+        correctAnswer: q.options[q.answer] ?? '',
+        chosenIndex,
+        chosenAnswer: q.options[chosenIndex] ?? null,
+        isCorrect,
+      };
     });
     const partAScore = Math.round((partACorrect / fq.partA.length) * partAMax);
 
     let partBCorrect = 0;
-    fq.partB.answers.forEach((ans, i) => {
-      if (this.fullQuizPartBAnswers[i] === ans) partBCorrect++;
+    const partBDetail: FullQuizAnswerDetail['partB'] = fq.partB.expressions.map((expression, i) => {
+      const correctReplyKey = fq.partB.answers[i];
+      const chosenReplyKey = this.fullQuizPartBAnswers[i];
+      const isCorrect = chosenReplyKey === correctReplyKey;
+      if (isCorrect) partBCorrect++;
+      return {
+        expression,
+        correctReplyKey,
+        correctReplyText: this.getReplyText(correctReplyKey),
+        chosenReplyKey,
+        chosenReplyText: this.getReplyText(chosenReplyKey),
+        isCorrect,
+      };
     });
-    const partBScore = Math.round((partBCorrect / fq.partB.expressions.length) * 10);
+    const partBScore = Math.round((partBCorrect / fq.partB.expressions.length) * partMaxes.partB);
 
     let orderScore = 0;
+    let partCOrderDetail: FullQuizAnswerDetail['partCOrder'] = null;
     if (fq.partCOrder) {
       let orderCorrect = 0;
-      this.partCOrderItems.forEach((item, i) => {
+      const items = this.partCOrderItems.map((item, i) => {
         if (item.correctPosition === i + 1) orderCorrect++;
+        return { text: item.text, correctPosition: item.correctPosition, chosenPosition: i + 1 };
       });
-      orderScore = Math.round((orderCorrect / fq.partCOrder.items.length) * 10);
+      orderScore = Math.round((orderCorrect / fq.partCOrder.items.length) * partMaxes.order);
+      partCOrderDetail = { instruction: fq.partCOrder.instruction, items };
     }
 
-    const speakMax = 100 - partAMax - 10 - (fq.partCOrder ? 10 : 0);
+    const speakMax = partMaxes.speak;
     let partCScore = 0;
+    const partCDetail: FullQuizAnswerDetail['partC'] = [];
     if (fq.partC.length > 0) {
       let ratioSum = 0;
       let subCount = 0;
       fq.partC.forEach((q, qIdx) => {
-        q.subQuestions.forEach((sub, subIdx) => {
+        const subQuestions = q.subQuestions.map((sub, subIdx) => {
           const answer = this.partCAnswers[qIdx]?.[subIdx] || '';
-          ratioSum += this.gameFx.textOverlapRatio(sub.sampleAnswer, answer);
+          const ratio = this.gameFx.textOverlapRatio(sub.sampleAnswer, answer);
+          ratioSum += ratio;
           subCount++;
+          return {
+            label: sub.label,
+            sampleAnswer: sub.sampleAnswer,
+            studentAnswer: answer,
+            similarityPercent: Math.round(ratio * 100),
+          };
         });
+        partCDetail.push({ contextText: q.contextText, subQuestions });
       });
       partCScore = subCount > 0 ? Math.round((ratioSum / subCount) * speakMax) : 0;
     }
@@ -822,12 +905,21 @@ export class StudentLessonsComponent implements OnDestroy {
     this.fullQuizResult = { partAScore, partBScore, orderScore, partCScore, total };
     this.fullQuizSubmitted = true;
 
+    const quizDetail: FullQuizAnswerDetail = {
+      quizFormat: 'full',
+      scores: { partA: partAScore, partB: partBScore, order: orderScore, partC: partCScore, total },
+      partA: partADetail,
+      partB: partBDetail,
+      partCOrder: partCOrderDetail,
+      partC: partCDetail,
+    };
+
     const type = this.currentStep === 'pre-test' ? 'pre' : 'post';
     localStorage.setItem(
       `score_${this.session.currentUser.id}_unit${this.lessonsData.currentUnit.id}_${type}`,
       total.toString(),
     );
-    this.progress.submitQuizResultToBackend(type === 'pre' ? 'pre_test' : 'post_test', total);
+    this.progress.submitQuizResultToBackend(type === 'pre' ? 'pre_test' : 'post_test', total, quizDetail);
 
     this.progress.currentXp += 25;
     if (this.progress.currentXp > this.progress.dailyXpGoal) this.progress.currentXp = this.progress.dailyXpGoal;
@@ -835,9 +927,10 @@ export class StudentLessonsComponent implements OnDestroy {
 
     this.learningLog.log({
       type: type === 'pre' ? 'Pre-Test' : 'Post-Test',
-      title: `${type === 'pre' ? 'Pre-Test' : 'Post-Test'} Unit ${this.lessonsData.currentUnit.id}`,
+      title: `${type === 'pre' ? 'Pre-Test (ก่อนเรียน)' : 'Post-Test (หลังเรียน)'} Unit ${this.lessonsData.currentUnit.id}`,
       score: total,
       xp: 25,
+      quizDetail,
     });
   }
 }

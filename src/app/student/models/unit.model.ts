@@ -75,6 +75,63 @@ export interface Unit {
   coverImage?: string;
 }
 
+// Full pre-test/post-test attempt -- every question, every option, what the
+// student actually picked/wrote, and whether it was correct -- so a quiz
+// result is never reduced down to just its rolled-up % score. Two shapes
+// because the app has two quiz formats (see student-lessons.component.ts
+// submitQuiz()/submitFullQuiz()): the simple multiple-choice preQuiz/postQuiz,
+// and the richer multi-part Full Quiz (Part A multiple-choice / Part B
+// matching / optional Part C ordering / Part D open-ended speaking-graded-by-
+// text-overlap). Sent to the backend as-is (POST /student/quiz-result
+// `answers`, stored in practice_sessions.quiz_answers) and also kept on the
+// local LearningLogEntry so the student's own history can show it too.
+export interface SimpleQuizAnswerDetail {
+  quizFormat: 'simple';
+  correctCount: number;
+  totalQuestions: number;
+  questions: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    correctAnswer: string;
+    chosenIndex: number;
+    chosenAnswer: string | null;
+    isCorrect: boolean;
+  }[];
+}
+
+export interface FullQuizAnswerDetail {
+  quizFormat: 'full';
+  scores: { partA: number; partB: number; order: number; partC: number; total: number };
+  partA: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    correctAnswer: string;
+    chosenIndex: number;
+    chosenAnswer: string | null;
+    isCorrect: boolean;
+  }[];
+  partB: {
+    expression: string;
+    correctReplyKey: string;
+    correctReplyText: string;
+    chosenReplyKey: string;
+    chosenReplyText: string;
+    isCorrect: boolean;
+  }[];
+  partCOrder: {
+    instruction: string;
+    items: { text: string; correctPosition: number; chosenPosition: number }[];
+  } | null;
+  partC: {
+    contextText: string;
+    subQuestions: { label: string; sampleAnswer: string; studentAnswer: string; similarityPercent: number }[];
+  }[];
+}
+
+export type QuizAnswerDetail = SimpleQuizAnswerDetail | FullQuizAnswerDetail;
+
 export interface LearningLogEntry {
   date: Date | string;
   type: string;
@@ -103,6 +160,9 @@ export interface LearningLogEntry {
   // ผลแยกทีละคำของแบบฝึกหัด dictation (โชว์ใน "ประวัติ" แบบ collapsible เหมือน transcript
   // แต่เป็นรายการคำแทนบทสนทนา เพราะกิจกรรมนี้ไม่มี AI ตอบโต้จริง)
   wordResults?: { text: string; userAnswer: string; score: number }[];
+  // Pre-Test/Post-Test only -- ข้อสอบทั้งชุดที่ตอบจริง (ทุกข้อ/ตัวเลือก/คำตอบที่เลือกหรือพิมพ์/
+  // ถูกผิด) ดู QuizAnswerDetail ด้านบน
+  quizDetail?: QuizAnswerDetail;
 }
 
 export interface FrequentlyWrongItem {

@@ -963,7 +963,14 @@
   position: fixed;
   inset: 0;
   z-index: 1200;
-  background: #f8fafc;
+  // Was an opaque flat #f8fafc -- since this sits (via position:fixed) on
+  // top of <app-cute-background> in the shell behind it rather than
+  // replacing it, an opaque fill here blanked out the decorative
+  // clouds/sparkles background for every fullscreen step (Pre/Post-Test,
+  // the roadmap mini-games, the lesson slide viewer) even though the rest
+  // of the student area shows it. Transparent lets it show through, same
+  // as every other page.
+  background: transparent;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1331,9 +1338,6 @@
   }
 }
 .qfs-speech-answer {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.4rem;
   font-size: 0.88rem;
   color: var(--slate-800);
   font-weight: 500;
@@ -1341,6 +1345,9 @@
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.4rem;
+  strong {
+    color: var(--pastel-blue-dark);
+  }
 }
 .qfs-speech-sample {
   font-size: 0.8rem;

@@ -31,12 +31,30 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
   // เกณฑ์คะแนน/คำสั่งให้ AI ต่อบทเรียน (ai_grading_instruction ฯลฯ) — โหลด/บันทึกแยก
   // จาก saveLesson() หลัก เพราะผูกกับ lesson_id จริงใน DB เท่านั้น (บทเรียนที่ยังไม่ได้
   // บันทึกครั้งแรกจะยังไม่มีให้ตั้งค่า)
-  aiSettings: {
-    pass_threshold: number | null;
-    game_weight: number | null;
-    test_weight: number | null;
-    ai_grading_instruction: string | null;
-  } = { pass_threshold: null, game_weight: null, test_weight: null, ai_grading_instruction: null };
+  // part_a_max/part_b_max/part_order_max = คะแนนเต็มของแต่ละ Part ใน Full Quiz (null =
+  // ใช้ค่าเริ่มต้นเดิม 70/10/10 ที่เคย hardcode ไว้ฝั่งนักเรียน) แยกออกจาก game_weight/
+  // test_weight ซึ่งเป็นสัดส่วนคะแนนรวมทั้งบท (pre/post/game) ไม่ใช่คะแนนเต็มรายพาร์ทของ
+  // ข้อสอบ -- ฟอร์มด้านล่างเลยแยกเป็น 2 หัวข้อ "การให้คะแนนเกม" กับ "คะแนนข้อสอบ" ให้ชัดเจน
+  private readonly defaultAiSettings = {
+    pass_threshold: null as number | null,
+    game_weight: null as number | null,
+    test_weight: null as number | null,
+    part_a_max: null as number | null,
+    part_b_max: null as number | null,
+    part_order_max: null as number | null,
+    ai_grading_instruction: null as string | null,
+  };
+  aiSettings = { ...this.defaultAiSettings };
+
+  // ตัวอย่างคำสั่งให้ AI ตรวจ/ให้คะแนน -- แสดงถาวรใต้ช่องข้อความอิสระ (ต่างจาก placeholder
+  // เดิมที่หายไปทันทีที่พิมพ์) กดแล้วแทรกลง aiSettings.ai_grading_instruction ตรงๆ ผ่าน
+  // ngModel ในเทมเพลต ไม่ต้องมี method แยก
+  readonly aiGradingInstructionExamples: string[] = [
+    'เข้มงวดเรื่อง grammar และการเรียงประโยค เน้นคำศัพท์วิชาชีพครู ให้กำลังใจแบบเป็นกันเอง',
+    'เน้นความกล้าพูดและความมั่นใจเป็นหลัก ผ่อนปรนเรื่องไวยากรณ์เล็กน้อยและสำเนียง',
+    'ตรวจแบบผ่อนปรน ให้กำลังใจนักศึกษาที่เพิ่งเริ่มเรียน ไม่หักคะแนนคำผิดเล็กน้อย',
+    'เข้มงวดมาก ต้องใช้ประโยคสมบูรณ์ ไม่มีคำผิด และสุภาพเหมาะกับบริบทวิชาชีพครูเท่านั้นถึงจะได้คะแนนเต็ม',
+  ];
   aiSettingsSaving = false;
 
   // คำสั่งให้ AI แยกตามชั้นปี (ปี 1/ปี 2) — ต่างจาก aiSettings ด้านบนตรงไม่ผูกกับบทเรียน
@@ -207,7 +225,7 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
     this.isCreatingNew = true;
     this.activeEditTab = 'lesson';
     // บทเรียนใหม่ยังไม่มี lesson_id จริง — ต้องบันทึกบทเรียนก่อน แล้วค่อยกลับมาตั้งเกณฑ์ AI ทีหลัง
-    this.aiSettings = { pass_threshold: null, game_weight: null, test_weight: null, ai_grading_instruction: null };
+    this.aiSettings = { ...this.defaultAiSettings };
   }
 
   loadLessonAiSettings(lessonId: number): void {
@@ -218,11 +236,14 @@ export class TeacherLessonsComponent implements OnInit, OnDestroy {
           pass_threshold: data?.pass_threshold ?? null,
           game_weight: data?.game_weight ?? null,
           test_weight: data?.test_weight ?? null,
+          part_a_max: data?.part_a_max ?? null,
+          part_b_max: data?.part_b_max ?? null,
+          part_order_max: data?.part_order_max ?? null,
           ai_grading_instruction: data?.ai_grading_instruction ?? null,
         };
       },
       error: () => {
-        this.aiSettings = { pass_threshold: null, game_weight: null, test_weight: null, ai_grading_instruction: null };
+        this.aiSettings = { ...this.defaultAiSettings };
       }
     });
   }

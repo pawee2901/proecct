@@ -482,7 +482,11 @@
 
       <!-- List of actual logs in this category -->
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        @if (getFilteredProfileLogs(selectedHistoryCategory).length === 0) {
+        @if (selectedHistoryCategory === 'test' && loadingTestHistory) {
+          <div style="text-align: center; padding: 3rem; background: var(--slate-50); border-radius: 16px; border: 1.5px dashed var(--slate-200);">
+            <p style="margin: 0; font-size: 0.82rem; color: var(--slate-400); font-weight: 600;">กำลังโหลดประวัติ...</p>
+          </div>
+        } @else if (getFilteredProfileLogs(selectedHistoryCategory).length === 0) {
           <div style="text-align: center; padding: 3rem; background: var(--slate-50); border-radius: 16px; border: 1.5px dashed var(--slate-200);">
             <p style="margin: 0; font-size: 0.82rem; color: var(--slate-400); font-weight: 600;">ยังไม่มีประวัติการทำกิจกรรมในหมวดหมู่นี้</p>
           </div>
@@ -676,8 +680,123 @@
                     </div>
                   }
 
+                  <!-- Pre/Post-Test full attempt (every question/option/answer, not just
+                       the % score above) -- quizDetail comes from practice_sessions.quiz_answers
+                       (see loadTestHistoryFromDb()); undefined for quizzes taken before this
+                       existed, so those still fall through to the generic description below -->
+                  @if (log.quizDetail) {
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem; text-align: left;">
+                      <h5 style="margin: 0; font-size: 0.8rem; font-weight: 850; color: var(--slate-800);">
+                        รายละเอียดข้อที่ตอบ
+                        @if (log.quizDetail.quizFormat === 'simple') {
+                          ({{ log.quizDetail.correctCount }}/{{ log.quizDetail.totalQuestions }} ข้อถูก)
+                        }
+                      </h5>
+
+                      @if (log.quizDetail.quizFormat === 'simple') {
+                        @for (q of log.quizDetail.questions; track $index; let i = $index) {
+                          <div
+                            [style.background]="q.isCorrect ? '#f0fdf4' : '#fef2f2'"
+                            [style.border]="q.isCorrect ? '1px solid #bbf7d0' : '1px solid #fecaca'"
+                            style="border-radius: 12px; padding: 0.65rem 0.85rem;"
+                          >
+                            <p style="margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 800; color: var(--slate-800);">{{ i + 1 }}. {{ q.question }}</p>
+                            <p style="margin: 0; font-size: 0.76rem; color: var(--slate-600); display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;">
+                              คำตอบที่เลือก: <strong>{{ q.chosenAnswer || '(ไม่ได้ตอบ)' }}</strong>
+                              @if (!q.isCorrect) {
+                                <span style="color: #b91c1c; font-weight: 700;">(เฉลย: {{ q.correctAnswer }})</span>
+                              }
+                              <span style="margin-left: auto;">{{ q.isCorrect ? '✅' : '❌' }}</span>
+                            </p>
+                          </div>
+                        }
+                      } @else {
+                        <p style="margin: 0; font-size: 0.72rem; font-weight: 800; color: var(--pastel-blue-dark); text-transform: uppercase; letter-spacing: 0.03em;">
+                          ตอนที่ 1 (Part A) — {{ log.quizDetail.scores.partA }} คะแนน
+                        </p>
+                        @for (q of log.quizDetail.partA; track $index; let i = $index) {
+                          <div
+                            [style.background]="q.isCorrect ? '#f0fdf4' : '#fef2f2'"
+                            [style.border]="q.isCorrect ? '1px solid #bbf7d0' : '1px solid #fecaca'"
+                            style="border-radius: 12px; padding: 0.65rem 0.85rem;"
+                          >
+                            <p style="margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 800; color: var(--slate-800);">{{ i + 1 }}. {{ q.question }}</p>
+                            <p style="margin: 0; font-size: 0.76rem; color: var(--slate-600); display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;">
+                              คำตอบที่เลือก: <strong>{{ q.chosenAnswer || '(ไม่ได้ตอบ)' }}</strong>
+                              @if (!q.isCorrect) {
+                                <span style="color: #b91c1c; font-weight: 700;">(เฉลย: {{ q.correctAnswer }})</span>
+                              }
+                              <span style="margin-left: auto;">{{ q.isCorrect ? '✅' : '❌' }}</span>
+                            </p>
+                          </div>
+                        }
+
+                        <p style="margin: 0.3rem 0 0; font-size: 0.72rem; font-weight: 800; color: var(--pastel-blue-dark); text-transform: uppercase; letter-spacing: 0.03em;">
+                          ตอนที่ 2 (Part B) — {{ log.quizDetail.scores.partB }} คะแนน
+                        </p>
+                        @for (b of log.quizDetail.partB; track $index; let i = $index) {
+                          <div
+                            [style.background]="b.isCorrect ? '#f0fdf4' : '#fef2f2'"
+                            [style.border]="b.isCorrect ? '1px solid #bbf7d0' : '1px solid #fecaca'"
+                            style="border-radius: 12px; padding: 0.65rem 0.85rem;"
+                          >
+                            <p style="margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 800; color: var(--slate-800);">{{ i + 1 }}. {{ b.expression }}</p>
+                            <p style="margin: 0; font-size: 0.76rem; color: var(--slate-600); display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;">
+                              ตอบ: <strong>{{ b.chosenReplyText || '(ไม่ได้ตอบ)' }}</strong>
+                              @if (!b.isCorrect) {
+                                <span style="color: #b91c1c; font-weight: 700;">(เฉลย: {{ b.correctReplyText }})</span>
+                              }
+                              <span style="margin-left: auto;">{{ b.isCorrect ? '✅' : '❌' }}</span>
+                            </p>
+                          </div>
+                        }
+
+                        @if (log.quizDetail.partCOrder) {
+                          <p style="margin: 0.3rem 0 0; font-size: 0.72rem; font-weight: 800; color: var(--pastel-blue-dark); text-transform: uppercase; letter-spacing: 0.03em;">
+                            ตอนที่ 3 (เรียงลำดับประโยค) — {{ log.quizDetail.scores.order }} คะแนน
+                          </p>
+                          <p style="margin: 0; font-size: 0.78rem; color: var(--slate-600); font-style: italic;">{{ log.quizDetail.partCOrder.instruction }}</p>
+                          @for (item of log.quizDetail.partCOrder.items; track $index) {
+                            <div
+                              [style.background]="item.chosenPosition === item.correctPosition ? '#f0fdf4' : '#fef2f2'"
+                              [style.border]="item.chosenPosition === item.correctPosition ? '1px solid #bbf7d0' : '1px solid #fecaca'"
+                              style="border-radius: 12px; padding: 0.65rem 0.85rem;"
+                            >
+                              <p style="margin: 0; font-size: 0.76rem; color: var(--slate-600); display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;">
+                                {{ item.chosenPosition }}. {{ item.text }}
+                                @if (item.chosenPosition !== item.correctPosition) {
+                                  <span style="color: #b91c1c; font-weight: 700;">(ตำแหน่งที่ถูกต้อง: {{ item.correctPosition }})</span>
+                                }
+                                <span style="margin-left: auto;">{{ item.chosenPosition === item.correctPosition ? '✅' : '❌' }}</span>
+                              </p>
+                            </div>
+                          }
+                        }
+
+                        @if (log.quizDetail.partC.length > 0) {
+                          <p style="margin: 0.3rem 0 0; font-size: 0.72rem; font-weight: 800; color: var(--pastel-blue-dark); text-transform: uppercase; letter-spacing: 0.03em;">
+                            ตอนที่ {{ log.quizDetail.partCOrder ? '4' : '3' }} (คำถามปลายเปิด) — {{ log.quizDetail.scores.partC }} คะแนน
+                          </p>
+                          @for (q of log.quizDetail.partC; track $index) {
+                            <p style="margin: 0; font-size: 0.78rem; color: var(--slate-600); font-style: italic;">{{ q.contextText }}</p>
+                            @for (sub of q.subQuestions; track sub.label) {
+                              <div style="background: white; border: 1px solid var(--slate-200); border-radius: 12px; padding: 0.65rem 0.85rem;">
+                                <p style="margin: 0 0 0.25rem; font-size: 0.78rem; font-weight: 800; color: var(--slate-800);">{{ sub.label }}</p>
+                                <p style="margin: 0; font-size: 0.76rem; color: var(--slate-600); display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;">
+                                  คำตอบของคุณ: <strong>{{ sub.studentAnswer || '(ไม่ได้ตอบ)' }}</strong>
+                                  <span style="color: var(--slate-500);">(ตัวอย่างคำตอบ: {{ sub.sampleAnswer }})</span>
+                                  <span style="margin-left: auto; font-weight: 700;">{{ sub.similarityPercent }}%</span>
+                                </p>
+                              </div>
+                            }
+                          }
+                        }
+                      }
+                    </div>
+                  }
+
                   <!-- Default description for non-transcript actions -->
-                  @if (!log.transcript && !log.feedback && !log.suggestions && !log.wordResults && !log.report) {
+                  @if (!log.transcript && !log.feedback && !log.suggestions && !log.wordResults && !log.report && !log.quizDetail) {
                     <div style="font-size: 0.76rem; color: var(--slate-500); font-weight: 600; text-align: left;">
                       กิจกรรมนี้ทำเสร็จสมบูรณ์เรียบร้อยแล้ว ได้รับคะแนนสำเร็จและ XP ครบถ้วนตามมาตรฐานรายวิชา
                     </div>

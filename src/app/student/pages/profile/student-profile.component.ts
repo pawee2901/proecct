@@ -35,6 +35,15 @@ export class StudentProfileComponent {
   selectedHistoryCategory = 'speech-to-speech';
   expandedProfileLogIndex: number | null = null;
 
+  // ── Pre/Post-Test history (หมวด 'test') ──
+  // ต่างจาก 4 หมวดฝึกพูดด้านบนซึ่งอ่านจาก learningLog.learningLogs (localStorage
+  // ต่อเครื่อง จำกัด 50 รายการ, ผสมข้อมูล DB เข้ามาเฉพาะ Speaking) — Pre/Post-Test
+  // ดึงจาก practice_sessions ตรงๆ ทุกครั้งที่เปิดหมวดนี้ (เหมือนที่หน้าอาจารย์ใช้ดูของ
+  // นักศึกษา ผ่าน endpoint เดียวกันเป๊ะ แค่ส่ง user_id ของตัวเอง) เพราะเป็นแหล่งข้อมูล
+  // จริงที่ครบและซิงก์ข้ามอุปกรณ์ได้ ไม่หายไปตามจำนวนรายการ localStorage ที่ล้นออก
+  testHistory: any[] = [];
+  loadingTestHistory = false;
+
   // ── ข้อมูลโปรไฟล์เต็ม (Profile ▸ ข้อมูลโปรไฟล์) ──
   // แยกจาก session.currentUser (snapshot ตอนล็อกอิน อาจเก่า/ไม่ครบ) โหลดสดจาก
   // /student/profile/<id> ทุกครั้งที่เข้า sub-view นี้ ใช้ field ดิบจาก DB ตรงๆ
@@ -238,21 +247,60 @@ export class StudentProfileComponent {
     this.profileSubView = 'category-detail';
     this.expandedProfileLogIndex = null;
     this.gameFx.playSoundEffect('click');
+    if (category === 'test') this.loadTestHistoryFromDb();
+  }
+
+  // แปลง "DD/MM/YYYY HH:mm" ที่ backend คืนมา (DATE_FORMAT ฝั่ง MySQL) เป็น Date จริง —
+  // new Date("06/08/2026 22:57") เดา format ผิดเป็น MM/DD/YYYY ของ browser locale ได้
+  // เลยต้อง parse เองแยกส่วนวัน/เดือน/ปีให้ชัดเจน
+  private parseThaiFormattedDate(formatted: string): Date {
+    const [datePart, timePart] = (formatted || '').split(' ');
+    const [day, month, year] = (datePart || '').split('/').map(Number);
+    const [hour, minute] = (timePart || '0:0').split(':').map(Number);
+    return new Date(year || 0, (month || 1) - 1, day || 1, hour || 0, minute || 0);
+  }
+
+  loadTestHistoryFromDb(): void {
+    const userId = this.session.currentUser?.id;
+    if (!userId) return;
+    this.loadingTestHistory = true;
+    this.apiService.getTeacherStudentActivity(userId).subscribe({
+      next: (rows: any[]) => {
+        this.testHistory = (Array.isArray(rows) ? rows : [])
+          .filter((r) => r.quiz_type === 'pre_test' || r.quiz_type === 'post_test')
+          .map((r) => ({
+            date: this.parseThaiFormattedDate(r.created_at_formatted),
+            type: r.quiz_type === 'pre_test' ? 'Pre-Test' : 'Post-Test',
+            title: `${r.quiz_type === 'pre_test' ? 'Pre-Test (ก่อนเรียน)' : 'Post-Test (หลังเรียน)'} — ${r.lesson_name}`,
+            score: r.total_score,
+            xp: 25,
+            // ข้อสอบทั้งชุดที่ตอบจริง (null ถ้าเป็น quiz เก่าที่ทำก่อนมีฟีเจอร์นี้ -- ดู
+            // QuizAnswerDetail ใน unit.model.ts, เดียวกับที่ submitQuiz()/submitFullQuiz()
+            // ใน student-lessons.component.ts ส่งขึ้น backend)
+            quizDetail: r.quiz_answers || undefined,
+          }))
+          .sort((a, b) => b.date.getTime() - a.date.getTime());
+        this.loadingTestHistory = false;
+      },
+      error: (err) => {
+        console.warn('Could not load test history from database:', err);
+        this.loadingTestHistory = false;
+      },
+    });
   }
 
   getFilteredProfileLogs(category: string): any[] {
+    // Pre/Post-Test: แหล่งข้อมูลจริงจาก DB (โหลดตอนกดเข้าหมวดนี้ ดู
+    // openProfileHistoryCategory/loadTestHistoryFromDb) ไม่ใช่ learningLogs
+    if (category === 'test') return this.testHistory;
+
     if (!this.learningLog.learningLogs) return [];
-    // 'test'/'game' still key off log.type -- Lessons/Games never tag
-    // practiceMode (that's a Practice-tab-only concept). The 4 conversation
-    // modes now filter on the exact practiceMode tag Practice writes on every
-    // entry it logs, instead of the old loose type-string matching, which
-    // lumped Speech-to-Speech/Text-to-Speech/Speech-to-Text together under
-    // "practice" (they're all type: 'Speaking') and left the old "speaking"
-    // category matching nothing at all (it checked log.type for the string
-    // "speech-to-text", which only ever appears in log.title, never .type).
-    if (category === 'test') {
-      return this.learningLog.learningLogs.filter((log) => (log.type || '').toLowerCase().includes('test'));
-    }
+    // 'game' ยังคงกรองจาก log.type -- Lessons/Games ไม่เคยติด practiceMode
+    // (เป็น concept เฉพาะแท็บ Practice) ส่วน 4 โหมดสนทนากรองจาก practiceMode ตรงๆ
+    // ที่ Practice เขียนกำกับไว้ทุกรายการที่ log แทนการเทียบ type-string หลวมๆ แบบเดิม
+    // ซึ่งเคยเหมารวม Speech-to-Speech/Text-to-Speech/Speech-to-Text เป็น "practice"
+    // ก้อนเดียว (type: 'Speaking' เหมือนกันหมด) และทำให้หมวด "speaking" เดิมไม่แมตช์
+    // อะไรเลย (เช็ค log.type หา "speech-to-text" ทั้งที่คำนี้อยู่ใน log.title เท่านั้น)
     if (category === 'game') {
       return this.learningLog.learningLogs.filter((log) => (log.type || '').toLowerCase().includes('game'));
     }

@@ -21,21 +21,23 @@
 
   /* Single-accent modern theme (matches the Teacher area's flat, modern
      structure -- soft white bg, one accent color, no gradients/orbs).
-     Recolored to match the login/register page's turquoise brand
+     Recolored to match the login/register page's coral/rose brand
      (--pri/--pri-lt/--pri-dk in login-register.component.css) so the
-     student area reads as the same brand once a user signs in. Values
-     point back to the canonical palette in src/styles.scss (--brand-teal-*)
-     so both areas stay in sync from one source.
+     student area reads as the same brand once a user signs in -- login
+     moved from turquoise to this rose palette; these values follow it here
+     as literal hex (not var(--brand-teal-*)) because that token family is
+     still the real brand teal for the Teacher/Admin areas, which weren't
+     asked to change.
      Variable *names* are kept as-is on purpose: every student
      page/component reads color through these custom properties, so
      re-pointing values here recolors the whole area without touching any
      template markup. */
-  --pastel-blue-light: var(--brand-teal-50); /* Primary accent - light (== login --card-top bg) */
-  --pastel-blue: var(--brand-teal-100); /* Primary accent - base */
-  --pastel-blue-medium: var(--brand-teal-300); /* Primary accent - medium (== login --pri-lt) */
-  --pastel-blue-dark: var(--brand-teal-600); /* Primary accent - turquoise (== login --pri) */
-  --pastel-blue-darker: var(--brand-teal-700); /* Primary accent - hover/darker (== login --pri-dk) */
-  --pastel-blue-dark-rgb: var(--brand-teal-600-rgb); /* same as --pastel-blue-dark, as an r,g,b triple for rgba() composition (Liquid Glass buttons) */
+  --pastel-blue-light: #fdf2f6; /* Primary accent - light (== login --card-top bg start) */
+  --pastel-blue: #fce7f0; /* Primary accent - base */
+  --pastel-blue-medium: #f9a8d4; /* Primary accent - medium (== login --pri-lt) */
+  --pastel-blue-dark: #ec4899; /* Primary accent - rose (== login --pri) */
+  --pastel-blue-darker: #db2777; /* Primary accent - hover/darker (== login --pri-dk) */
+  --pastel-blue-dark-rgb: 236, 72, 153; /* same as --pastel-blue-dark, as an r,g,b triple for rgba() composition (Liquid Glass buttons) (== login --pri-rgb) */
 
   --pastel-green-light: var(--brand-mint-50); /* Success - light */
   --pastel-green: var(--brand-mint-100); /* Success - base */

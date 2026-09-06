@@ -62,7 +62,11 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   // Duolingo Onboarding wizard variables
   practiceSetupActive = false;
   setupStep = 1;
-  selectedCategory: 'teaching' | 'daily' | 'presentation' | 'interview' = 'teaching';
+  // 'presentation' stays a fixed special value (its own AI Q&A state machine, no
+  // practice_scenarios content) -- every other value is a category_key from
+  // roleplayCategories (teaching/daily/interview seeded+locked, or a teacher-added
+  // custom one), so this is a plain string now instead of a 4-value literal union.
+  selectedCategory: string = 'teaching';
   selectedLesson: {
     key: string;
     titleTh: string;
@@ -257,7 +261,20 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     { key: 'governmentSchool', titleTh: 'ครูสอนภาษาอังกฤษโรงเรียนรัฐบาลต่างจังหวัด', titleEn: 'Rural Government School Teacher', description: 'สัมภาษณ์งานตำแหน่งครูสอนภาษาอังกฤษที่โรงเรียนรัฐบาลในต่างจังหวัด', prompt: 'interviewing for an English teacher position at a rural government school', article: `You are interviewing for an English teacher position at a rural government school with limited resources. The interviewer wants to know how you adapt lessons with few materials and motivate students with different skill levels.`, vocab: [{ en: 'rural', th: 'ชนบท' }, { en: 'limited resources', th: 'ทรัพยากรจำกัด' }, { en: 'adapt', th: 'ปรับใช้' }, { en: 'mixed-ability', th: 'ระดับความสามารถหลากหลาย' }, { en: 'motivate', th: 'สร้างแรงจูงใจ' }], image: 'ห้องเรียนเรียบง่ายในชนบท มีกระดานดำและหนังสือเก่าวางบนโต๊ะไม้' },
   ];
 
-  
+  // ── Dynamic roleplay categories (teaching/daily/interview seeded+locked, plus any
+  // custom one a teacher adds via Teacher > จัดการเนื้อหาฝึกฝน) — replaces the fixed
+  // 3-category assumption; 'presentation' is NOT here, it stays its own hardcoded
+  // card/state machine (see selectedCategory). Populated by loadPracticeContentFromDb().
+  roleplayCategories: { category_key: string; label_th: string; label_en: string; icon: string; description?: string }[] = [];
+  // Seeded from the hardcoded fallback arrays above so the wizard still has content
+  // before the DB call resolves (or if it fails) — loadPracticeContentFromDb()
+  // overwrites each key with real per-year-level content once it loads.
+  lessonsByCategory: { [key: string]: any[] } = {
+    teaching: this.teachingLessons,
+    daily: this.dailyLessons,
+    interview: this.interviewLessons,
+  };
+
   avatarDetails: any = {
     jane: {
       name: 'Teacher Jane (ครูเจน)',
@@ -308,6 +325,19 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
       mouthHeight: '1.8%',
       lipColor: '#ad4e59'
     }
+  };
+
+  // Per-persona voice profile for practiceSpeakText() -- so each of the 4
+  // tutors sounds distinct instead of just splitting into 2 shared voices
+  // by gender. preferredNames are tried first, in order, against the
+  // browser's installed voice list; if none of them exist on this device
+  // we fall back to the old gender-based pick further down so speech
+  // always still works.
+  private readonly personaVoiceProfiles: Record<'jane' | 'david' | 'alex' | 'maria', { gender: 'female' | 'male'; pitch: number; rateMultiplier: number; preferredNames: string[] }> = {
+    jane: { gender: 'female', pitch: 1.0, rateMultiplier: 0.92, preferredNames: ['zira', 'susan', 'jenny', 'aria'] }, // calm, slower teacher
+    maria: { gender: 'female', pitch: 1.15, rateMultiplier: 1.0, preferredNames: ['hazel', 'samantha', 'moira', 'tessa', 'karen'] }, // slightly anxious parent
+    david: { gender: 'male', pitch: 0.88, rateMultiplier: 0.95, preferredNames: ['david', 'george', 'daniel'] }, // formal British educator
+    alex: { gender: 'male', pitch: 1.08, rateMultiplier: 1.08, preferredNames: ['guy', 'ryan', 'oliver', 'andrew'] }, // casual, upbeat friend
   };
 
   private mediaRecorder: any = null;
@@ -632,19 +662,25 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   // ได้จากหน้า Teacher > จัดการเนื้อหาฝึกฝน) ปีที่ยังไม่มีเนื้อหาจริงจะได้ array ว่างเปล่า
   // (ตั้งใจ — ไม่ fallback กลับไปโชว์เนื้อหาปี 1 ให้ปีอื่น เพราะนั่นคือปัญหาเดิมที่แก้อยู่นี้)
   // ยกเว้นตอน request ล้มเหลวจริง (เช่น เน็ตหลุด) ถึงจะคงค่า hardcode เดิมไว้กันหน้าว่างเปล่า
+  //
+  // roleplayCategories/lessonsByCategory มาแทนที่การดึง teaching/daily/interview แยกทีละ
+  // ก้อนแบบ hardcode — โหลดหมวดหมู่จริงจาก practice_categories ก่อน (teaching/daily/
+  // interview ที่ seed ไว้ + หมวดที่อาจารย์เพิ่มเอง) แล้วค่อยวนโหลด scenario ของแต่ละหมวด
+  // เข้า map เดียว ทำให้หมวดใหม่ที่อาจารย์เพิ่มใช้งานได้ทันทีโดยไม่ต้องแก้โค้ดเพิ่ม
   private loadPracticeContentFromDb(): void {
     const year = this.session.activeYearLevel || 1;
 
-    this.apiService.getPracticeScenarios(year, 'teaching').subscribe({
-      next: (data: any[]) => { if (Array.isArray(data)) this.teachingLessons = data; },
-      error: () => {},
-    });
-    this.apiService.getPracticeScenarios(year, 'daily').subscribe({
-      next: (data: any[]) => { if (Array.isArray(data)) this.dailyLessons = data; },
-      error: () => {},
-    });
-    this.apiService.getPracticeScenarios(year, 'interview').subscribe({
-      next: (data: any[]) => { if (Array.isArray(data)) this.interviewLessons = data; },
+    this.apiService.getPracticeCategories(year).subscribe({
+      next: (data: any[]) => {
+        if (!Array.isArray(data) || data.length === 0) return;
+        this.roleplayCategories = data;
+        data.forEach((cat) => {
+          this.apiService.getPracticeScenarios(year, cat.category_key).subscribe({
+            next: (lessons: any[]) => { if (Array.isArray(lessons)) this.lessonsByCategory[cat.category_key] = lessons; },
+            error: () => {},
+          });
+        });
+      },
       error: () => {},
     });
     this.apiService.getPracticeChatTopics(year).subscribe({
@@ -758,10 +794,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
   }
 
   private getLessonPoolForCategory(category: string): any[] {
-    if (category === 'teaching') return this.teachingLessons;
-    if (category === 'daily') return this.dailyLessons;
-    if (category === 'interview') return this.interviewLessons;
-    return [];
+    return this.lessonsByCategory[category] || [];
   }
 
   private pickRandomLesson(): void {
@@ -1009,16 +1042,63 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Chrome/Edge load the voice list asynchronously -- speechSynthesis.getVoices()
+  // can return [] on the very first call after page load (e.g. the tutor's
+  // opening greeting), which meant the gender/persona matching below had
+  // nothing to search and the browser fell back to its own default voice,
+  // ignoring which tutor was picked. Cache the list and re-resolve it once
+  // the 'voiceschanged' event fires so the very first utterance also gets a
+  // properly matched voice, not just the second one onward.
+  private voicesLoadedPromise: Promise<void> | null = null;
+  private ensureVoicesLoaded(): Promise<void> {
+    if (!('speechSynthesis' in window)) return Promise.resolve();
+    if (this.voicesLoadedPromise) return this.voicesLoadedPromise;
+    this.voicesLoadedPromise = new Promise((resolve) => {
+      if (window.speechSynthesis.getVoices().length > 0) {
+        resolve();
+        return;
+      }
+      let settled = false;
+      const onReady = () => {
+        if (settled) return;
+        settled = true;
+        window.speechSynthesis.removeEventListener('voiceschanged', onReady);
+        resolve();
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', onReady);
+      // Safety net: some browsers/platforms never fire voiceschanged (or
+      // genuinely have no voices) -- don't block speech forever.
+      setTimeout(onReady, 1000);
+    });
+    return this.voicesLoadedPromise;
+  }
+
   practiceSpeakText(text: string, onEnd?: () => void) {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+    if (!('speechSynthesis' in window)) {
+      Swal.fire({
+        icon: 'error',
+        title: 'ไม่รองรับระบบเสียง',
+        text: 'ขออภัย เบราว์เซอร์ของคุณไม่รองรับระบบสังเคราะห์เสียงอ่าน (Text-to-Speech)',
+        confirmButtonColor: '#6B21A8'
+      });
+      if (onEnd) onEnd();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    this.ensureVoicesLoaded().then(() => this.speakWithPersonaVoice(text, onEnd));
+  }
+
+  private speakWithPersonaVoice(text: string, onEnd?: () => void) {
       const utterance = new SpeechSynthesisUtterance(text);
       this.activeUtterance = utterance; // Keep reference to prevent GC
       utterance.lang = 'en-US';
-      utterance.rate = this.sharedUi.ttsSpeed;
+
+      const voiceProfile = this.personaVoiceProfiles[this.selectedAvatar];
+      utterance.rate = this.sharedUi.ttsSpeed * (voiceProfile?.rateMultiplier ?? 1);
+      utterance.pitch = voiceProfile?.pitch ?? 1;
 
       const voices = window.speechSynthesis.getVoices();
-      const isFemaleTutor = this.selectedAvatar === 'jane' || this.selectedAvatar === 'maria';
+      const isFemaleTutor = voiceProfile ? voiceProfile.gender === 'female' : (this.selectedAvatar === 'jane' || this.selectedAvatar === 'maria');
       const accent = this.sharedUi.ttsVoiceType === 'US' ? 'en-US' : 'en-GB';
 
       // Let's filter english voices first
@@ -1037,7 +1117,22 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
         return n.includes('natural') || n.includes('online') || n.includes('google') || n.includes('neural');
       };
 
-      if (isFemaleTutor) {
+      // Try this persona's own preferred voice names first, so each of the 4
+      // tutors sounds distinct instead of the 2 sharing whichever gender-matched
+      // voice wins below.
+      if (voiceProfile) {
+        for (const preferredName of voiceProfile.preferredNames) {
+          const match = accentVoices.find(v => v.name.toLowerCase().includes(preferredName));
+          if (match) {
+            voice = match;
+            break;
+          }
+        }
+      }
+
+      if (voice) {
+        // matched a persona-specific voice above, skip the gender fallback pools
+      } else if (isFemaleTutor) {
         // Look for typical female names or indicators
         const femaleVoices = accentVoices.filter(v => {
           const name = v.name.toLowerCase();
@@ -1105,15 +1200,6 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
         if (onEnd) onEnd();
       };
       window.speechSynthesis.speak(utterance);
-    } else {
-      Swal.fire({
-        icon: 'error',
-        title: 'ไม่รองรับระบบเสียง',
-        text: 'ขออภัย เบราว์เซอร์ของคุณไม่รองรับระบบสังเคราะห์เสียงอ่าน (Text-to-Speech)',
-        confirmButtonColor: '#6B21A8'
-      });
-      if (onEnd) onEnd();
-    }
   }
 
   // ====================================================
@@ -1576,7 +1662,9 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
       return `Hello ${studentName}! I am ${examiner}, your presentation evaluator today. Please select a presentation topic and click "Start Presentation" when you are ready to begin!`;
     }
 
-    if ((cat === 'teaching' || cat === 'daily') && this.selectedLesson) {
+    // Any other category (teaching/daily/interview's own scenario-pool cousins, or a
+    // teacher-added custom one) -- 'interview'/'presentation' already returned above.
+    if (this.selectedLesson) {
       return this.buildLessonGreeting(this.selectedLesson);
     }
 
@@ -1679,7 +1767,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
       html: `
         <div style="text-align: left; font-size: 0.9rem; line-height: 1.6; color: #475569; padding: 0.5rem 0;">
           <p style="margin: 6px 0;"><strong>วันที่ทำกิจกรรม:</strong> ${dateFormatted}</p>
-          ${log.score !== undefined ? `<p style="margin: 6px 0;"><strong>คะแนนสำเร็จ:</strong> <span style="color: #0d9488; font-weight: 800;">${log.score}%</span></p>` : ''}
+          ${log.score !== undefined ? `<p style="margin: 6px 0;"><strong>คะแนนสำเร็จ:</strong> <span style="color: #ec4899; font-weight: 800;">${log.score}%</span></p>` : ''}
           <p style="margin: 6px 0;"><strong>คะแนนประสบการณ์ที่ได้รับ:</strong> <span style="color: #10b981; font-weight: 800;">+${log.xp} XP</span></p>
           ${log.report?.overall ? `<p style="margin: 10px 0 0; padding-top: 10px; border-top: 1px solid #f1f5f9; white-space: pre-line;">${log.report.overall}</p>` : ''}
           ${log.report?.tips?.length ? `<p style="margin: 8px 0 0; padding-top: 8px; border-top: 1px solid #f1f5f9; white-space: pre-line;"><strong>💡 คำแนะนำ:</strong><br>${log.report.tips.join('<br>')}</p>` : ''}
@@ -1689,7 +1777,7 @@ export class StudentPracticeComponent implements OnInit, OnDestroy {
       `,
       icon: 'success',
       confirmButtonText: 'ตกลง',
-      confirmButtonColor: '#0d9488',
+      confirmButtonColor: '#ec4899',
     });
   }
 
@@ -2629,9 +2717,9 @@ Start the conversation naturally and in character with a short opening line (1-2
       .replace(/>/g, '&gt;');
 
     // Headings: ### title or ## title or # title
-    escaped = escaped.replace(/^### (.*?)$/gm, '<h5 style="margin: 0.75rem 0 0.5rem 0; font-size: 0.92rem; font-weight: 800; color: #0f766e;">$1</h5>');
-    escaped = escaped.replace(/^## (.*?)$/gm, '<h4 style="margin: 1rem 0 0.75rem 0; font-size: 1rem; font-weight: 850; color: #0f766e;">$1</h4>');
-    escaped = escaped.replace(/^# (.*?)$/gm, '<h3 style="margin: 1.25rem 0 1rem 0; font-size: 1.1rem; font-weight: 900; color: #0f766e;">$1</h3>');
+    escaped = escaped.replace(/^### (.*?)$/gm, '<h5 style="margin: 0.75rem 0 0.5rem 0; font-size: 0.92rem; font-weight: 800; color: var(--pastel-blue-darker);">$1</h5>');
+    escaped = escaped.replace(/^## (.*?)$/gm, '<h4 style="margin: 1rem 0 0.75rem 0; font-size: 1rem; font-weight: 850; color: var(--pastel-blue-darker);">$1</h4>');
+    escaped = escaped.replace(/^# (.*?)$/gm, '<h3 style="margin: 1.25rem 0 1rem 0; font-size: 1.1rem; font-weight: 900; color: var(--pastel-blue-darker);">$1</h3>');
 
     // Horizontal Rule: ---
     escaped = escaped.replace(/^---$/gm, '<hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.15); margin: 0.85rem 0;" />');
@@ -2687,18 +2775,6 @@ IMPORTANT: If the student made any grammar or spelling mistake in their message,
         let categoryPrompt = '';
         if (this.currentChatTopic) {
           categoryPrompt = `You are roleplaying in the scenario: ${this.currentChatTopic.titleEn} (${this.currentChatTopic.scenario}). Help the student practice English language commonly used in this situation.`;
-        } else if (this.selectedCategory === 'teaching') {
-          if (this.selectedLesson) {
-            categoryPrompt = `You are roleplaying in a School/Classroom setting for the lesson "${this.selectedLesson.titleEn}". Reading passage / scope for this lesson:\n"""${this.selectedLesson.article}"""\nStay strictly within the situation described above (setting, characters, topic). If the student goes off-topic, answer briefly and politely, then steer the conversation back to this scenario.`;
-          } else {
-            categoryPrompt = `You are roleplaying in a School/Classroom setting. Help the student practice English language commonly used by English Teachers (e.g. welcoming students, managing the classroom, giving instructions, talking to parent).`;
-          }
-        } else if (this.selectedCategory === 'daily') {
-          if (this.selectedLesson) {
-            categoryPrompt = `You are roleplaying in a casual daily-life conversation about "${this.selectedLesson.titleEn}". Reading passage / scope for this topic:\n"""${this.selectedLesson.article}"""\nStay within this topic. If the student goes off-topic, answer briefly and politely, then steer the conversation back to this topic.`;
-          } else {
-            categoryPrompt = `You are roleplaying in a casual daily life setting. Chat about hobbies, routines, travel, food, or general greetings.`;
-          }
         } else if (this.selectedCategory === 'presentation') {
           const topicName = this.getPresentationTopicName();
           const topicData = this.presentationTopics.find(t => t.key === this.presentationTopic);
@@ -2713,6 +2789,17 @@ IMPORTANT: If the student made any grammar or spelling mistake in their message,
           Give a very brief evaluation of their response (1-2 sentences) in character, and then ask the next question exactly as follows:
           ${nextQ ? `"${nextQ}"` : `"The interview is now complete. Thank you very much for your time today!"`}
           Do not ask any other questions. Keep the total response short.`;
+        } else {
+          // Any other roleplay category (teaching/daily, or a teacher-added custom
+          // one) -- all share this same generic lesson-article roleplay shape, just
+          // flavored with that category's own English label.
+          const cat = this.roleplayCategories.find((c) => c.category_key === this.selectedCategory);
+          const settingLabel = cat?.label_en || 'general conversational practice';
+          if (this.selectedLesson) {
+            categoryPrompt = `You are roleplaying in a ${settingLabel} setting for the lesson "${this.selectedLesson.titleEn}". Reading passage / scope for this lesson:\n"""${this.selectedLesson.article}"""\nStay strictly within the situation described above (setting, characters, topic). If the student goes off-topic, answer briefly and politely, then steer the conversation back to this scenario.`;
+          } else {
+            categoryPrompt = `You are roleplaying in a ${settingLabel} setting. Help the student practice English naturally in this context.`;
+          }
         }
 
         let levelPrompt = '';
@@ -3008,7 +3095,7 @@ IMPORTANT: If the student made any grammar or spelling mistake in their last mes
           <div style="text-align: left; font-size: 0.9rem; line-height: 1.6; color: #475569; padding: 0.5rem 0;">
             <p style="margin: 6px 0;"><strong>ประเภทกิจกรรม:</strong> ${log.type || 'กิจกรรมทั่วไป'}</p>
             <p style="margin: 6px 0;"><strong>วันที่ทำกิจกรรม:</strong> ${dateFormatted}</p>
-            ${log.score !== undefined ? `<p style="margin: 6px 0;"><strong>คะแนนสำเร็จ:</strong> <span style="color: #0d9488; font-weight: 800;">${log.score}%</span></p>` : ''}
+            ${log.score !== undefined ? `<p style="margin: 6px 0;"><strong>คะแนนสำเร็จ:</strong> <span style="color: #ec4899; font-weight: 800;">${log.score}%</span></p>` : ''}
             <p style="margin: 6px 0;"><strong>คะแนนประสบการณ์ที่ได้รับ:</strong> <span style="color: #10b981; font-weight: 800;">+${log.xp} XP</span></p>
             ${log.report?.overall ? `<p style="margin: 10px 0 0; padding-top: 10px; border-top: 1px solid #f1f5f9; white-space: pre-line;">${log.report.overall}</p>` : ''}
             ${log.report?.tips?.length ? `<p style="margin: 8px 0 0; padding-top: 8px; border-top: 1px solid #f1f5f9; white-space: pre-line;"><strong>💡 คำแนะนำ:</strong><br>${log.report.tips.join('<br>')}</p>` : ''}

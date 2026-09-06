@@ -169,3 +169,19 @@ button, input, select, textarea {
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* SweetAlert2 renders its dialog appended to <body>, outside any component's
+   own DOM tree, so this has to be a global (non-:host) rule to reach it at
+   all. Its own default z-index is only 1060 (see
+   node_modules/sweetalert2/dist/sweetalert2.css) -- lower than several of
+   the app's own fullscreen layers (.quiz-fs-overlay: 1200, Practice's
+   recording/evaluating overlays: 99998-99999), so a Swal.fire() triggered
+   from inside one of those (e.g. the "ตอบคำถามไม่ครบ" validation warning in
+   submitFullQuiz()) rendered stuck behind it instead of on top -- looked
+   broken, with quiz content painted over the dialog. Swal is meant to be a
+   blocking, always-on-top prompt, so give it a z-index higher than
+   anything else in the app instead of matching/chasing whatever the
+   current highest overlay happens to be. */
+.swal2-container {
+  z-index: 999999 !important;
+}

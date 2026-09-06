@@ -52,7 +52,7 @@ export class ApiService {
     return this.http.delete(`${this.baseUrl}/lesson/${lessonId}`);
   }
 
-  submitQuizResult(payload: { userId: number; lessonId: number; quizType: string; score: number }): Observable<any> {
+  submitQuizResult(payload: { userId: number; lessonId: number; quizType: string; score: number; answers?: unknown }): Observable<any> {
     return this.http.post(`${this.baseUrl}/student/quiz-result`, payload);
   }
 
@@ -88,6 +88,11 @@ export class ApiService {
     game_weight?: number | null;
     test_weight?: number | null;
     ai_grading_instruction?: string | null;
+    // คะแนนเต็มของแต่ละ Part ใน Full Quiz (Part A/B/เรียงลำดับ) -- null = ใช้ค่าเริ่มต้นเดิม
+    // (70/10/10) ดู student-lessons.component.ts getFullQuizPartMaxes()
+    part_a_max?: number | null;
+    part_b_max?: number | null;
+    part_order_max?: number | null;
   }): Observable<any> {
     return this.http.put(`${this.baseUrl}/teacher/lessons/${lessonId}/ai-settings`, data);
   }
@@ -278,6 +283,24 @@ export class ApiService {
 
   deletePracticeChatTopic(topicId: number): Observable<any> {
     return this.http.delete(`${this.baseUrl}/practice-chat-topics/${topicId}`);
+  }
+
+  // หมวดหมู่ roleplay (teaching/daily/interview ที่ล็อกไว้ + หมวดที่อาจารย์เพิ่มเอง) --
+  // category_key ของหมวดที่สร้างใหม่ถูก generate ฝั่ง backend เอง (ไม่ต้องส่งมา)
+  getPracticeCategories(yearLevel: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/practice-categories?year_level=${yearLevel}`);
+  }
+
+  createPracticeCategory(data: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/practice-categories`, data);
+  }
+
+  updatePracticeCategory(categoryId: number, data: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/practice-categories/${categoryId}`, data);
+  }
+
+  deletePracticeCategory(categoryId: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/practice-categories/${categoryId}`);
   }
 
   // kind: 'scenario' (ต้องมี category) | 'chat_topic'

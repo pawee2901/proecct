@@ -7,14 +7,17 @@ import { Subscription } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { TeacherSessionService } from '../../services/teacher-session.service';
 
-type ScenarioCategory = 'teaching' | 'daily' | 'interview';
-type ActiveTab = ScenarioCategory | 'chat';
-
 // Practice Content Manager — replaces what used to be teachingLessons/dailyLessons/
 // interviewLessons/practiceChatTopics hardcoded in student-practice.component.ts:
 // the exact same content for every year level, with zero teacher control. Now split
 // per year level (session.activeYearLevel, same classroom picker as Lessons/Students)
 // and editable here, with an AI "ให้ AI ช่วยแต่ง" draft assist per item.
+//
+// The category tabs (teaching/daily/interview) used to be a hardcoded `readonly tabs`
+// array -- now loaded from practice_categories (seeded with those same 3, locked so
+// their label/icon/key can't change from here) so a teacher can add their own on top.
+// "หัวข้อแชท (Chat Topics)" stays a fixed extra tab appended after them -- it's a
+// structurally separate table (practice_chat_topics), not a category row.
 @Component({
   selector: 'app-teacher-practice-content',
   standalone: true,
@@ -23,13 +26,12 @@ type ActiveTab = ScenarioCategory | 'chat';
   styleUrl: './teacher-practice-content.component.scss',
 })
 export class TeacherPracticeContentComponent implements OnInit, OnDestroy {
-  activeTab: ActiveTab = 'teaching';
-  readonly tabs: { key: ActiveTab; label: string; icon: string }[] = [
-    { key: 'teaching', label: 'ครู (Teaching)', icon: '👩‍🏫' },
-    { key: 'daily', label: 'ชีวิตประจำวัน (Daily)', icon: '💬' },
-    { key: 'interview', label: 'สัมภาษณ์งาน (Interview)', icon: '💼' },
-    { key: 'chat', label: 'หัวข้อแชท (Chat Topics)', icon: '⌨️' },
-  ];
+  activeTab = 'teaching';
+  categories: any[] = [];
+  readonly chatTab = { category_key: 'chat', label_th: 'หัวข้อแชท (Chat Topics)', label_en: '', icon: '⌨️', is_locked: true };
+  get tabs(): any[] {
+    return [...this.categories, this.chatTab];
+  }
 
   scenarios: any[] = [];
   chatTopics: any[] = [];
@@ -39,6 +41,8 @@ export class TeacherPracticeContentComponent implements OnInit, OnDestroy {
   editingScenario: any = null;
   // { topic_id?, icon, titleTh, titleEn, scenario }
   editingChatTopic: any = null;
+  // { category_id?, label_th, label_en, icon, description }
+  editingCategory: any = null;
 
   draftTopicHint = '';
   drafting = false;
@@ -49,10 +53,14 @@ export class TeacherPracticeContentComponent implements OnInit, OnDestroy {
   constructor(public session: TeacherSessionService, private apiService: ApiService) {}
 
   ngOnInit(): void {
+    this.loadCategories();
     this.loadData();
     this.yearChangedSub = this.session.yearChanged$.subscribe(() => {
       this.editingScenario = null;
       this.editingChatTopic = null;
+      this.editingCategory = null;
+      this.activeTab = 'teaching';
+      this.loadCategories();
       this.loadData();
     });
   }
@@ -65,13 +73,22 @@ export class TeacherPracticeContentComponent implements OnInit, OnDestroy {
     return this.session.activeYearLevel || 1;
   }
 
-  switchTab(tab: ActiveTab): void {
+  switchTab(tab: string): void {
     if (this.activeTab === tab) return;
     this.activeTab = tab;
     this.editingScenario = null;
     this.editingChatTopic = null;
+    this.editingCategory = null;
     this.draftTopicHint = '';
     this.loadData();
+  }
+
+  loadCategories(): void {
+    if (!this.session.activeYearLevel) return;
+    this.apiService.getPracticeCategories(this.yearLevel).subscribe({
+      next: (data: any[]) => { this.categories = Array.isArray(data) ? data : []; },
+      error: () => { this.categories = []; },
+    });
   }
 
   loadData(): void {
@@ -88,6 +105,75 @@ export class TeacherPracticeContentComponent implements OnInit, OnDestroy {
         error: () => { this.scenarios = []; this.loading = false; },
       });
     }
+  }
+
+  // ── Category CRUD (teacher-added tabs only -- seeded teaching/daily/interview
+  // are is_locked and never show the edit/delete affordance in the template) ──
+  startNewCategory(): void {
+    this.editingScenario = null;
+    this.editingChatTopic = null;
+    this.editingCategory = { label_th: '', label_en: '', icon: '💬', description: '' };
+  }
+
+  editCategory(cat: any): void {
+    this.editingScenario = null;
+    this.editingChatTopic = null;
+    this.editingCategory = { ...cat };
+  }
+
+  cancelCategoryEdit(): void {
+    this.editingCategory = null;
+  }
+
+  saveCategory(): void {
+    if (!this.editingCategory.label_th?.trim() || !this.editingCategory.label_en?.trim()) {
+      Swal.fire({ icon: 'warning', title: 'กรอกข้อมูลไม่ครบถ้วน', text: 'กรุณากรอกชื่อไทยและชื่ออังกฤษของหมวดหมู่ให้ครบ', confirmButtonColor: '#0d9488' });
+      return;
+    }
+    const payload = { ...this.editingCategory, year_level: this.yearLevel };
+    const isEdit = !!this.editingCategory.category_id;
+    this.saving = true;
+    const req = isEdit
+      ? this.apiService.updatePracticeCategory(this.editingCategory.category_id, payload)
+      : this.apiService.createPracticeCategory(payload);
+    req.subscribe({
+      next: () => {
+        this.saving = false;
+        this.editingCategory = null;
+        this.loadCategories();
+        Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', timer: 1200, showConfirmButton: false });
+      },
+      error: () => {
+        this.saving = false;
+        Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', confirmButtonColor: '#0d9488' });
+      },
+    });
+  }
+
+  deleteCategory(cat: any): void {
+    Swal.fire({
+      icon: 'warning',
+      title: `ลบหมวดหมู่ "${cat.label_th}"?`,
+      showCancelButton: true,
+      confirmButtonText: 'ลบเลย',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#dc2626',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.apiService.deletePracticeCategory(cat.category_id).subscribe({
+          next: () => {
+            if (this.activeTab === cat.category_key) this.switchTab('teaching');
+            this.loadCategories();
+          },
+          error: (err: any) => Swal.fire({
+            icon: 'error',
+            title: 'ลบไม่สำเร็จ',
+            text: err?.error?.message || 'กรุณาลองใหม่อีกครั้ง',
+            confirmButtonColor: '#0d9488',
+          }),
+        });
+      }
+    });
   }
 
   // ── Scenario CRUD (teaching / daily / interview) ──
