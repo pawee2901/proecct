@@ -1661,6 +1661,17 @@ export class LessonsDataService {
     this.loadLessonsFromDb();
   }
 
+  // ก่อนหน้านี้ `les.fullQuiz || fallbackUnit?.fullQuiz` เช็คแค่ truthy — แต่บทเรียนที่เคย
+  // เปิดแท็บ "แบบทดสอบหลายตอน" ในหน้าแก้ไขบทเรียนแล้วยังไม่ได้กรอกอะไรเลย (หรือกรอกแล้วลบออก
+  // หมด) จะได้ full_quiz เป็น object ที่ "มีอยู่" แต่ทุก part ว่างเปล่า ({partA:[],...}) ซึ่งเป็น
+  // truthy เหมือนกัน เลยบล็อกไม่ให้ fallback กลับไปใช้เนื้อหาจริงที่ hardcode ไว้ (richYear1Seed)
+  // ได้เลย -- ทำให้นักศึกษาเจอข้อสอบว่างเปล่าทั้งที่มีเนื้อหาจริงอยู่แล้วในโค้ด ต้องเช็คว่ามี
+  // คำถามจริงอย่างน้อย 1 ข้อในสักส่วนก่อน ถึงจะถือว่า "มีเนื้อหาจริง" ควรใช้แทน fallback
+  private hasFullQuizContent(fq: any): boolean {
+    if (!fq) return false;
+    return (fq.partA?.length > 0) || (fq.partB?.expressions?.length > 0) || (fq.partC?.length > 0);
+  }
+
   loadLessonsFromDb(): void {
     const staticUnitsFallback = this.getYearFallbackUnits(this.sessionService.activeYearLevel);
 
@@ -1772,14 +1783,14 @@ export class LessonsDataService {
                 lessons: fallbackUnit?.lessons || ['การเรียนรู้ตามหลักสูตร', 'การฝึกปฏิบัติและโต้ตอบ'],
                 vocabularies: finalVocabs,
                 dialogues: fallbackUnit?.dialogues || [{ role1: 'Teacher', text1: 'Welcome to the lesson.', role2: 'Student', text2: 'Hello teacher!' }],
-                preQuiz: les.preQuiz || fallbackUnit?.preQuiz || [],
-                postQuiz: les.postQuiz || fallbackUnit?.postQuiz || [],
+                preQuiz: (les.preQuiz?.length > 0) ? les.preQuiz : (fallbackUnit?.preQuiz || []),
+                postQuiz: (les.postQuiz?.length > 0) ? les.postQuiz : (fallbackUnit?.postQuiz || []),
                 scrambleWords,
                 scrambleHints,
                 unscrambleDialogue,
                 pictureWords: customPictureWords.length > 0 ? customPictureWords : undefined,
                 fillBlankItems: customFillBlanks.length > 0 ? customFillBlanks : undefined,
-                fullQuiz: les.fullQuiz || fallbackUnit?.fullQuiz,
+                fullQuiz: this.hasFullQuizContent(les.fullQuiz) ? les.fullQuiz : fallbackUnit?.fullQuiz,
                 allowedGames: allowed,
                 speakingQuestions: sentences,
                 classHours: les.classHours || '⏱ 4 คาบเรียน',
