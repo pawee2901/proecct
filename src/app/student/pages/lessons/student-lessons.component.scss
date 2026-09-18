@@ -1087,6 +1087,17 @@
   max-width: 800px;
   width: 100%;
   margin: 0 auto;
+  // White, matching .qfs-header -- .qfs-body had no background at all
+  // before, so on mobile (where it already renders edge-to-edge -- 800px
+  // max-width is wider than any phone) it was letting .bottom-nav show
+  // straight through the padding/clearance space reserved above, right
+  // where .qfs-submit-row's button sits. .quiz-fs-overlay itself stays
+  // transparent (that's what lets <app-cute-background> peek through
+  // around this card on wider screens), but the card's own body needs to
+  // be opaque like every other white card in this app, or its z-index
+  // (1200, above .bottom-nav's 150) buys nothing -- a higher stacking
+  // order only hides what's behind it if what's on top is actually opaque.
+  background: white;
 
   // The home-indicator/gesture-bar clearance (env(safe-area-inset-bottom))
   // is a real ::after spacer, not folded into the padding above, because a
