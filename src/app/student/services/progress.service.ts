@@ -5,6 +5,8 @@ import { LessonsDataService } from './lessons-data.service';
 import { LearningLogService } from './learning-log.service';
 import { ProgressReportEntry } from '../models/unit.model';
 
+type PendingQuizResult = { userId: number; lessonId: number; quizType: string; score: number; answers?: unknown };
+
 // Extracted from student.component.ts: progressReport/practiceCount/averageScore
 // (~2915-2916, 147-149), loadProgressHistory (~8018-8063), getLessonStatusClass/
 // Label + getCompletedCount (~5051-5069), gamification stats (~157-159).
@@ -40,18 +42,73 @@ export class ProgressService {
    *  every option, what the student picked/wrote, right or wrong, and the
    *  per-part score breakdown (see student-lessons.component.ts submitQuiz()/
    *  submitFullQuiz()) -- stored as-is on the backend (quiz_answers column)
-   *  instead of being discarded once the % score is computed. */
+   *  instead of being discarded once the % score is computed.
+   *
+   *  If the POST itself never reaches the backend (offline, VPS hiccup), the
+   *  attempt used to be silently dropped -- the student's device still shows
+   *  the score (localStorage) but the teacher never sees it and it never
+   *  syncs to another device. Now it's queued in localStorage and retried by
+   *  retryPendingQuizResults() below instead of being lost. */
   submitQuizResultToBackend(quizType: 'pre_test' | 'post_test' | 'pre_game' | 'post_game', score: number, answers?: unknown): void {
     if (!this.session.currentUser?.id || !this.lessonsData.currentUnit?.id) return;
-    this.apiService
-      .submitQuizResult({
-        userId: this.session.currentUser.id,
-        lessonId: this.lessonsData.currentUnit.id,
-        quizType,
-        score,
-        answers,
-      })
-      .subscribe({ error: () => {} });
+    const payload: PendingQuizResult = {
+      userId: this.session.currentUser.id,
+      lessonId: this.lessonsData.currentUnit.id,
+      quizType,
+      score,
+      answers,
+    };
+    this.apiService.submitQuizResult(payload).subscribe({
+      error: () => this.writePendingQuizResults([...this.readPendingQuizResults(), payload]),
+    });
+  }
+
+  private pendingQuizResultsKey(): string {
+    return `pending_quiz_results_${this.session.currentUser?.id || 'guest'}`;
+  }
+
+  private readPendingQuizResults(): PendingQuizResult[] {
+    try {
+      const raw = localStorage.getItem(this.pendingQuizResultsKey());
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private writePendingQuizResults(items: PendingQuizResult[]): void {
+    try {
+      localStorage.setItem(this.pendingQuizResultsKey(), JSON.stringify(items));
+    } catch {}
+  }
+
+  /** Resends any quiz results (pre/post-test or pre/post-game) whose POST
+   *  failed last time -- see submitQuizResultToBackend above. Called once on
+   *  app bootstrap (StudentShellComponent.ngOnInit) so a student who took a
+   *  Pre/Post-Test while offline, or while the backend was briefly down,
+   *  still ends up with it recorded server-side (and visible to their
+   *  teacher) the next time they open the app with a working connection. An
+   *  item is removed from the queue only once its resend actually succeeds;
+   *  anything that still fails stays queued for the next attempt. */
+  retryPendingQuizResults(): void {
+    const pending = this.readPendingQuizResults();
+    if (pending.length === 0) return;
+
+    const stillPending: PendingQuizResult[] = [];
+    let remaining = pending.length;
+    const settle = () => {
+      if (--remaining === 0) this.writePendingQuizResults(stillPending);
+    };
+
+    pending.forEach((payload) => {
+      this.apiService.submitQuizResult(payload).subscribe({
+        next: () => settle(),
+        error: () => {
+          stillPending.push(payload);
+          settle();
+        },
+      });
+    });
   }
 
   loadProgressHistory(): void {

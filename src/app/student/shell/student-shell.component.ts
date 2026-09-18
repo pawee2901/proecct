@@ -58,6 +58,7 @@ export class StudentShellComponent implements OnInit {
 
     this.lessonsData.initForSession(); // original steps 1 & 6
     this.progress.loadProgressHistory(); // original step 2
+    this.progress.retryPendingQuizResults(); // resend any quiz results that failed to reach the backend last session
     this.learningLog.loadLearningLogs(); // original step 5
     this.gameEngine.buildGameVocabPool(); // original step 7
     this.gameEngine.loadCustomGameContent(); // teacher-edited game content overrides (game_contents)
