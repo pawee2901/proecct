@@ -127,6 +127,9 @@
        its own scroll-lock internally once built, since the Shell no longer owns that state. -->
   <main class="main-content">
     <router-outlet></router-outlet>
+    <!-- Real element, not padding -- see .scroll-bottom-spacer in
+         student-shell.component.scss for why. -->
+    <div class="scroll-bottom-spacer" aria-hidden="true"></div>
   </main>
 
   <!-- ==================================================== BOTTOM NAVIGATION (Mobile) ==================================================== -->

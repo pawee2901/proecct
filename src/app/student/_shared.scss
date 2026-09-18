@@ -671,6 +671,14 @@
   border: 1.5px solid var(--slate-200);
   border-radius: 10px;
   padding: 0.6rem 0.85rem;
+  // 48px is the Material/WCAG-recommended minimum touch target -- the
+  // padding above alone only comes out to ~36-38px tall (font-size 0.83rem
+  // + line-height), which on a phone is small enough to cause mis-taps
+  // between adjacent options in .opts-grid (reported as "กดปุ่มได้ยากมาก" on
+  // mobile). min-height doesn't change desktop's look (padding already
+  // clears it there) since align-items: center keeps the label vertically
+  // centered either way.
+  min-height: 48px;
   font-size: 0.83rem;
   font-weight: 600;
   color: var(--slate-700);
@@ -1355,6 +1363,14 @@
   .btn-enter-lesson {
     padding: 0.55rem;
     font-size: 0.78rem;
+  }
+
+  // More breathing room between quiz/exercise option buttons on a phone --
+  // 0.6rem was tight enough at thumb width that a tap aimed at one option
+  // could land on its neighbor (see .opt-btn's min-height comment above for
+  // the other half of this fix).
+  .opts-grid {
+    gap: 0.85rem;
   }
 }
 

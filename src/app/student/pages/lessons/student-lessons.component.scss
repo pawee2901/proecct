@@ -961,7 +961,23 @@
    ==================================================== */
 .quiz-fs-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  // Explicit height instead of `inset: 0` (which also sets bottom: 0) --
+  // same 100vh/100dvh/100svh fallback chain as .dashboard-wrap
+  // (student-shell.component.scss) and for the same reason: a plain
+  // position:fixed box sized only by top/bottom:0 can end up measured
+  // against the browser's large/layout viewport on some mobile browsers,
+  // so its bottom edge (where .qfs-submit-row lives) sits behind the
+  // browser's own address/toolbar or gets clipped short of the real
+  // visible area instead of tracking what's actually on screen -- the
+  // "ส่งคำตอบ ปุ่มขึ้นมาทับแถบด้านล่าง" mobile report. dvh/svh-aware
+  // browsers use the later, more accurate declarations; others just keep
+  // the 100vh fallback.
+  height: 100vh;
+  height: 100dvh;
+  height: 100svh;
   z-index: 1200;
   // Was an opaque flat #f8fafc -- since this sits (via position:fixed) on
   // top of <app-cute-background> in the shell behind it rather than
@@ -1064,10 +1080,28 @@
   // nested-scroll setup that needs this explicitly on iOS.
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  // Flat 3rem breathing room below the last item (submit button, result
+  // card, etc.) before it would otherwise sit flush against the bottom
+  // edge.
   padding: 1.5rem 1.4rem 3rem;
   max-width: 800px;
   width: 100%;
   margin: 0 auto;
+
+  // The home-indicator/gesture-bar clearance (env(safe-area-inset-bottom))
+  // is a real ::after spacer, not folded into the padding above, because a
+  // scroll container that's also a flex item (.qfs-body is `flex: 1`
+  // inside .quiz-fs-overlay's column) can silently drop its own trailing
+  // padding from scrollHeight in WebKit/Blink -- see .scroll-bottom-spacer
+  // in student-shell.component.scss for the full writeup and the site-wide
+  // bug this same pattern caused (list pages that couldn't scroll all the
+  // way to their last item). Generated content from ::after doesn't have
+  // that problem -- it's a real box in the flow, always counted.
+  &::after {
+    content: '';
+    display: block;
+    height: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 /* Submit Row */
@@ -1382,6 +1416,8 @@
     padding: 0.75rem 1rem;
   }
   .qfs-body {
+    // ::after safe-area spacer (base rule above) still applies here --
+    // only the flat part of the padding is overridden per breakpoint.
     padding: 1rem 1rem 4rem;
   }
   .qfs-score-circle {
@@ -1396,6 +1432,18 @@
   }
   .ak-expr {
     min-width: 100%;
+  }
+  // Full-width, thumb-height submit button -- was a small centered pill
+  // (padding: 0.85rem 2.5rem, auto width) that on a narrow phone was easy
+  // to miss/fumble, especially this close to the bottom edge.
+  .qfs-submit-row {
+    margin-top: 1.5rem;
+    .btn-submit-quiz {
+      width: 100%;
+      justify-content: center;
+      min-height: 52px;
+      padding: 0.85rem 1.5rem;
+    }
   }
 }
 
