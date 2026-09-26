@@ -113,9 +113,8 @@
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid var(--slate-150); padding-bottom: 0.75rem;">
         <button
           (click)="backToMain()"
-          style="background: none; border: 1.5px solid var(--slate-300); border-radius: 10px; padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 800; color: var(--slate-600); cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.15s;"
-          onmouseover="this.style.background='#f1f5f9'"
-          onmouseout="this.style.background='none'"
+          type="button"
+          class="profile-back-btn"
         >
           ⬅ กลับ
         </button>
@@ -210,7 +209,7 @@
       <!-- Editable: password -->
       <div class="section-container" style="text-align: left;">
         <h3 style="margin: 0 0 0.75rem; font-size: 0.9rem; font-weight: 850; color: var(--slate-800);">เปลี่ยนรหัสผ่าน</h3>
-        <div style="display: flex; flex-direction: column; gap: 0.65rem; max-width: 420px;">
+        <div class="password-row">
           <input
             type="password"
             [(ngModel)]="currentPassword"
@@ -233,7 +232,7 @@
             type="button"
             (click)="submitPasswordChange()"
             [disabled]="changingPassword"
-            style="align-self: flex-start; background: var(--pastel-blue-dark); color: white; border: none; border-radius: 12px; padding: 0.6rem 1.25rem; font-size: 0.82rem; font-weight: 800; cursor: pointer;"
+            style="white-space: nowrap; background: var(--pastel-blue-dark); color: white; border: none; border-radius: 12px; padding: 0.6rem 1.25rem; font-size: 0.82rem; font-weight: 800; cursor: pointer;"
           >
             {{ changingPassword ? 'กำลังบันทึก...' : 'เปลี่ยนรหัสผ่าน' }}
           </button>
@@ -247,9 +246,8 @@
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid var(--slate-150); padding-bottom: 0.75rem;">
         <button
           (click)="backToMain()"
-          style="background: none; border: 1.5px solid var(--slate-300); border-radius: 10px; padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 800; color: var(--slate-600); cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.15s;"
-          onmouseover="this.style.background='#f1f5f9'"
-          onmouseout="this.style.background='none'"
+          type="button"
+          class="profile-back-btn"
         >
           ⬅ กลับ
         </button>
@@ -344,9 +342,8 @@
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid var(--slate-150); padding-bottom: 0.75rem;">
         <button
           (click)="backToMain()"
-          style="background: none; border: 1.5px solid var(--slate-300); border-radius: 10px; padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 800; color: var(--slate-600); cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.15s;"
-          onmouseover="this.style.background='#f1f5f9'"
-          onmouseout="this.style.background='none'"
+          type="button"
+          class="profile-back-btn"
         >
           ⬅ กลับ
         </button>
@@ -465,9 +462,8 @@
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid var(--slate-150); padding-bottom: 0.75rem;">
         <button
           (click)="profileSubView = 'history-categories'"
-          style="background: none; border: 1.5px solid var(--slate-300); border-radius: 10px; padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 800; color: var(--slate-600); cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.15s;"
-          onmouseover="this.style.background='#f1f5f9'"
-          onmouseout="this.style.background='none'"
+          type="button"
+          class="profile-back-btn"
         >
           ⬅ กลับ
         </button>

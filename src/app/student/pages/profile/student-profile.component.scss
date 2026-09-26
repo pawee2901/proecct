@@ -56,35 +56,57 @@
   box-sizing: border-box;
 }
 
+/* ข้อมูลบัญชี: เรียงแนวนอนเป็นช่อง ๆ (หัวข้ออยู่บน ค่าอยู่ล่าง) อ่านจบในแถวเดียว
+   ไม่ต้องกวาดสายตาจากซ้ายสุดไปขวาสุด — จอใหญ่ 6 ช่อง, แท็บเล็ต 3 ช่อง, มือถือ 2 ช่อง
+   (ตัดขึ้นบรรทัดใหม่เอง ไม่มีการเลื่อนซ้าย-ขวา) */
 .profile-info-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 .profile-info-row {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.55rem 0;
-  border-bottom: 1px solid var(--slate-100);
-}
-.profile-info-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--slate-50, #f8fafc);
+  border: 1px solid var(--slate-100, #f1f5f9);
+  border-radius: 14px;
+  min-width: 0;
 }
 .profile-info-lbl {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
   color: var(--slate-500);
-  flex-shrink: 0;
 }
 .profile-info-val {
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 800;
   color: var(--slate-800);
-  text-align: right;
   word-break: break-word;
+}
+@media (max-width: 1024px) {
+  .profile-info-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .profile-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
+  .profile-info-row { padding: 0.6rem 0.7rem; }
+}
+
+/* เปลี่ยนรหัสผ่าน: 3 ช่อง + ปุ่ม อยู่แถวเดียวกันบนจอใหญ่, จอเล็กเรียงลงมา */
+.password-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+.password-row input {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 760px) {
+  .password-row { grid-template-columns: 1fr; }
+  .password-row button { justify-self: start; }
 }
 
 .profile-avatar-img {
@@ -408,3 +430,30 @@
   }
 }
 
+
+/* ปุ่ม "⬅ กลับ" — เดิมพื้นโปร่ง + ขอบ/ตัวอักษรสีเทาอ่อน กลืนไปกับพื้นหลังชมพูจนแทบไม่เห็น
+   เปลี่ยนเป็นปุ่มพื้นทึบสีหลักของธีม ตัวอักษรขาว มีเงา ให้เด่นชัด */
+.profile-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--pastel-blue-dark);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px -3px rgba(236, 72, 153, 0.45);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+.profile-back-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -3px rgba(236, 72, 153, 0.55);
+}
+.profile-back-btn:focus-visible {
+  outline: 3px solid rgba(236, 72, 153, 0.35);
+  outline-offset: 2px;
+}

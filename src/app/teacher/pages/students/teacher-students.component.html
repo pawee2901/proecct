@@ -3,8 +3,171 @@
      selectedStudent ให้เอง -->
 <div class="tab-panel animate-fade">
 
-  <!-- มุมมอง 1: รายชื่อนักเรียนปกติ -->
+  <!-- สลับมุมมอง: รายชื่อนักศึกษา / คะแนนแยกรายบท / คะแนนรวมทุกบท (ตามที่อาจารย์ขอ) -->
   @if (!selectedStudent) {
+    <div class="secondary-tabs">
+      <button type="button" class="sub-tab-btn" [class.active]="viewMode === 'list'" (click)="setViewMode('list')"> รายชื่อนักศึกษา</button>
+      <button type="button" class="sub-tab-btn" [class.active]="viewMode === 'by-unit'" (click)="setViewMode('by-unit')"> คะแนนแยกรายบท</button>
+      <button type="button" class="sub-tab-btn" [class.active]="viewMode === 'summary'" (click)="setViewMode('summary')"> คะแนนรวมทุกบท + เฉลี่ย</button>
+    </div>
+  }
+
+  <!-- มุมมอง 3/4: ตารางคะแนนทั้งห้อง -->
+  @if (viewMode !== 'list' && !selectedStudent) {
+    <div class="section-container">
+      <div class="filter-controls-row">
+        <div class="search-input-wrapper search-input-wrapper--compact">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="filter-input" placeholder="ค้นหาชื่อหรือรหัสนักศึกษา..." [(ngModel)]="searchQuery" />
+        </div>
+        <div class="header-buttons-row header-buttons-row--compact">
+          <button type="button" class="btn-primary-action outline" [disabled]="unitSummaryLoading" (click)="loadUnitSummary()">
+            {{ unitSummaryLoading ? 'กำลังโหลด...' : '🔄 รีเฟรช' }}
+          </button>
+          <button type="button" class="btn-primary-action" [disabled]="unitSummaryLoading" (click)="exportUnitScoresToWord()">
+            ดาวน์โหลดตารางนี้ (Word)
+          </button>
+        </div>
+      </div>
+
+      @if (unitSummaryLoading && !unitSummary) {
+        <p class="empty-table-msg">กำลังรวบรวมคะแนนของทั้งห้อง... (ครั้งแรกอาจใช้เวลาสักครู่ เพราะ AI ต้องคำนวณคะแนนรวมรายบท)</p>
+      } @else if (!session.activeClassroomId) {
+        <p class="empty-table-msg">ยังไม่มีห้องเรียนให้เลือก — เพิ่มชั้นปีและห้องเรียนจากแถบด้านข้างก่อน</p>
+      } @else if (!unitSummary || unitSummary.lessons.length === 0) {
+        <p class="empty-table-msg">ห้องนี้ยังไม่มีบทเรียนที่เผยแพร่</p>
+      } @else {
+
+        <!-- ── คะแนนแยกรายบท ── -->
+        @if (viewMode === 'by-unit') {
+          <div class="unit-pill-row">
+            @for (l of unitSummary.lessons; track l.lesson_id) {
+              <button type="button" class="unit-pill" [class.active]="l.lesson_id === selectedUnitLessonId" (click)="selectedUnitLessonId = l.lesson_id">
+                บทที่ {{ l.lesson_number }}
+              </button>
+            }
+          </div>
+
+          @if (selectedUnitIndex >= 0) {
+            <h3 class="section-title" style="margin-top: 0.75rem;">{{ unitLabel(unitSummary.lessons[selectedUnitIndex]) }}</h3>
+            <p class="section-desc">
+              ทำแล้ว {{ unitDoneCount(selectedUnitIndex) }}/{{ summaryStudents.length }} คน ·
+              ผ่าน {{ unitPassCount(selectedUnitIndex) }} คน ·
+              ค่าเฉลี่ยห้อง (เฉพาะคนที่ทำ): {{ fmt(unitClassAverage(selectedUnitIndex)) }}
+            </p>
+
+            <div class="table-responsive">
+              <table class="cute-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>รหัสประจำตัว</th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th class="num">ก่อนเรียน</th>
+                    <th class="num">หลังเรียน</th>
+                    <th class="num">เกม</th>
+                    <th class="num">คะแนนบทนี้</th>
+                    <th>สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (st of summaryStudents; track st.user_id; let i = $index) {
+                    <tr>
+                      <td>{{ i + 1 }}</td>
+                      <td><span class="id-tag">{{ st.student_code }}</span></td>
+                      <td><strong>{{ st.name }}</strong></td>
+                      <td class="num">{{ fmt(st.units[selectedUnitIndex].pre) }}</td>
+                      <td class="num">{{ fmt(st.units[selectedUnitIndex].post) }}</td>
+                      <td class="num">{{ fmt(st.units[selectedUnitIndex].game) }}</td>
+                      <td class="num"><strong>{{ fmt(st.units[selectedUnitIndex].overall) }}</strong></td>
+                      <td>
+                        @if (!st.units[selectedUnitIndex].done) {
+                          <span class="status-indicator-pill">ยังไม่ได้ทำ</span>
+                        } @else {
+                          <span class="status-indicator-pill" [class.active]="st.units[selectedUnitIndex].passed">
+                            {{ st.units[selectedUnitIndex].passed ? 'ผ่าน' : 'ไม่ผ่าน' }}
+                          </span>
+                        }
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="8"><p class="empty-table-msg">ไม่พบนักศึกษา</p></td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        <!-- ── คะแนนรวมทุกบท แล้วหารเฉลี่ย ── -->
+        @if (viewMode === 'summary') {
+          <div class="divide-mode-row">
+            <span>วิธีหารค่าเฉลี่ย:</span>
+            <label><input type="radio" name="divideMode" [value]="true" [(ngModel)]="divideByAllUnits" /> ÷ จำนวนบททั้งหมด ({{ unitSummary.lessons.length }} บท, บทที่ยังไม่ทำ = 0)</label>
+            <label><input type="radio" name="divideMode" [value]="false" [(ngModel)]="divideByAllUnits" /> ÷ เฉพาะบทที่ทำแล้ว</label>
+          </div>
+          <p class="section-desc">
+            ค่าเฉลี่ยทั้งห้อง: <strong>{{ fmt(summaryClassAverage) }}</strong> · คะแนนแต่ละบทคือ "คะแนนรวมของบท" (ก่อนเรียน/หลังเรียน/เกม ที่ระบบรวมให้แล้ว เต็ม 100)
+          </p>
+
+          <div class="table-responsive">
+            <table class="cute-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>รหัสประจำตัว</th>
+                  <th>ชื่อ-นามสกุล</th>
+                  @for (l of unitSummary.lessons; track l.lesson_id) {
+                    <th class="num" [title]="l.lesson_name">บท {{ l.lesson_number }}</th>
+                  }
+                  <th class="num">รวม ({{ unitSummary.lessons.length * 100 }})</th>
+                  <th class="num">เฉลี่ย</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (st of summaryStudents; track st.user_id; let i = $index) {
+                  <tr>
+                    <td>{{ i + 1 }}</td>
+                    <td><span class="id-tag">{{ st.student_code }}</span></td>
+                    <td><strong>{{ st.name }}</strong></td>
+                    @for (u of st.units; track u.lesson_id) {
+                      <td class="num" [class.cell-fail]="u.done && u.passed === false" [class.cell-empty]="!u.done">{{ fmt(u.overall) }}</td>
+                    }
+                    <td class="num"><strong>{{ st.total_score }}</strong></td>
+                    <td class="num">
+                      <span class="latency-indicator" [class.fast]="studentAverage(st) >= 60" [class.slow]="studentAverage(st) < 60">
+                        {{ studentAverage(st) }}
+                      </span>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td [attr.colspan]="unitSummary.lessons.length + 5"><p class="empty-table-msg">ไม่พบนักศึกษา</p></td></tr>
+                }
+              </tbody>
+              @if (summaryStudents.length > 0) {
+                <tfoot>
+                  <tr class="avg-row">
+                    <td colspan="3"><strong>ค่าเฉลี่ยห้อง (เฉพาะคนที่ทำ)</strong></td>
+                    @for (l of unitSummary.lessons; track l.lesson_id; let j = $index) {
+                      <td class="num">{{ fmt(unitClassAverage(j)) }}</td>
+                    }
+                    <td></td>
+                    <td class="num"><strong>{{ fmt(summaryClassAverage) }}</strong></td>
+                  </tr>
+                </tfoot>
+              }
+            </table>
+          </div>
+        }
+      }
+    </div>
+  }
+
+  <!-- มุมมอง 1: รายชื่อนักเรียนปกติ -->
+  @if (viewMode === 'list' && !selectedStudent) {
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-header">
@@ -266,9 +429,9 @@
                          ต่างจากการ์ด "ทักษะการพูด" คอลัมน์ซ้ายซึ่งเป็นค่าเฉลี่ยรวมทั้งหมด อันนี้
                          คือผลของรอบนี้รอบเดียว ให้เห็นพัฒนาการทีละครั้งที่ฝึก -->
                     <div class="skill-chip-row">
-                      <span class="skill-chip skill-chip--pron">🗣️ ออกเสียง {{ a.pronunciation_score }}/30</span>
-                      <span class="skill-chip skill-chip--speed">⚡ ความเร็ว {{ a.speed_score }}/20</span>
-                      <span class="skill-chip skill-chip--grammar">✍️ ไวยากรณ์ {{ a.grammar_score }}/50</span>
+                      <span class="skill-chip skill-chip--pron"> ออกเสียง {{ a.pronunciation_score }}/30</span>
+                      <span class="skill-chip skill-chip--speed"> ความเร็ว {{ a.speed_score }}/20</span>
+                      <span class="skill-chip skill-chip--grammar"> ไวยากรณ์ {{ a.grammar_score }}/50</span>
                     </div>
                   }
                   @if (a.ai_feedback) {

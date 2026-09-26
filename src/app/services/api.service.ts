@@ -73,6 +73,11 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/teacher/students/${userId}/scores`);
   }
 
+  // ตารางคะแนนทั้งห้อง — แยกรายบท + รวมทุกบทแล้วหารเฉลี่ย (GET /teacher/unit-scores)
+  getTeacherUnitScores(classroomId: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/teacher/unit-scores`, { params: { classroom_id: classroomId } });
+  }
+
   getTeacherStudentActivity(userId: number): Observable<any> {
     return this.http.get(`${this.baseUrl}/teacher/students/${userId}/activity`);
   }

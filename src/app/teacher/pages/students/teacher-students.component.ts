@@ -127,6 +127,34 @@ interface MockStudent {
   }[];
 }
 
+// ── ตารางคะแนนทั้งห้อง (GET /teacher/unit-scores, ดู get_teacher_unit_score_summary()) ──
+interface UnitScoreCell {
+  lesson_id: number;
+  done: boolean;
+  pre: number | null;
+  post: number | null;
+  game: number | null;
+  overall: number | null;
+  passed: boolean | null;
+}
+interface UnitScoreStudent {
+  user_id: number;
+  student_code: string;
+  name: string;
+  units: UnitScoreCell[];
+  lessons_done: number;
+  total_score: number;
+  max_total: number;
+  average_score: number;
+  average_completed_only: number;
+}
+interface UnitScoreSummary {
+  classroom_id: number;
+  lessons: { lesson_id: number; lesson_number: number; lesson_name: string }[];
+  students: UnitScoreStudent[];
+}
+type StudentsViewMode = 'list' | 'by-unit' | 'summary';
+
 // "รายงานสถิตินักศึกษา" tab extracted verbatim from the old TeacherComponent
 // (teacher.component.ts/.html). Reads/writes the shared activeYearLevel via
 // TeacherSessionService so it stays in sync with the Lessons page.
@@ -161,6 +189,14 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
 
   private yearChangedSub?: Subscription;
 
+  // ── มุมมองคะแนนของอาจารย์: รายชื่อ / คะแนนแยกรายบท / คะแนนรวม 5 บท ──
+  viewMode: StudentsViewMode = 'list';
+  unitSummary: UnitScoreSummary | null = null;
+  unitSummaryLoading = false;
+  selectedUnitLessonId: number | null = null;
+  /** true = หารด้วยจำนวนบททั้งหมด (บทที่ยังไม่ทำ = 0), false = หารเฉพาะบทที่ทำแล้ว */
+  divideByAllUnits = true;
+
   constructor(public session: TeacherSessionService, private apiService: ApiService) {}
 
   ngOnInit(): void {
@@ -169,6 +205,8 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
     // เพื่อยังคงเคลียร์ selectedStudent เหมือนเดิมตอนสลับปีระหว่างดูรายละเอียดนักศึกษาอยู่
     this.yearChangedSub = this.session.yearChanged$.subscribe(() => {
       this.selectedStudent = null;
+      this.unitSummary = null;
+      if (this.viewMode !== 'list') this.loadUnitSummary();
     });
   }
 
@@ -227,6 +265,167 @@ export class TeacherStudentsComponent implements OnInit, OnDestroy {
   expandedActivitySessionId: number | null = null;
   toggleActivityDetail(sessionId: number): void {
     this.expandedActivitySessionId = this.expandedActivitySessionId === sessionId ? null : sessionId;
+  }
+
+  // ── คะแนนแยกรายบท / คะแนนรวม 5 บท ──
+  setViewMode(mode: StudentsViewMode): void {
+    this.viewMode = mode;
+    this.selectedStudent = null;
+    if (mode !== 'list' && !this.unitSummary) this.loadUnitSummary();
+  }
+
+  loadUnitSummary(): void {
+    const classroomId = this.session.activeClassroomId;
+    if (!classroomId) {
+      this.unitSummary = null;
+      return;
+    }
+    this.unitSummaryLoading = true;
+    this.apiService.getTeacherUnitScores(classroomId).subscribe({
+      next: (data: UnitScoreSummary) => {
+        // ห้องอาจถูกสลับระหว่างรอ — ทิ้งผลของห้องเก่า
+        if (classroomId !== this.session.activeClassroomId) return;
+        this.unitSummary = data;
+        this.unitSummaryLoading = false;
+        const ids = (data?.lessons || []).map((l) => l.lesson_id);
+        if (!this.selectedUnitLessonId || !ids.includes(this.selectedUnitLessonId)) {
+          this.selectedUnitLessonId = ids[0] ?? null;
+        }
+      },
+      error: () => {
+        this.unitSummaryLoading = false;
+        this.unitSummary = { classroom_id: classroomId, lessons: [], students: [] };
+      },
+    });
+  }
+
+  private matchesSearch(name: string, code: string): boolean {
+    const q = this.searchQuery.trim().toLowerCase();
+    return !q || name.toLowerCase().includes(q) || code.includes(q);
+  }
+
+  get summaryStudents(): UnitScoreStudent[] {
+    return (this.unitSummary?.students || []).filter((st) => this.matchesSearch(st.name, st.student_code));
+  }
+
+  get selectedUnitIndex(): number {
+    return (this.unitSummary?.lessons || []).findIndex((l) => l.lesson_id === this.selectedUnitLessonId);
+  }
+
+  unitLabel(lesson: { lesson_number: number; lesson_name: string }): string {
+    return `บทที่ ${lesson.lesson_number}: ${lesson.lesson_name}`;
+  }
+
+  /** ค่าเฉลี่ยที่แสดงตามโหมดหารที่เลือก */
+  studentAverage(st: UnitScoreStudent): number {
+    return this.divideByAllUnits ? st.average_score : st.average_completed_only;
+  }
+
+  /** ค่าเฉลี่ยทั้งห้องของบทหนึ่ง (เฉพาะคนที่ทำบทนั้นแล้ว) */
+  unitClassAverage(index: number): number | null {
+    const vals = this.summaryStudents
+      .map((st) => st.units[index]?.overall)
+      .filter((v): v is number => v !== null && v !== undefined);
+    if (vals.length === 0) return null;
+    return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100;
+  }
+
+  unitPassCount(index: number): number {
+    return this.summaryStudents.filter((st) => st.units[index]?.passed === true).length;
+  }
+
+  unitDoneCount(index: number): number {
+    return this.summaryStudents.filter((st) => st.units[index]?.done).length;
+  }
+
+  get summaryClassAverage(): number | null {
+    const list = this.summaryStudents;
+    if (list.length === 0) return null;
+    return Math.round((list.reduce((a, st) => a + this.studentAverage(st), 0) / list.length) * 100) / 100;
+  }
+
+  fmt(v: number | null | undefined): string {
+    return v === null || v === undefined ? '-' : String(v);
+  }
+
+  /** ดาวน์โหลดตารางคะแนน (มุมมองที่เปิดอยู่) เป็นไฟล์ Word */
+  exportUnitScoresToWord(): void {
+    const summary = this.unitSummary;
+    if (!summary || summary.students.length === 0) {
+      Swal.fire({ icon: 'info', title: 'ยังไม่มีคะแนนให้ดาวน์โหลด', confirmButtonColor: '#0f766e' });
+      return;
+    }
+    const classroomName = this.session.classrooms.find((c) => c.classroom_id === this.session.activeClassroomId)?.name || 'classroom';
+    const students = this.summaryStudents;
+    let title: string;
+    let header: string[];
+    let body: string[][];
+
+    if (this.viewMode === 'by-unit') {
+      const idx = this.selectedUnitIndex;
+      const lesson = summary.lessons[idx];
+      if (!lesson) return;
+      title = `คะแนน${this.unitLabel(lesson)} — ${classroomName}`;
+      header = ['ลำดับ', 'รหัสประจำตัว', 'ชื่อ-นามสกุล', 'ก่อนเรียน', 'หลังเรียน', 'เกม', 'คะแนนบทนี้', 'สถานะ'];
+      body = students.map((st, i) => {
+        const u = st.units[idx];
+        return [
+          String(i + 1), st.student_code, st.name,
+          this.fmt(u?.pre), this.fmt(u?.post), this.fmt(u?.game), this.fmt(u?.overall),
+          !u?.done ? 'ยังไม่ได้ทำ' : u.passed ? 'ผ่าน' : 'ไม่ผ่าน',
+        ];
+      });
+    } else {
+      const n = summary.lessons.length;
+      title = `คะแนนรวม ${n} บท — ${classroomName}`;
+      header = ['ลำดับ', 'รหัสประจำตัว', 'ชื่อ-นามสกุล', ...summary.lessons.map((l) => `บท ${l.lesson_number}`), `รวม (${n * 100})`, 'เฉลี่ย'];
+      body = students.map((st, i) => [
+        String(i + 1), st.student_code, st.name,
+        ...st.units.map((u) => this.fmt(u.overall)),
+        String(st.total_score), String(this.studentAverage(st)),
+      ]);
+    }
+
+    const cell = (text: string, isHeader = false) =>
+      new TableCell({
+        shading: isHeader ? { fill: '0D9488' } : undefined,
+        children: [new Paragraph({ children: [new TextRun({ text, bold: isHeader, color: isHeader ? 'FFFFFF' : undefined })] })],
+      });
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({ children: [new TextRun({ text: title, bold: true, size: 32 })], spacing: { after: 200 } }),
+          new Paragraph({
+            children: [new TextRun({
+              text: this.viewMode === 'summary'
+                ? `เฉลี่ย = คะแนนรวมทุกบท ÷ ${this.divideByAllUnits ? 'จำนวนบททั้งหมด (บทที่ยังไม่ทำนับเป็น 0)' : 'จำนวนบทที่ทำแล้ว'} · วันที่ดาวน์โหลด: ${new Date().toLocaleDateString('th-TH')}`
+                : `วันที่ดาวน์โหลด: ${new Date().toLocaleDateString('th-TH')}`,
+              size: 20, color: '64748B',
+            })],
+            spacing: { after: 300 },
+          }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({ tableHeader: true, children: header.map((h) => cell(h, true)) }),
+              ...body.map((r) => new TableRow({ children: r.map((t) => cell(t)) })),
+            ],
+          }),
+        ],
+      }],
+    });
+
+    Packer.toBlob(doc).then((blob) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${title.replace(/[\\/:*?"<>|]/g, '-')}-${new Date().toISOString().slice(0, 10)}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
   }
 
   // เปิดดูสถิติรายบุคคล — โหลดคะแนนต่อบทเรียนจริงจาก backend
