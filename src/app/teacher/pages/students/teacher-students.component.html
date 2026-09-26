@@ -82,7 +82,7 @@
                       <td class="num">{{ fmt(st.units[selectedUnitIndex].pre) }}</td>
                       <td class="num">{{ fmt(st.units[selectedUnitIndex].post) }}</td>
                       <td class="num">{{ fmt(st.units[selectedUnitIndex].game) }}</td>
-                      <td class="num"><strong>{{ fmt(st.units[selectedUnitIndex].overall) }}</strong></td>
+                      <td class="num"><strong>{{ fmt(st.units[selectedUnitIndex].overall) }}{{ st.units[selectedUnitIndex].estimated ? '*' : '' }}</strong></td>
                       <td>
                         @if (!st.units[selectedUnitIndex].done) {
                           <span class="status-indicator-pill">ยังไม่ได้ทำ</span>
@@ -109,6 +109,7 @@
             <label><input type="radio" name="divideMode" [value]="true" [(ngModel)]="divideByAllUnits" /> ÷ จำนวนบททั้งหมด ({{ unitSummary.lessons.length }} บท, บทที่ยังไม่ทำ = 0)</label>
             <label><input type="radio" name="divideMode" [value]="false" [(ngModel)]="divideByAllUnits" /> ÷ เฉพาะบทที่ทำแล้ว</label>
           </div>
+          <p class="section-desc" style="font-size: 0.74rem;">* = ยังไม่มีคะแนนรวมจาก AI ใช้สูตรถ่วงน้ำหนักตามเกณฑ์ของบทแทน (จะตรงกับ AI หลังเปิดดูสถิติของนักศึกษาคนนั้น)</p>
           <p class="section-desc">
             ค่าเฉลี่ยทั้งห้อง: <strong>{{ fmt(summaryClassAverage) }}</strong> · คะแนนแต่ละบทคือ "คะแนนรวมของบท" (ก่อนเรียน/หลังเรียน/เกม ที่ระบบรวมให้แล้ว เต็ม 100)
           </p>
@@ -134,7 +135,7 @@
                     <td><span class="id-tag">{{ st.student_code }}</span></td>
                     <td><strong>{{ st.name }}</strong></td>
                     @for (u of st.units; track u.lesson_id) {
-                      <td class="num" [class.cell-fail]="u.done && u.passed === false" [class.cell-empty]="!u.done">{{ fmt(u.overall) }}</td>
+                      <td class="num" [class.cell-fail]="u.done && u.passed === false" [class.cell-empty]="!u.done">{{ fmt(u.overall) }}{{ u.estimated ? '*' : '' }}</td>
                     }
                     <td class="num"><strong>{{ st.total_score }}</strong></td>
                     <td class="num">

@@ -136,6 +136,8 @@ interface UnitScoreCell {
   game: number | null;
   overall: number | null;
   passed: boolean | null;
+  /** true = ยังไม่มีคะแนนจาก AI ที่ cache ไว้ ใช้สูตรถ่วงน้ำหนักแทน (ดู backend) */
+  estimated?: boolean;
 }
 interface UnitScoreStudent {
   user_id: number;
